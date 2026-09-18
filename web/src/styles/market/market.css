@@ -261,6 +261,47 @@
   font-size: 12px;
   margin-top: 8px;
 }
+.market-detail-heading {
+  margin: 4px 0 4px;
+}
+.market-detail-heading h2 {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  overflow-wrap: anywhere;
+  margin-bottom: 14px;
+}
+.market-author-speech {
+  display: grid;
+  gap: 10px;
+}
+.market-speech-bubble {
+  position: relative;
+  background: #fff;
+  border: 1px solid #fff;
+  box-shadow: var(--shadow);
+  border-radius: 20px;
+  padding: 14px 16px;
+  margin-left: 16px;
+  font-size: 14px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.market-speech-bubble::before {
+  content: "";
+  position: absolute;
+  left: -7px;
+  top: 13px;
+  width: 12px;
+  height: 12px;
+  background: #fff;
+  transform: rotate(45deg);
+  border-radius: 3px;
+}
+.market-day-picker {
+  margin-top: 18px;
+}
 .market-share-link .market-share-code {
   font-size: 26px;
   letter-spacing: 4px;

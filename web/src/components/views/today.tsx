@@ -1,11 +1,5 @@
 "use client";
-import {
-  ArrowRight,
-  MapPin,
-  ChevronRight,
-  Check,
-  CalendarDays,
-} from "lucide-react";
+import { ArrowRight, MapPin, ChevronRight, CalendarDays } from "lucide-react";
 import type { TripData, TripEvent } from "@/lib/models";
 import {
   countdown,
@@ -22,6 +16,7 @@ import { LocalClock } from "../home/local-clock";
 import { TicketRoute } from "../home/ticket-route";
 import { eventRoute } from "@/lib/event-route";
 import { TravelSticker } from "../travel-sticker";
+import { EmptyState } from "../empty-state";
 import { Avatar } from "../avatar";
 import { SectionTitle } from "../ui";
 export function Today({
@@ -150,28 +145,23 @@ export function Today({
           </button>
         </article>
       ) : (
-        <div className="surface empty-state">
-          <Check size={28} />
-          <h3>
-            {data.events.length
+        <EmptyState
+          kind="explore"
+          title={
+            data.events.length
               ? activeEvents.length
                 ? "行程已结束"
                 : "暂无待进行的安排"
-              : "还没有行程事项"}
-          </h3>
-          <p>
-            {data.events.length
+              : "还没有行程事项"
+          }
+          text={
+            data.events.length
               ? "行程、资料和账本仍然可以随时查看。"
-              : "前往完整行程，添加航班、住宿或活动。"}
-          </p>
-          <button
-            className="text-action"
-            onClick={() => onNavigate("itinerary")}
-          >
-            查看完整行程
-            <ArrowRight size={16} />
-          </button>
-        </div>
+              : "前往完整行程，添加航班、住宿或活动。"
+          }
+          action="查看完整行程"
+          onAction={() => onNavigate("itinerary")}
+        />
       )}
       {featured && !finished && (
         <EventExtras event={featured} events={activeEvents} onEvent={onEvent} />

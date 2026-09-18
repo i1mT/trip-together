@@ -1,0 +1,1 @@
+ALTER TABLE members ADD COLUMN default_avatar TEXT NOT NULL DEFAULT '';

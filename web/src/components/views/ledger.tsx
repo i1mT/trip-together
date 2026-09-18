@@ -13,6 +13,7 @@ import type { Currency, Expense, TripData, TripDocument } from "@/lib/models";
 import { money, summarize, currencyLabel } from "@/lib/money";
 import { ExpenseDetail } from "../ledger/expense-detail";
 import { ExpenseEditor } from "../expense-editor";
+import { EmptyState } from "../empty-state";
 export function Ledger({
   data,
   onRefresh,
@@ -189,17 +190,17 @@ export function Ledger({
             </div>
           )}
           {!records.length && (
-            <div className="surface empty-state">
-              <ReceiptText size={30} />
-              <h3>
-                {data.expenses.length ? "当前筛选下没有支出" : "还没有支出记录"}
-              </h3>
-              <p>
-                {data.expenses.length
+            <EmptyState
+              kind="transfer"
+              title={
+                data.expenses.length ? "当前筛选下没有支出" : "还没有支出记录"
+              }
+              text={
+                data.expenses.length
                   ? "试试其他币种或付款人。"
-                  : "记录第一笔支出，自动计算同行成员的分摊。"}
-              </p>
-            </div>
+                  : "记录第一笔支出，自动计算同行成员的分摊。"
+              }
+            />
           )}
           <p className="list-caption">
             当前筛选合计{" "}

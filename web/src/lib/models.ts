@@ -31,6 +31,7 @@ export type Member = {
   name: string;
   english_name: string;
   has_avatar?: number;
+  default_avatar?: string;
   version?: number;
 };
 export type Profile = Member & {

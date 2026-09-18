@@ -141,6 +141,20 @@
   display: grid;
   gap: 12px;
 }
+.trip-entry-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.trip-entry-row > button {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+}
+.trip-entry-row > button > svg {
+  display: none;
+}
 .trip-entry-actions > button {
   display: flex;
   align-items: center;

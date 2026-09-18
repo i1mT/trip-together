@@ -206,7 +206,7 @@ export function ExpenseDetail({
         ) : (
           <div className="expense-action-buttons">
             <button
-              className="secondary-button"
+              className="danger-button"
               onClick={() => setConfirmDelete(true)}
             >
               <Trash2 size={17} />

@@ -91,6 +91,17 @@
 .login-submit-group > .secondary-button {
   margin-top: 4px;
 }
+.login-secondary-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 4px;
+}
+.login-secondary-row .secondary-button {
+  min-height: 46px;
+  padding: 10px;
+  font-size: 13px;
+}
 .login-form > .form-actions {
   margin: 16px 0 0;
 }

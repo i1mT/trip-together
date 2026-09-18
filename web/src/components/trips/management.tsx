@@ -177,7 +177,7 @@ export function TripManagement({
           </section>
           <div className="trip-danger-zone">
             <button
-              className="text-action"
+              className="text-danger"
               onClick={() => {
                 setError("");
                 setDeleting(true);
@@ -268,7 +268,7 @@ export function TripManagement({
             {error && <p role="alert">{error}</p>}
             <SheetFooter>
               <button
-                className="primary-button"
+                className="danger-button"
                 disabled={busy || confirmation !== data.trip.title}
                 onClick={async () => {
                   setBusy(true);

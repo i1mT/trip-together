@@ -8,7 +8,6 @@ import {
   ImageIcon,
   ExternalLink,
   Plane,
-  FolderOpen,
   Trash2,
   Pencil,
 } from "lucide-react";
@@ -16,6 +15,7 @@ import type { TripDocument } from "@/lib/models";
 import { DocumentUpload, DeleteDocument } from "../files/document-manager";
 import { RenameDocument } from "../files/rename-document";
 import { SheetFooter, Sheet } from "../ui";
+import { EmptyState } from "../empty-state";
 function documentTitle(doc: TripDocument) {
   return doc.name;
 }
@@ -166,26 +166,22 @@ export function Documents({
         </div>
       )}
       {!filtered.length && (
-        <div className="surface empty-state">
-          <FolderOpen size={30} />
-          <h3>{documents.length ? "没有找到这份资料" : "还没有旅行资料"}</h3>
-          <p>
-            {documents.length
+        <EmptyState
+          kind="luggage"
+          title={documents.length ? "没有找到这份资料" : "还没有旅行资料"}
+          text={
+            documents.length
               ? "尝试其他关键词或分类。"
-              : "上传机票、住宿资料或行程文件，方便旅行时查看。"}
-          </p>
-          <button
-            className="text-action"
-            onClick={() => {
-              if (documents.length) {
-                setQuery("");
-                setFilter("全部");
-              } else setUploading(true);
-            }}
-          >
-            {documents.length ? "清除筛选" : "上传第一份资料"}
-          </button>
-        </div>
+              : "上传机票、住宿资料或行程文件，方便旅行时查看。"
+          }
+          action={documents.length ? "清除筛选" : "上传第一份资料"}
+          onAction={() => {
+            if (documents.length) {
+              setQuery("");
+              setFilter("全部");
+            } else setUploading(true);
+          }}
+        />
       )}
     </section>
   );

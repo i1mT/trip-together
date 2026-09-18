@@ -4,6 +4,7 @@ import { Check, ChevronDown, Trash2 } from "lucide-react";
 import type { PreparationItem } from "@/lib/models";
 import { api } from "@/lib/api";
 import { SheetFooter, Sheet } from "../ui";
+import { EmptyState } from "../empty-state";
 import { PreparationEditor } from "./preparation-editor";
 export function PreparationChecklist({
   items,
@@ -98,11 +99,11 @@ export function PreparationChecklist({
         </details>
       ))}
       {!items.length && (
-        <div className="surface empty-state">
-          <Check size={30} />
-          <h3>还没有准备事项</h3>
-          <p>添加需要携带的物品或提前办理的事项，每位成员分别勾选。</p>
-        </div>
+        <EmptyState
+          kind="luggage"
+          title="还没有准备事项"
+          text="添加需要携带的物品或提前办理的事项，每位成员分别勾选。"
+        />
       )}
       <button
         className="secondary-button w-full"
@@ -134,7 +135,7 @@ export function PreparationChecklist({
             <p>删除「{removing.title}」及所有成员对此项的勾选记录？</p>
             <SheetFooter>
               <button
-                className="primary-button"
+                className="danger-button"
                 disabled={busy}
                 onClick={async () => {
                   if (await action(`/preparation/${removing.id}`, "DELETE"))

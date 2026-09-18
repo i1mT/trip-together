@@ -47,6 +47,7 @@ async function fixture(
     "0002_email_auth.sql",
     "0003_short_invites.sql",
     "0004_remove_pending_costs.sql",
+    "0009_member_default_avatar.sql",
   ]) {
     if (file === "0004_remove_pending_costs.sql") await beforeCleanup?.(DB);
     const sql = await readFile(`infra/schema/${file}`, "utf8");

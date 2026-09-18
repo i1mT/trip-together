@@ -85,32 +85,37 @@ export function TripList({
         <p>创建、加入与切换行程。</p>
       </div>
       <div className="trip-entry-actions">
-        <button className="trip-create-entry" onClick={() => setCreating(true)}>
-          <span className="trip-action-icon">
-            <Plus size={23} />
-          </span>
-          <span>
-            <strong>创建行程</strong>
-            <small>从日期和目的地开始</small>
-          </span>
-          <ArrowRight size={20} />
-        </button>
-        <button
-          className="trip-join-entry"
-          onClick={() => {
-            setJoining(true);
-            setError("");
-          }}
-        >
-          <span className="trip-action-icon">
-            <Users size={21} />
-          </span>
-          <span>
-            <strong>加入行程</strong>
-            <small>使用同行人的邀请口令</small>
-          </span>
-          <ArrowRight size={18} />
-        </button>
+        <div className="trip-entry-row">
+          <button
+            className="trip-create-entry"
+            onClick={() => setCreating(true)}
+          >
+            <span className="trip-action-icon">
+              <Plus size={23} />
+            </span>
+            <span>
+              <strong>创建行程</strong>
+              <small>从日期和目的地开始</small>
+            </span>
+            <ArrowRight size={18} />
+          </button>
+          <button
+            className="trip-join-entry"
+            onClick={() => {
+              setJoining(true);
+              setError("");
+            }}
+          >
+            <span className="trip-action-icon">
+              <Users size={21} />
+            </span>
+            <span>
+              <strong>加入行程</strong>
+              <small>使用同行人的邀请口令</small>
+            </span>
+            <ArrowRight size={18} />
+          </button>
+        </div>
         <button className="trip-join-entry" onClick={onMarket}>
           <span className="trip-action-icon">
             <Ticket size={22} />

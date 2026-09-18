@@ -38,6 +38,7 @@
 }
 .passport-card {
   padding: 13px 19px 20px;
+  margin-bottom: 14px;
 }
 .passport-top {
   display: flex;

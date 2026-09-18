@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { Eye, EyeOff, LockKeyhole } from "lucide-react";
+import { Eye, EyeOff, LockKeyhole, Mail } from "lucide-react";
 import { TravelSticker } from "./travel-sticker";
 import { track } from "@/lib/analytics/client";
 import { api } from "@/lib/api";
@@ -123,22 +123,25 @@ export function Login({
           )}
           <label>
             邮箱
-            <input
-              required
-              type="email"
-              aria-label="邮箱"
-              autoCapitalize="none"
-              autoComplete="username"
-              maxLength={254}
-              value={email}
-              disabled={busy}
-              onChange={(e) => {
-                setEmail(e.target.value);
-                setCode("");
-                setNotice("");
-                setError("");
-              }}
-            />
+            <div className="password-field">
+              <Mail size={18} />
+              <input
+                required
+                type="email"
+                aria-label="邮箱"
+                autoCapitalize="none"
+                autoComplete="username"
+                maxLength={254}
+                value={email}
+                disabled={busy}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  setCode("");
+                  setNotice("");
+                  setError("");
+                }}
+              />
+            </div>
           </label>
           <label>
             {mode === "recover" ? "新密码" : "密码"}
@@ -219,16 +222,28 @@ export function Login({
                       ? "重置密码"
                       : "绑定邮箱并登录"}
             </button>
-            <button
-              type="button"
-              className="secondary-button"
-              disabled={busy}
-              onClick={() =>
-                switchMode(mode === "login" ? "register" : "login")
-              }
-            >
-              {mode === "login" ? "注册新账号" : "返回登录"}
-            </button>
+            <div className="login-secondary-row">
+              <button
+                type="button"
+                className="secondary-button"
+                disabled={busy}
+                onClick={() =>
+                  switchMode(mode === "login" ? "register" : "login")
+                }
+              >
+                {mode === "login" ? "注册新账号" : "返回登录"}
+              </button>
+              {mode === "login" && onBrowseMarket && (
+                <button
+                  type="button"
+                  className="secondary-button"
+                  disabled={busy}
+                  onClick={onBrowseMarket}
+                >
+                  先看看行程市场
+                </button>
+              )}
+            </div>
           </div>
         </form>
         <div className="form-actions">
@@ -241,25 +256,7 @@ export function Login({
               忘记密码
             </button>
           )}
-          {mode === "login" && (
-            <button
-              className="text-action"
-              disabled={busy}
-              onClick={() => switchMode("migrate")}
-            >
-              旧账号绑定邮箱
-            </button>
-          )}
         </div>
-        {mode === "login" && onBrowseMarket && (
-          <button
-            type="button"
-            className="secondary-button market-guest-entry"
-            onClick={onBrowseMarket}
-          >
-            通过口令浏览行程市场
-          </button>
-        )}
       </section>
     </main>
   );

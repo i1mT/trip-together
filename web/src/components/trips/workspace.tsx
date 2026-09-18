@@ -262,7 +262,7 @@ export function TripWorkspace({
             <p>确定删除「{deletingEvent.title}」吗？关联文件会保留。</p>
             <SheetFooter>
               <button
-                className="primary-button"
+                className="danger-button"
                 disabled={deleting}
                 onClick={async () => {
                   setDeleting(true);

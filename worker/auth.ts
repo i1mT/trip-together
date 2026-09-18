@@ -54,8 +54,18 @@ export async function register(request: Request, env: Env) {
   await consumeCode(request, env, input.email, "register", input.code);
   const id = crypto.randomUUID(),
     salt = randomToken();
+  const defaultAvatars = [
+    "flight",
+    "drive",
+    "stay",
+    "explore",
+    "transfer",
+    "luggage",
+  ] as const;
+  const defaultAvatar =
+    defaultAvatars[crypto.getRandomValues(new Uint8Array(1))[0] % 6];
   const result = await env.DB.prepare(
-    "INSERT INTO members (id,email,name,password_hash,salt,email_verified_at) VALUES (?,?,?,?,?,?) ON CONFLICT(email) DO NOTHING",
+    "INSERT INTO members (id,email,name,password_hash,salt,email_verified_at,default_avatar) VALUES (?,?,?,?,?,?,?) ON CONFLICT(email) DO NOTHING",
   )
     .bind(
       id,
@@ -64,6 +74,7 @@ export async function register(request: Request, env: Env) {
       await passwordHash(input.password, salt),
       salt,
       env.APP_ENV === "local" ? null : Date.now(),
+      defaultAvatar,
     )
     .run();
   if (!result.meta.changes)

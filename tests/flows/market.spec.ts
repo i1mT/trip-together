@@ -52,7 +52,7 @@ test("手机公开发布、匿名预览、登录返回并复制为独立行程",
     preview = await other.newPage(),
     reader = await new Client().register();
   await preview.goto(new URL("/", page.url()).href);
-  await preview.getByRole("button", { name: "通过口令浏览行程市场" }).click();
+  await preview.getByRole("button", { name: "先看看行程市场" }).click();
   await preview.getByLabel("搜索公开行程").fill(code.toLowerCase());
   await preview.getByRole("button", { name: "搜索", exact: true }).click();
   await expect(preview.locator(".market-card")).toHaveCount(1);
@@ -62,7 +62,7 @@ test("手机公开发布、匿名预览、登录返回并复制为独立行程",
     "nowrap",
   );
   await preview.getByRole("button", { name: /巴黎慢游/ }).click();
-  await expect(preview.locator(".market-introduction-full")).toContainText(
+  await expect(preview.locator(".market-speech-bubble")).toContainText(
     "每天慢慢逛，不赶路。",
   );
   await expect(

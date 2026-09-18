@@ -1,11 +1,12 @@
 "use client";
 import { useEffect, useState } from "react";
-import { ArrowLeft, ArrowRight, Compass, Search } from "lucide-react";
+import { ArrowLeft, ArrowRight, Search } from "lucide-react";
 import type { MarketCard, PublicItinerary } from "../../../../shared/market";
 import { api, ApiError } from "@/lib/api";
 import { Sheet, SheetForm, SheetFooter } from "../ui";
 import { MarketAuthor } from "./author";
 import { SnapshotView } from "./snapshot-view";
+import { EmptyState } from "../empty-state";
 export type CopyAttempt = { requestId: string; date: string; copiedId: string };
 export function Market({
   initialId = "",
@@ -138,13 +139,18 @@ export function Market({
           </div>
           {detail && (
             <>
-              <MarketAuthor author={detail.author} />
-              <span className="market-code">分享口令 {detail.code}</span>
-              {detail.introduction && (
-                <p className="market-introduction-full">
-                  {detail.introduction}
-                </p>
-              )}
+              <div className="market-detail-heading">
+                <h2>{detail.snapshot.trip.title}</h2>
+                <div className="market-author-speech">
+                  <MarketAuthor author={detail.author} />
+                  {detail.introduction && (
+                    <p className="market-speech-bubble">
+                      {detail.introduction}
+                    </p>
+                  )}
+                </div>
+                <span className="market-code">分享口令 {detail.code}</span>
+              </div>
               <SnapshotView snapshot={detail.snapshot} />
               <p className="market-privacy">
                 只复制行程安排，不包含资料、成员、账本或预订信息。复制不会加入原行程。
@@ -199,15 +205,15 @@ export function Market({
             </button>
           </form>
           {!loading && !error && items.length === 0 ? (
-            <div className="empty-state">
-              <Compass size={32} />
-              <h2>{query ? "没有找到匹配的行程" : "还没有公开行程"}</h2>
-              <p>
-                {query
+            <EmptyState
+              kind="explore"
+              title={query ? "没有找到匹配的行程" : "还没有公开行程"}
+              text={
+                query
                   ? "换个目的地或名称试试。"
-                  : "你可以在“我的行程”中，预览并公开分享自己的旅行安排。"}
-              </p>
-            </div>
+                  : "你可以在“我的行程”中，预览并公开分享自己的旅行安排。"
+              }
+            />
           ) : (
             <div className="market-grid">
               {!loading &&

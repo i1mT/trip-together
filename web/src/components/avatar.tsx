@@ -1,12 +1,15 @@
 "use client";
 import { useEffect, useState } from "react";
-import type { Member } from "@/lib/models";
+import type { Member, TripEvent } from "@/lib/models";
+import { TravelSticker } from "./travel-sticker";
 
 export function Avatar({
   member,
   className = "",
 }: {
-  member: Pick<Member, "id" | "name" | "has_avatar" | "version"> | undefined;
+  member:
+    | Pick<Member, "id" | "name" | "has_avatar" | "default_avatar" | "version">
+    | undefined;
   className?: string;
 }) {
   const [failed, setFailed] = useState(false);
@@ -24,9 +27,13 @@ export function Avatar({
           onError={() => setFailed(true)}
           draggable={false}
         />
+      ) : member?.default_avatar ? (
+        <span className="avatar-default-sticker" aria-label={member.name}>
+          <TravelSticker kind={member.default_avatar as TripEvent["kind"]} />
+        </span>
       ) : (
         <span aria-label={member?.name ?? "成员"}>
-          {member?.name.slice(-1) ?? "?"}
+          {member?.name.slice(0, 1) ?? "?"}
         </span>
       )}
     </span>

@@ -3,7 +3,7 @@ import { body, HttpError, json } from "../http";
 import { passwordHash, randomToken, equal } from "./password";
 import { rateLimit } from "../auth";
 export const profileColumns =
-  "id,email,name,english_name,passport,identity_number,expiry,version,(avatar_key IS NOT NULL) AS has_avatar";
+  "id,email,name,english_name,passport,identity_number,expiry,version,default_avatar,(avatar_key IS NOT NULL) AS has_avatar";
 export async function profile(env: Env, id: string) {
   return env.DB.prepare(`SELECT ${profileColumns} FROM members WHERE id=?`)
     .bind(id)

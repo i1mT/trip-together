@@ -161,6 +161,7 @@ test("从注册到行程、文件、账本、证件和重新登录", async ({
   });
   await page.getByRole("button", { name: "我的", exact: true }).click();
   await page.getByRole("button", { name: "退出当前身份" }).click();
+  await page.getByRole("button", { name: "确认退出" }).click();
   await page.getByLabel("邮箱", { exact: true }).fill(email);
   await page.getByLabel("密码", { exact: true }).fill(password);
   await page.getByRole("button", { name: "登录", exact: true }).click();

@@ -23,6 +23,7 @@ import {
   eventEndDate,
 } from "@/lib/time";
 import { TravelSticker } from "../travel-sticker";
+import { EmptyState } from "../empty-state";
 import { EventIcon, SheetFooter, Sheet, SectionTitle } from "../ui";
 import { PreparationChecklist } from "../preparation/checklist";
 import { EventEditor } from "../editors/event-editor";
@@ -140,14 +141,13 @@ export function Itinerary({
             <span className="list-caption">{filtered.length} 项安排</span>
           </div>
           {!filtered.length && (
-            <div className="surface empty-state">
-              <CalendarDays size={28} />
-              <h3>这一天还没有安排</h3>
-              <p>可以先添加活动名称，具体时间稍后完善。</p>
-              <button className="text-action" onClick={() => setEditing(true)}>
-                添加当天事项
-              </button>
-            </div>
+            <EmptyState
+              kind="explore"
+              title="这一天还没有安排"
+              text="可以先添加活动名称，具体时间稍后完善。"
+              action="添加当天事项"
+              onAction={() => setEditing(true)}
+            />
           )}
           <div className="timeline">
             {filtered.map((e) => (
@@ -341,20 +341,20 @@ export function EventDetail({
             </button>
           </>
         ) : (
-          <div className="surface empty-state">
-            <h3>尚未关联资料</h3>
-            <p>可以直接上传图片、订单或关联已有资料。</p>
-            <button className="text-action" onClick={() => onEdit(event, 4)}>
-              关联资料
-            </button>
-          </div>
+          <EmptyState
+            kind="luggage"
+            title="尚未关联资料"
+            text="可以直接上传图片、订单或关联已有资料。"
+            action="关联资料"
+            onAction={() => onEdit(event, 4)}
+          />
         )}
         <p className="source-note">资料来源：{event.source || "手动添加"}</p>
         <SheetFooter>
           <button className="secondary-button" onClick={() => onEdit(event)}>
             修改事项
           </button>
-          <button className="secondary-button" onClick={() => onDelete(event)}>
+          <button className="danger-button" onClick={() => onDelete(event)}>
             删除事项
           </button>
         </SheetFooter>

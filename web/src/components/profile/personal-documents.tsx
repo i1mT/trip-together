@@ -230,7 +230,7 @@ export function PersonalDocuments({
             <p>确定删除这份证件图片吗？</p>
             <SheetFooter>
               <button
-                className="primary-button w-full"
+                className="danger-button w-full"
                 disabled={deleting}
                 onClick={() => void remove()}
               >

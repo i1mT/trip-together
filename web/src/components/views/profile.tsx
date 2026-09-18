@@ -13,7 +13,7 @@ import type { TripData, TripDocument } from "@/lib/models";
 import { PersonalDocuments } from "../profile/personal-documents";
 import { ProfileEditor, PasswordEditor } from "../account/profile-editor";
 import { Avatar } from "../avatar";
-import { SectionTitle } from "../ui";
+import { SectionTitle, Sheet, SheetFooter } from "../ui";
 export function Profile({
   data,
   onRefresh,
@@ -33,7 +33,8 @@ export function Profile({
     [passwordOpen, setPasswordOpen] = useState(false);
   const [visible, setVisible] = useState(false),
     [error, setError] = useState(""),
-    [copied, setCopied] = useState(false);
+    [copied, setCopied] = useState(false),
+    [confirmLogout, setConfirmLogout] = useState(false);
   async function copy() {
     try {
       await navigator.clipboard.writeText(
@@ -79,7 +80,7 @@ export function Profile({
           onClose={() => setPasswordOpen(false)}
         />
       )}
-      {data.trip && (
+      {data.trip && data.members.length > 2 && (
         <>
           <SectionTitle>
             同行成员{" "}
@@ -159,19 +160,35 @@ export function Profile({
           修改密码
         </button>
         <button
-          className="secondary-button w-full"
-          onClick={async () => {
-            try {
-              await onLogout();
-            } catch (e) {
-              setError(e instanceof Error ? e.message : "退出失败");
-            }
-          }}
+          className="danger-button w-full"
+          onClick={() => setConfirmLogout(true)}
         >
           <LogOut size={17} />
           退出当前身份
         </button>
       </div>
+      {confirmLogout && (
+        <Sheet open title="退出登录" onClose={() => setConfirmLogout(false)}>
+          <div className="editor-form">
+            <p>确定退出当前身份吗？退出后需要重新登录。</p>
+            {error && <p role="alert">{error}</p>}
+            <SheetFooter>
+              <button
+                className="danger-button"
+                onClick={async () => {
+                  try {
+                    await onLogout();
+                  } catch (e) {
+                    setError(e instanceof Error ? e.message : "退出失败");
+                  }
+                }}
+              >
+                确认退出
+              </button>
+            </SheetFooter>
+          </div>
+        </Sheet>
+      )}
       {error && (
         <p role="alert" className="error-message">
           {error}

@@ -15,7 +15,7 @@ export async function tripData(env: Env, memberId: string, trip: Trip) {
   ] = await Promise.all([
     profile(env, memberId),
     env.DB.prepare(
-      "SELECT u.id,u.name,u.english_name,(u.avatar_key IS NOT NULL) AS has_avatar,u.version FROM members u JOIN trip_members m ON m.member_id=u.id WHERE m.trip_id=? ORDER BY m.joined_at,u.id",
+      "SELECT u.id,u.name,u.english_name,u.default_avatar,(u.avatar_key IS NOT NULL) AS has_avatar,u.version FROM members u JOIN trip_members m ON m.member_id=u.id WHERE m.trip_id=? ORDER BY m.joined_at,u.id",
     )
       .bind(trip.id)
       .all(),

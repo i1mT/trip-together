@@ -1,3 +1,4 @@
+import { isPlanned } from "../../../shared/event-status";
 import type { TripEvent } from "./models";
 export function localDate(date: Date | string | number, timezone = "UTC") {
   return new Intl.DateTimeFormat("en-CA", {
@@ -29,9 +30,9 @@ export function dateLabel(date: Date | string | number, timezone = "UTC") {
   }).format(new Date(date));
 }
 export function selectEvents(events: TripEvent[], now: number) {
-  const sorted = [...events].sort(
-    (a, b) => Date.parse(a.start) - Date.parse(b.start),
-  );
+  const sorted = events
+    .filter(isPlanned)
+    .sort((a, b) => Date.parse(a.start) - Date.parse(b.start));
   const timed = sorted.filter(
     (e) => e.timeMode !== "date" && !e.endUnspecified,
   );

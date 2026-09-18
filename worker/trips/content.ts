@@ -1,3 +1,4 @@
+import { eventStatuses } from "../../shared/event-status";
 import { z } from "zod";
 import { body, HttpError, json } from "../http";
 import { eventSchema } from "../../shared/validation";
@@ -15,6 +16,7 @@ export async function saveEvent(
   for (const doc of v.documents)
     await requireDocument(env, doc, tripId, memberId);
   const { version, ...data } = v;
+  let status = "planned";
   // Preserve attachments owned by other members when editing a shared event.
   if (id) {
     const previous = await env.DB.prepare(
@@ -23,6 +25,7 @@ export async function saveEvent(
       .bind(id, tripId)
       .first<{ data: string }>();
     if (previous) {
+      status = JSON.parse(previous.data).status ?? "planned";
       const hidden = await env.DB.prepare(
         "SELECT id FROM documents WHERE trip_id=? AND owner_id IS NOT NULL AND owner_id<>? AND id IN (SELECT value FROM json_each(?, '$.documents'))",
       )
@@ -38,7 +41,7 @@ export async function saveEvent(
         "UPDATE events SET data=?,version=version+1 WHERE id=? AND trip_id=? AND version=?",
       )
         .bind(
-          JSON.stringify({ ...data, id: eventId }),
+          JSON.stringify({ ...data, status, id: eventId }),
           eventId,
           tripId,
           version ?? 0,
@@ -50,7 +53,7 @@ export async function saveEvent(
         .bind(
           eventId,
           tripId,
-          JSON.stringify({ ...data, id: eventId }),
+          JSON.stringify({ ...data, status, id: eventId }),
           memberId,
         )
         .run();
@@ -101,4 +104,27 @@ export async function preparation(
     .bind(itemId, tripId, v.group_name, v.title, v.note)
     .run();
   return json({ id: itemId });
+}
+
+export async function setEventStatus(
+  request: Request,
+  env: Env,
+  tripId: string,
+  id: string,
+) {
+  const value = await body(
+    request,
+    z.object({
+      status: z.enum(eventStatuses),
+      version: z.number().int().positive(),
+    }),
+  );
+  const result = await env.DB.prepare(
+    "UPDATE events SET data=json_set(data,'$.status',?),version=version+1 WHERE id=? AND trip_id=? AND version=?",
+  )
+    .bind(value.status, id, tripId, value.version)
+    .run();
+  if (!result.meta.changes)
+    throw new HttpError(409, "事项已经变更，请刷新后重试");
+  return json({ status: value.status, version: value.version + 1 });
 }

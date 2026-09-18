@@ -16,6 +16,7 @@ import {
   zoneName,
   localDate,
 } from "@/lib/time";
+import { isPlanned } from "../../../../shared/event-status";
 import { EventExtras } from "../home/event-extras";
 import { LocalClock } from "../home/local-clock";
 import { TicketRoute } from "../home/ticket-route";
@@ -40,11 +41,12 @@ export function Today({
   onEvent: (e: TripEvent) => void;
   onNavigate: (tab: string) => void;
 }) {
+  const activeEvents = data.events.filter(isPlanned);
   const { current, featured, finished } = selectEvents(data.events, now);
   const before =
-      now < Date.parse(data.events[0]?.start ?? data.trip.start_date),
+      now < Date.parse(activeEvents[0]?.start ?? data.trip.start_date),
     zone = featured?.timezone ?? data.trip.timezone;
-  const sameDay = data.events.filter(
+  const sameDay = activeEvents.filter(
     (e) =>
       localDate(e.start, e.timezone) ===
       localDate(before && featured ? featured.start : now, zone),
@@ -150,7 +152,13 @@ export function Today({
       ) : (
         <div className="surface empty-state">
           <Check size={28} />
-          <h3>{data.events.length ? "行程已结束" : "还没有行程事项"}</h3>
+          <h3>
+            {data.events.length
+              ? activeEvents.length
+                ? "行程已结束"
+                : "暂无待进行的安排"
+              : "还没有行程事项"}
+          </h3>
           <p>
             {data.events.length
               ? "行程、资料和账本仍然可以随时查看。"
@@ -166,7 +174,7 @@ export function Today({
         </div>
       )}
       {featured && !finished && (
-        <EventExtras event={featured} events={data.events} onEvent={onEvent} />
+        <EventExtras event={featured} events={activeEvents} onEvent={onEvent} />
       )}
       {preview && (
         <button className="text-action" onClick={onExitPreview}>

@@ -41,6 +41,7 @@ export type Profile = Member & {
   expiry: string;
 };
 export type TripEvent = {
+  status?: import("../../../shared/event-status").EventStatus;
   dateEnd?: string;
   timeRange?: boolean;
   timeMode?: "timed" | "date";

@@ -55,6 +55,11 @@ export function TripWorkspace({
       const result = await api<TripData>("/trip");
       if (mounted.current) {
         setData(result);
+        setEvent((current) =>
+          current
+            ? (result.events.find((item) => item.id === current.id) ?? null)
+            : null,
+        );
         setError("");
       }
     } catch (e) {
@@ -207,6 +212,23 @@ export function TripWorkspace({
       <EventDetail
         event={event}
         data={data}
+        onRefresh={refresh}
+        onStatusChanged={async (updated) => {
+          setEvent((current) =>
+            current?.id === updated.id ? updated : current,
+          );
+          setData((current) =>
+            current
+              ? {
+                  ...current,
+                  events: current.events.map((item) =>
+                    item.id === updated.id ? updated : item,
+                  ),
+                }
+              : current,
+          );
+          await refresh().catch((e) => setError(e.message));
+        }}
         onEdit={(e, step = 1) => {
           setEvent(null);
           setEditingEvent({ event: e, step });

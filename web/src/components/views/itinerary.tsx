@@ -1,4 +1,6 @@
 "use client";
+import { eventStatusLabel } from "../../../../shared/event-status";
+import { EventStatusActions } from "../events/status-actions";
 import { mapLink } from "../../../../shared/places";
 import { useState } from "react";
 import {
@@ -156,7 +158,11 @@ export function Itinerary({
               >
                 <div className="timeline-time">
                   <strong>{eventTime(e)}</strong>
-                  <span>{e.certainty === "suggested" ? "建议" : "已确认"}</span>
+                  {!eventStatusLabel(e.status) && (
+                    <span>
+                      {e.certainty === "suggested" ? "建议" : "已确认"}
+                    </span>
+                  )}
                 </div>
                 <div className={`timeline-icon ${e.kind}`}>
                   <TravelSticker kind={e.kind} />
@@ -167,6 +173,11 @@ export function Itinerary({
                     {e.code ? ` · ${e.code}` : ""}
                   </small>
                   <h3>{e.title}</h3>
+                  {eventStatusLabel(e.status) && (
+                    <span className={`event-status-tag ${e.status}`}>
+                      {eventStatusLabel(e.status)}
+                    </span>
+                  )}
                   <p>{e.subtitle}</p>
                   <span className="timeline-link">
                     查看详情与资料
@@ -200,6 +211,8 @@ export function EventDetail({
   onDocument,
   onEdit,
   onDelete,
+  onStatusChanged,
+  onRefresh,
 }: {
   event: TripEvent | null;
   data: TripData;
@@ -207,6 +220,8 @@ export function EventDetail({
   onDocument: (d: TripDocument) => void;
   onEdit: (e: TripEvent, step?: 1 | 4) => void;
   onDelete: (e: TripEvent) => void;
+  onStatusChanged: (event: TripEvent) => Promise<void>;
+  onRefresh: () => Promise<void>;
 }) {
   if (!event) return null;
   const docs = data.documents.filter((d) => event.documents.includes(d.id));
@@ -220,7 +235,8 @@ export function EventDetail({
       <div className="event-detail">
         <span className="detail-kind">
           <EventIcon kind={event.kind} />
-          {event.certainty === "confirmed" ? "安排已确认" : "计划中"}
+          {eventStatusLabel(event.status) ||
+            (event.certainty === "confirmed" ? "安排已确认" : "计划中")}
         </span>
         {event.from && (
           <div className="flight-route">
@@ -301,6 +317,12 @@ export function EventDetail({
             <p>{event.note}</p>
           </div>
         )}
+        <EventStatusActions
+          key={`${event.id}:${event.version}`}
+          event={event}
+          onChanged={onStatusChanged}
+          onRefresh={onRefresh}
+        />
         <SectionTitle>相关资料</SectionTitle>
         {docs.length ? (
           <>

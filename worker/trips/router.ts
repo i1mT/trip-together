@@ -2,7 +2,7 @@ import { manageShare } from "../market/manage";
 import { HttpError } from "../http";
 import { requireTrip } from "./access";
 import { updateTrip, deleteTrip, invite } from "./manage";
-import { saveEvent, deleteEvent, preparation } from "./content";
+import { saveEvent, deleteEvent, preparation, setEventStatus } from "./content";
 import { tripData, packing } from "../data";
 import { saveExpense, deleteExpense } from "../finance/expenses";
 import { uploadReceipt, deleteDraftReceipt } from "../finance/receipts";
@@ -27,6 +27,8 @@ export async function tripRouter(
   if (resource === "invites" && ["GET", "POST", "DELETE"].includes(method))
     return invite(request, env, trip, memberId);
   if (resource === "events") {
+    if (method === "PATCH" && id && parts.length === 3)
+      return setEventStatus(request, env, tripId, id);
     if ((method === "POST" && !id) || (method === "PUT" && id))
       return saveEvent(request, env, tripId, memberId, id);
     if (method === "DELETE" && id) return deleteEvent(request, env, tripId, id);

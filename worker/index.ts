@@ -1,3 +1,5 @@
+import { publicMarket } from "./market/public";
+import { copyItinerary } from "./market/copy";
 import { analyticsConfig } from "./analytics/config";
 import { analyticsScheduled } from "./analytics/delivery";
 import { summaryResponse } from "./analytics/summary";
@@ -41,6 +43,8 @@ export default {
         return secure(await summaryResponse(request, env));
       if (path === "/api/analytics/track" && method === "POST")
         return secure(await trackResponse(request, env));
+      if (method === "GET" && /^\/api\/market(?:\/[a-f0-9-]{36})?$/.test(path))
+        return secure(await publicMarket(request, env, path.split("/")[3]));
       if (path === "/api/auth-config" && method === "GET")
         return secure(
           json({
@@ -59,6 +63,13 @@ export default {
       }
       const memberId = await identity(request, env);
       if (!memberId) return secure(json({ error: "请先登录" }, 401));
+      if (
+        method === "POST" &&
+        /^\/api\/market\/[a-f0-9-]{36}\/copy$/.test(path)
+      )
+        return secure(
+          await copyItinerary(request, env, memberId, path.split("/")[3]),
+        );
       let r: Response;
       if (path === "/api/bootstrap" && method === "GET")
         r = await bootstrap(env, memberId);

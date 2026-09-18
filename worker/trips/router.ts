@@ -1,3 +1,4 @@
+import { manageShare } from "../market/manage";
 import { HttpError } from "../http";
 import { requireTrip } from "./access";
 import { updateTrip, deleteTrip, invite } from "./manage";
@@ -19,6 +20,8 @@ export async function tripRouter(
     if (method === "PUT") return updateTrip(request, env, trip, memberId);
     if (method === "DELETE") return deleteTrip(request, env, trip, memberId);
   }
+  if (resource === "share" && ["GET", "POST", "DELETE"].includes(method))
+    return manageShare(request, env, trip, memberId);
   if (resource === "data" && method === "GET")
     return tripData(env, memberId, trip);
   if (resource === "invites" && ["GET", "POST", "DELETE"].includes(method))

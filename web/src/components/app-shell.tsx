@@ -4,6 +4,7 @@ import type { Bootstrap, TripDocument } from "@/lib/models";
 import { api, ApiError, setActiveTrip } from "@/lib/api";
 import { track, type AnalyticsPage } from "@/lib/analytics/client";
 import { ProfileTrips } from "./profile/trip-switcher";
+import { Market, type CopyAttempt } from "./market/market";
 import { Login } from "./login";
 import { TripList } from "./trips/trip-list";
 import { TripWorkspace } from "./trips/workspace";
@@ -31,7 +32,24 @@ export function AppShell() {
     [loading, setLoading] = useState(true),
     [error, setError] = useState("");
   const [doc, setDoc] = useState<TripDocument | null>(null);
+  const [market, setMarket] = useState(false),
+    [shareId, setShareId] = useState(""),
+    [marketLogin, setMarketLogin] = useState(false);
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    setShareId(params.get("share") ?? "");
+    setMarket(params.has("share") || params.has("market"));
+  }, []);
+  function closeMarket() {
+    setMarket(false);
+    setMarketLogin(false);
+    const url = new URL(window.location.href);
+    url.searchParams.delete("share");
+    url.searchParams.delete("market");
+    window.history.replaceState(null, "", url);
+  }
   const selectedRef = useRef("");
+  const pendingCopies = useRef(new Map<string, CopyAttempt>());
   useEffect(() => {
     if (!loading && boot)
       track("page_viewed", managing ? "trips" : (tab as AnalyticsPage));
@@ -45,25 +63,30 @@ export function AppShell() {
     setTab("today");
     setDoc(null);
   }, []);
-  const refresh = useCallback(async () => {
-    try {
-      const result = await api<Bootstrap>("/bootstrap");
-      const preferred = selectedRef.current || savedTrip(result.me.id);
-      const id =
-        result.trips.find((t) => t.id === preferred)?.id ||
-        result.trips[0]?.id ||
-        "";
-      selectedRef.current = id;
-      setActiveTrip(id);
-      setSelected(id);
-      rememberTrip(result.me.id, id);
-      setBoot(result);
-      setError("");
-    } catch (e) {
-      if (e instanceof ApiError && e.status === 401) expired();
-      else throw e;
-    }
-  }, [expired]);
+  const refresh = useCallback(
+    async (requireSession = false) => {
+      try {
+        const result = await api<Bootstrap>("/bootstrap");
+        const preferred = selectedRef.current || savedTrip(result.me.id);
+        const id =
+          result.trips.find((t) => t.id === preferred)?.id ||
+          result.trips[0]?.id ||
+          "";
+        selectedRef.current = id;
+        setActiveTrip(id);
+        setSelected(id);
+        rememberTrip(result.me.id, id);
+        setBoot(result);
+        setError("");
+      } catch (e) {
+        if (e instanceof ApiError && e.status === 401) {
+          expired();
+          if (requireSession) throw e;
+        } else throw e;
+      }
+    },
+    [expired],
+  );
   useEffect(() => {
     void refresh()
       .catch((e) => setError(e.message))
@@ -92,9 +115,42 @@ export function AppShell() {
     expired();
   }
   if (loading) return <div className="loading-screen">正在加载…</div>;
+  if (market && (!marketLogin || boot))
+    return (
+      <div className="app-shell">
+        <Market
+          initialId={shareId}
+          memberId={boot?.me.id}
+          pending={pendingCopies.current}
+          onBack={closeMarket}
+          onLogin={() => {
+            expired();
+            setShareId(
+              new URLSearchParams(window.location.search).get("share") ?? "",
+            );
+            setMarketLogin(true);
+          }}
+          onCopied={async (id) => {
+            await refresh(true);
+            selectedRef.current = id;
+            setActiveTrip(id);
+            setSelected(id);
+            if (boot) rememberTrip(boot.me.id, id);
+            closeMarket();
+            setManaging(false);
+            setTab("itinerary");
+          }}
+        />
+      </div>
+    );
   if (!boot)
     return (
       <>
+        {marketLogin && (
+          <button className="trip-back" onClick={() => setMarketLogin(false)}>
+            返回行程预览
+          </button>
+        )}
         <Login onLogin={refresh} />
         {error && (
           <p role="alert" className="error-message">
@@ -120,6 +176,11 @@ export function AppShell() {
           data={boot}
           selected={selected}
           onBack={() => setManaging(false)}
+          onMarket={() => {
+            setShareId("");
+            setMarket(true);
+            setMarketLogin(false);
+          }}
           onRefresh={refresh}
           onSelect={(id) => {
             select(id);

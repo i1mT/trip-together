@@ -1,0 +1,153 @@
+.market-page {
+  padding-bottom: 110px;
+}
+.market-search {
+  display: flex;
+  gap: 10px;
+  margin: 20px 0;
+}
+.market-search input {
+  min-width: 0;
+  flex: 1;
+  border: 1px solid var(--line, #e8e4eb);
+  border-radius: 18px;
+  padding: 13px 16px;
+  background: white;
+  font-size: 16px;
+}
+.market-search button {
+  width: 48px;
+  display: grid;
+  place-items: center;
+  border-radius: 16px;
+  background: #ebe4f4;
+}
+.market-grid {
+  display: grid;
+  gap: 16px;
+}
+.market-card {
+  text-align: left;
+  width: 100%;
+  gap: 12px;
+}
+.market-tag {
+  font-size: 13px;
+  color: #6c4c96;
+}
+.market-summary {
+  padding: 22px;
+  background: #ebe4f4;
+  border-radius: 26px;
+  margin: 14px 0 24px;
+}
+.market-summary h2 {
+  font-size: 25px;
+  font-weight: 800;
+  margin: 8px 0;
+  overflow-wrap: anywhere;
+}
+.market-summary small,
+.market-event small {
+  color: #77727f;
+  display: block;
+}
+.market-day {
+  margin: 22px 0;
+}
+.market-day h3 {
+  font-size: 17px;
+  font-weight: 750;
+  margin-bottom: 12px;
+}
+.market-events {
+  display: grid;
+  gap: 10px;
+}
+.market-event {
+  display: flex;
+  gap: 12px;
+  padding: 17px;
+  border-radius: 22px;
+  background: #fff;
+}
+.market-event > div {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.market-event h4 {
+  font-weight: 750;
+  font-size: 17px;
+}
+.market-event p {
+  font-size: 14px;
+  margin: 5px 0;
+}
+.market-event-icon {
+  flex-shrink: 0;
+  color: #6c4c96;
+  padding-top: 3px;
+}
+.market-privacy {
+  font-size: 14px;
+  line-height: 1.7;
+  color: #77727f;
+  margin: 14px 0;
+}
+.market-copy-bar {
+  position: sticky;
+  bottom: 18px;
+  margin-top: 24px;
+}
+.market-copy-bar button {
+  width: 100%;
+  box-shadow: 0 8px 24px #29253116;
+}
+.market-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 20px 0;
+}
+.market-share {
+  padding: 0 18px 18px;
+  display: grid;
+  gap: 14px;
+}
+.market-share-link {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  background: #ebe4f4;
+  border-radius: 20px;
+}
+.market-share-link input {
+  width: 100%;
+  min-width: 0;
+  font-size: 14px;
+  border-radius: 10px;
+  padding: 10px;
+  background: #fff;
+}
+.market-confirm {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 14px;
+  line-height: 1.6;
+}
+.market-confirm input {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.market-entry {
+  width: 100%;
+  margin: 0 0 24px;
+  text-align: left;
+}
+.market-entry strong {
+  font-weight: 750;
+}

@@ -13,6 +13,7 @@ import {
 import type { TripData } from "@/lib/models";
 import { api } from "@/lib/api";
 import { SheetFooter, Sheet } from "../ui";
+import { ShareManager } from "../market/share-manager";
 import { TripForm } from "./trip-form";
 export function TripManagement({
   data,
@@ -109,6 +110,7 @@ export function TripManagement({
             </span>
             <ChevronRight size={18} />
           </button>
+          <ShareManager tripId={data.trip.id} />
           <section className="trip-invitation">
             <div className="section-heading">
               <h2>

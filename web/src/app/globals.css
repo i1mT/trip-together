@@ -83,3 +83,5 @@
   --radius-lg: 1.875rem;
   --radius-xl: 2rem;
 }
+
+@import "../styles/market/market.css";

@@ -7,6 +7,7 @@ import { Sheet, SheetForm, SheetFooter } from "../ui";
 import { MarketAuthor } from "./author";
 import { SnapshotView } from "./snapshot-view";
 import { EmptyState } from "../empty-state";
+import { TravelSticker } from "../travel-sticker";
 export type CopyAttempt = { requestId: string; date: string; copiedId: string };
 export function Market({
   initialId = "",
@@ -127,20 +128,24 @@ export function Market({
   }
   return (
     <main className="page-content market-page">
-      <button className="trip-back" onClick={() => (id ? open("") : onBack())}>
-        <ArrowLeft size={20} />
-        {id ? "返回行程市场" : "返回"}
-      </button>
       {id ? (
         <>
-          <div className="trip-manager-heading">
-            <h1>行程预览</h1>
-            <p>复制一份，再按自己的旅行计划修改。</p>
+          <div className="trip-manager-heading page-heading-with-back">
+            <button
+              className="icon-button page-back-button"
+              onClick={() => open("")}
+              aria-label="返回行程市场"
+            >
+              <ArrowLeft size={22} />
+            </button>
+            <div>
+              <h1>行程预览</h1>
+              <p>复制一份，再按自己的旅行计划修改。</p>
+            </div>
           </div>
           {detail && (
             <>
-              <div className="market-detail-heading">
-                <h2>{detail.snapshot.trip.title}</h2>
+              <div className="market-detail-header">
                 <div className="market-author-speech">
                   <MarketAuthor author={detail.author} />
                   {detail.introduction && (
@@ -181,9 +186,18 @@ export function Market({
         </>
       ) : (
         <>
-          <div className="trip-manager-heading">
-            <h1>行程市场</h1>
-            <p>参考公开行程，复制成自己的旅行安排。</p>
+          <div className="trip-manager-heading page-heading-with-back">
+            <button
+              className="icon-button page-back-button"
+              onClick={onBack}
+              aria-label="返回"
+            >
+              <ArrowLeft size={22} />
+            </button>
+            <div>
+              <h1>行程市场</h1>
+              <p>参考公开行程，复制成自己的旅行安排。</p>
+            </div>
           </div>
           <form
             className="market-search"
@@ -227,7 +241,6 @@ export function Market({
                       {item.days} 天 · {item.event_count} 个事项
                     </span>
                     <strong>{item.title}</strong>
-                    <MarketAuthor author={item.author} />
                     {item.introduction && (
                       <span className="market-introduction-excerpt">
                         {item.introduction}
@@ -236,9 +249,12 @@ export function Market({
                     <span>
                       {item.destinations.join(" · ") || "查看旅行路线"}
                     </span>
-                    <span className="trip-ticket-bottom">
-                      预览行程
-                      <ArrowRight size={18} />
+                    <span className="trip-ticket-bottom market-card-footer">
+                      <MarketAuthor author={item.author} />
+                      <span className="market-preview-link">
+                        预览行程
+                        <ArrowRight size={18} />
+                      </span>
                     </span>
                   </button>
                 ))}
@@ -265,7 +281,12 @@ export function Market({
           )}
         </>
       )}
-      {loading && <p role="status">正在加载行程…</p>}
+      {loading && (
+        <div className="market-loading" role="status">
+          <TravelSticker kind="luggage" className="market-loading-sticker" />
+          <p>正在加载行程…</p>
+        </div>
+      )}
       {error && !copying && (
         <div role="alert" className="error-message">
           {error}

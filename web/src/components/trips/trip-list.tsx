@@ -76,13 +76,18 @@ export function TripList({
     );
   return (
     <main className="page-content trip-lobby">
-      <button className="trip-back" onClick={onBack}>
-        <ArrowLeft size={20} />
-        返回
-      </button>
-      <div className="trip-manager-heading">
-        <h1>我的行程</h1>
-        <p>创建、加入与切换行程。</p>
+      <div className="trip-manager-heading page-heading-with-back">
+        <button
+          className="icon-button page-back-button"
+          onClick={onBack}
+          aria-label="返回"
+        >
+          <ArrowLeft size={22} />
+        </button>
+        <div>
+          <h1>我的行程</h1>
+          <p>创建、加入与切换行程。</p>
+        </div>
       </div>
       <div className="trip-entry-actions">
         <div className="trip-entry-row">

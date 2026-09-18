@@ -144,19 +144,17 @@
   font-weight: 650;
 }
 .choice-trigger {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  text-align: left;
   width: 100%;
   border: 1px solid #e8e4eb;
   border-radius: 14px;
   padding: 12px;
   background: white;
   min-height: 46px;
+  font-size: 16px;
+  color: var(--ink);
+  box-sizing: border-box;
 }
-.choice-trigger span {
+.choice-trigger::placeholder {
   color: var(--muted);
 }
 .choice-panel {

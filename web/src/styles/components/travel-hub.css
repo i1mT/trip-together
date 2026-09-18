@@ -125,6 +125,26 @@
   font-size: 13px;
   margin-bottom: 22px;
 }
+.page-heading-with-back {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.page-heading-with-back > div {
+  min-width: 0;
+}
+.page-back-button {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: var(--shadow);
+  color: var(--ink);
+}
+.market-login-back {
+  padding: 16px 24px 0;
+}
 .trip-manager-heading {
   margin-bottom: 28px;
 }

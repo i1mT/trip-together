@@ -7,11 +7,13 @@ export function PlacePicker({
   label,
   value,
   legacy,
+  placeholder = "搜索城市、酒店、景点或机场",
   onChange,
 }: {
   label: string;
   value: Place | null;
   legacy?: string;
+  placeholder?: string;
   onChange: (place: Place | null) => void;
 }) {
   const [query, setQuery] = useState(""),
@@ -56,7 +58,7 @@ export function PlacePicker({
         <div className="place-search">
           <input
             aria-label={`搜索${label}`}
-            placeholder="搜索城市、酒店、景点或机场"
+            placeholder={placeholder}
             maxLength={200}
             value={query}
             onChange={(e) => {

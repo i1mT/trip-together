@@ -4,8 +4,24 @@ import {
   destinations,
   type Destination,
 } from "../../../../shared/travel-options";
-import { ChoiceField } from "../editors/choice-field";
-import { Field, ZoneField, CurrencyField } from "../editors/fields";
+import type { Place } from "../../../../shared/places";
+import { PlacePicker } from "../editors/event/place-picker";
+function toDestination(place: Place): Destination {
+  const match = destinations.find((d) => {
+    const city = d.name.split(" · ")[0];
+    return (
+      place.name.includes(city) ||
+      city.includes(place.name) ||
+      place.address.includes(city)
+    );
+  });
+  return {
+    name: match?.name ?? place.name,
+    timezone:
+      match?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone,
+    currency: match?.currency ?? "CNY",
+  };
+}
 export function DestinationPicker({
   value,
   onChange,
@@ -13,17 +29,11 @@ export function DestinationPicker({
   value: Destination[];
   onChange: (v: Destination[]) => void;
 }) {
-  const [adding, setAdding] = useState(!value.length),
-    [custom, setCustom] = useState(false);
-  const [draft, setDraft] = useState<Destination>({
-    name: "",
-    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-    currency: "CNY",
-  });
-  function add(d: Destination) {
-    onChange([...value, d]);
+  const [adding, setAdding] = useState(!value.length);
+  function add(place: Place | null) {
+    if (!place) return;
+    onChange([...value, toDestination(place)]);
     setAdding(false);
-    setCustom(false);
   }
   return (
     <div className="destination-picker">
@@ -47,57 +57,12 @@ export function DestinationPicker({
         </div>
       ))}
       {adding && (
-        <>
-          <ChoiceField
-            label="目的地"
-            value=""
-            placeholder="搜索国家或城市"
-            options={destinations.map((d, i) => ({
-              value: String(i),
-              label: d.name,
-            }))}
-            onChange={(i) => add(destinations[Number(i)])}
-          />
-          <button
-            type="button"
-            className="text-action"
-            onClick={() => setCustom(!custom)}
-          >
-            找不到目的地？自行添加
-          </button>
-          {custom && (
-            <div className="optional-fields">
-              <Field
-                label="城市名称"
-                value={draft.name}
-                onChange={(name) => setDraft({ ...draft, name })}
-              />
-              <ZoneField
-                label="当地时间"
-                value={draft.timezone}
-                onChange={(timezone) => setDraft({ ...draft, timezone })}
-              />
-              <CurrencyField
-                label="当地币种"
-                value={draft.currency}
-                onChange={(currency) =>
-                  setDraft({
-                    ...draft,
-                    currency: currency as Destination["currency"],
-                  })
-                }
-              />
-              <button
-                type="button"
-                className="secondary-button"
-                disabled={!draft.name.trim()}
-                onClick={() => add({ ...draft, name: draft.name.trim() })}
-              >
-                添加这个目的地
-              </button>
-            </div>
-          )}
-        </>
+        <PlacePicker
+          label="目的地"
+          value={null}
+          placeholder="搜索城市"
+          onChange={add}
+        />
       )}
       {!adding && value.length < 20 && (
         <button

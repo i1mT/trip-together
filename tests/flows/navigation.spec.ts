@@ -41,8 +41,9 @@ test("个人页切换、独立行程管理、非当前行程邀请与原页面�
   await manage();
   await page.getByRole("button", { name: /创建行程/ }).click();
   await page.getByLabel("行程名称（选填）", { exact: true }).fill("当前旅行");
-  await page.getByRole("button", { name: "目的地", exact: true }).click();
-  await page.getByRole("button", { name: "东京 · 日本", exact: true }).click();
+  await page.getByLabel("搜索目的地", { exact: true }).fill("东京");
+  await page.getByRole("button", { name: "搜索目的地结果" }).click();
+  await page.getByRole("button", { name: /东京/ }).first().click();
   await page
     .getByRole("dialog")
     .getByRole("button", { name: "创建行程", exact: true })

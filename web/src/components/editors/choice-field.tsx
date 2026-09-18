@@ -23,29 +23,26 @@ export function ChoiceField({
   );
   return (
     <div className="choice-field">
-      <span id={`${id}-label`}>{label}</span>
-      <button
-        type="button"
+      <label htmlFor={`${id}-input`}>{label}</label>
+      <input
+        id={`${id}-input`}
         className="choice-trigger"
-        aria-labelledby={`${id}-label`}
-        aria-expanded={open}
-        onClick={() => {
-          setOpen(!open);
+        value={open ? query : (selected?.label ?? "")}
+        placeholder={placeholder}
+        autoComplete="off"
+        aria-label={label}
+        onFocus={() => {
+          setOpen(true);
           setQuery("");
         }}
-      >
-        {selected?.label ?? placeholder}
-        <span aria-hidden>⌄</span>
-      </button>
+        onChange={(e) => {
+          setQuery(e.target.value);
+          setOpen(true);
+        }}
+        onBlur={() => setOpen(false)}
+      />
       {open && (
         <div className="choice-panel">
-          <input
-            autoFocus
-            aria-label={`搜索${label}`}
-            placeholder="搜索名称"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-          />
           <div
             className="choice-options"
             role="group"
@@ -56,9 +53,11 @@ export function ChoiceField({
                 type="button"
                 key={o.value}
                 aria-pressed={value === o.value}
-                onClick={() => {
+                onMouseDown={(e) => {
+                  e.preventDefault();
                   onChange(o.value);
                   setOpen(false);
+                  setQuery("");
                 }}
               >
                 {o.label}

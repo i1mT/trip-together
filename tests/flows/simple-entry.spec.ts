@@ -231,13 +231,13 @@ test("目的地搜索、多城市保存和跨时区航班时间", async ({
   const account = await new Client().register();
   await login(page, account);
   await page.getByRole("button", { name: "创建行程", exact: true }).click();
-  await page.getByRole("button", { name: "目的地", exact: true }).click();
-  await page.getByLabel("搜索目的地").fill("东京");
-  await page.getByRole("button", { name: "东京 · 日本", exact: true }).click();
+  await page.getByLabel("搜索目的地", { exact: true }).fill("东京");
+  await page.getByRole("button", { name: "搜索目的地结果" }).click();
+  await page.getByRole("button", { name: /东京/ }).first().click();
   await page.getByRole("button", { name: "＋ 添加其他目的地" }).click();
-  await page.getByRole("button", { name: "目的地", exact: true }).click();
-  await page.getByLabel("搜索目的地").fill("曼谷");
-  await page.getByRole("button", { name: "曼谷 · 泰国", exact: true }).click();
+  await page.getByLabel("搜索目的地", { exact: true }).fill("曼谷");
+  await page.getByRole("button", { name: "搜索目的地结果" }).click();
+  await page.getByRole("button", { name: /曼谷/ }).first().click();
   await page.getByLabel("出发日期", { exact: true }).fill("2030-06-01");
   await page.getByLabel("返回日期", { exact: true }).fill("2030-06-07");
   await expect(

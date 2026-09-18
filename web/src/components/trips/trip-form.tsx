@@ -116,32 +116,29 @@ export function TripForm({
     >
       <SheetForm className="editor-form" onSubmit={save}>
         <DestinationPicker value={places} onChange={changePlaces} />
-        <fieldset>
-          <legend>旅行日期</legend>
-          <div className="form-grid">
-            <Field
-              label="出发日期"
-              type="date"
-              value={v.start_date}
-              required
-              onChange={(start_date) =>
-                setV({
-                  ...v,
-                  start_date,
-                  end_date: v.end_date < start_date ? start_date : v.end_date,
-                })
-              }
-            />
-            <Field
-              label="返回日期"
-              type="date"
-              value={v.end_date}
-              min={v.start_date}
-              required
-              onChange={(x) => change("end_date", x)}
-            />
-          </div>
-        </fieldset>
+        <div className="form-grid">
+          <Field
+            label="出发日期"
+            type="date"
+            value={v.start_date}
+            required
+            onChange={(start_date) =>
+              setV({
+                ...v,
+                start_date,
+                end_date: v.end_date < start_date ? start_date : v.end_date,
+              })
+            }
+          />
+          <Field
+            label="返回日期"
+            type="date"
+            value={v.end_date}
+            min={v.start_date}
+            required
+            onChange={(x) => change("end_date", x)}
+          />
+        </div>
         <Field
           label="行程名称（选填）"
           value={v.title}
@@ -156,26 +153,30 @@ export function TripForm({
         <details className="optional-details">
           <summary>调整时间与币种</summary>
           <div className="optional-fields">
-            <ZoneField
-              label="目的地当地时间"
-              value={v.timezone}
-              onChange={(x) => change("timezone", x)}
-            />
-            <CurrencyField
-              label="目的地币种"
-              value={v.currency}
-              onChange={(x) => change("currency", x)}
-            />
-            <ZoneField
-              label="常住地时间"
-              value={v.home_timezone}
-              onChange={(x) => change("home_timezone", x)}
-            />
-            <CurrencyField
-              label="常用币种"
-              value={v.home_currency}
-              onChange={(x) => change("home_currency", x)}
-            />
+            <div className="form-grid">
+              <ZoneField
+                label="目的地当地时间"
+                value={v.timezone}
+                onChange={(x) => change("timezone", x)}
+              />
+              <CurrencyField
+                label="目的地币种"
+                value={v.currency}
+                onChange={(x) => change("currency", x)}
+              />
+            </div>
+            <div className="form-grid">
+              <ZoneField
+                label="常住地时间"
+                value={v.home_timezone}
+                onChange={(x) => change("home_timezone", x)}
+              />
+              <CurrencyField
+                label="常用币种"
+                value={v.home_currency}
+                onChange={(x) => change("home_currency", x)}
+              />
+            </div>
             <small>跨国旅行的每个事项可以选择自己的当地时间。</small>
           </div>
         </details>

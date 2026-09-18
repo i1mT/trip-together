@@ -1,5 +1,6 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { ArrowLeft } from "lucide-react";
 import type { Bootstrap, TripDocument } from "@/lib/models";
 import { api, ApiError, setActiveTrip } from "@/lib/api";
 import { track, type AnalyticsPage } from "@/lib/analytics/client";
@@ -164,9 +165,15 @@ export function AppShell() {
     return (
       <>
         {marketLogin && (
-          <button className="trip-back" onClick={() => setMarketLogin(false)}>
-            返回行程预览
-          </button>
+          <div className="page-content market-login-back">
+            <button
+              className="icon-button page-back-button"
+              onClick={() => setMarketLogin(false)}
+              aria-label="返回行程预览"
+            >
+              <ArrowLeft size={22} />
+            </button>
+          </div>
         )}
         <Login onLogin={refresh} onBrowseMarket={browseMarket} />
         {error && (

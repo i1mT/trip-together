@@ -5,6 +5,7 @@ import { localInput } from "@/lib/zoned-input";
 import { zoneName, eventTime } from "@/lib/time";
 import { eventRoute } from "@/lib/event-route";
 import { TravelSticker } from "../travel-sticker";
+import { EmptyState } from "../empty-state";
 export function SnapshotView({
   snapshot,
   title,
@@ -74,34 +75,40 @@ export function SnapshotView({
           </button>
         ))}
       </div>
-      <div className="section-heading">
-        <h2>{items[0]?.location?.name || items[0]?.place || "当天安排"}</h2>
-        <span className="list-caption">{items.length} 项安排</span>
-      </div>
-      <div className="timeline">
-        {items.map((e, index) => {
-          const route = eventRoute(e);
-          return (
-            <div className="timeline-event" key={index}>
-              <div className="timeline-time">
-                <strong>{eventTime(e)}</strong>
-              </div>
-              <div className={`timeline-icon ${e.kind}`}>
-                <TravelSticker kind={e.kind} />
-              </div>
-              <div className="timeline-card">
-                <small>{zoneName(e.timezone)}</small>
-                <h3>{e.title}</h3>
-                <p>
-                  {route
-                    ? `${route.from.name} → ${route.to.name}`
-                    : e.location?.name || e.place}
-                </p>
-              </div>
-            </div>
-          );
-        })}
-      </div>
+      {items.length ? (
+        <>
+          <div className="section-heading">
+            <h2>{items[0]?.location?.name || items[0]?.place || "当天安排"}</h2>
+            <span className="list-caption">{items.length} 项安排</span>
+          </div>
+          <div className="timeline">
+            {items.map((e, index) => {
+              const route = eventRoute(e);
+              return (
+                <div className="timeline-event" key={index}>
+                  <div className="timeline-time">
+                    <strong>{eventTime(e)}</strong>
+                  </div>
+                  <div className={`timeline-icon ${e.kind}`}>
+                    <TravelSticker kind={e.kind} />
+                  </div>
+                  <div className="timeline-card">
+                    <small>{zoneName(e.timezone)}</small>
+                    <h3>{e.title}</h3>
+                    <p>
+                      {route
+                        ? `${route.from.name} → ${route.to.name}`
+                        : e.location?.name || e.place}
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </>
+      ) : (
+        <EmptyState kind="explore" title="这一天还没有安排" />
+      )}
     </div>
   );
 }

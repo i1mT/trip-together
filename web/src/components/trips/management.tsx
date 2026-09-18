@@ -76,15 +76,20 @@ export function TripManagement({
   }
   return (
     <main className="page-content trip-lobby trip-management">
-      <button className="trip-back" onClick={onBack}>
-        <ArrowLeft size={20} />
-        返回我的行程
-      </button>
-      <div className="trip-manager-heading">
-        <h1>{data.trip.title}</h1>
-        <p>
-          {data.trip.start_date} — {data.trip.end_date}
-        </p>
+      <div className="trip-manager-heading page-heading-with-back">
+        <button
+          className="icon-button page-back-button"
+          onClick={onBack}
+          aria-label="返回我的行程"
+        >
+          <ArrowLeft size={22} />
+        </button>
+        <div>
+          <h1>{data.trip.title}</h1>
+          <p>
+            {data.trip.start_date} — {data.trip.end_date}
+          </p>
+        </div>
       </div>
       <div className="trip-detail-status">
         <span>{owner ? "我创建的行程" : "我加入的行程"}</span>

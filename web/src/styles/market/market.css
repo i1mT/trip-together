@@ -1,5 +1,5 @@
 .market-page {
-  padding-bottom: 110px;
+  padding-bottom: 150px;
 }
 .market-search {
   display: flex;
@@ -135,8 +135,11 @@
   margin: 14px 0;
 }
 .market-copy-bar {
-  position: sticky;
-  bottom: 18px;
+  position: fixed;
+  bottom: max(16px, env(safe-area-inset-bottom));
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(calc(100% - 32px), 528px);
   margin-top: 24px;
 }
 .market-copy-bar button {
@@ -286,28 +289,40 @@
   font-size: 12px;
   margin-top: 8px;
 }
-.market-detail-heading {
+.market-detail-header {
+  background: #f3edf8;
+  border-radius: 24px;
+  padding: 16px;
   margin: 4px 0 4px;
 }
-.market-detail-heading h2 {
-  font-size: 28px;
-  font-weight: 800;
-  letter-spacing: -0.5px;
-  overflow-wrap: anywhere;
-  margin-bottom: 14px;
-}
 .market-author-speech {
-  display: grid;
-  gap: 10px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.market-author-speech .market-author {
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+  width: 56px;
+  gap: 6px;
+}
+.market-author-speech .market-author-avatar {
+  width: 48px;
+  height: 48px;
+  flex-basis: 48px;
+  border-radius: 50%;
 }
 .market-speech-bubble {
   position: relative;
+  flex: 1;
+  min-width: 0;
   background: #fff;
   border: 1px solid #fff;
   box-shadow: var(--shadow);
   border-radius: 20px;
   padding: 14px 16px;
-  margin-left: 16px;
+  margin-left: 0;
   font-size: 14px;
   line-height: 1.7;
   white-space: pre-wrap;
@@ -323,6 +338,11 @@
   background: #fff;
   transform: rotate(45deg);
   border-radius: 3px;
+}
+.market-detail-header .market-code {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed #d5c6e6;
 }
 .market-day-picker {
   margin: 18px 0 0;
@@ -365,4 +385,45 @@
 .market-guest-entry {
   width: 100%;
   margin-top: 20px;
+}
+.market-card-footer {
+  align-items: center;
+}
+.market-card-footer .market-author {
+  font-size: 12px;
+}
+.market-card-footer .market-author-avatar {
+  width: 26px;
+  height: 26px;
+  flex-basis: 26px;
+}
+.market-preview-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--accent);
+  font-size: 12px;
+  flex-shrink: 0;
+}
+.market-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 48px 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+.market-loading-sticker {
+  width: 72px;
+  animation: market-bob 1.2s ease-in-out infinite;
+}
+@keyframes market-bob {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-6deg);
+  }
+  50% {
+    transform: translateY(-8px) rotate(-6deg);
+  }
 }

@@ -22,8 +22,9 @@ test("从注册到行程、文件、账本、证件和重新登录", async ({
     .fill("周末城市旅行");
   await page.getByLabel("出发日期", { exact: true }).fill("2030-06-01");
   await page.getByLabel("返回日期", { exact: true }).fill("2030-06-10");
-  await page.getByRole("button", { name: "目的地", exact: true }).click();
-  await page.getByRole("button", { name: "巴黎 · 法国", exact: true }).click();
+  await page.getByLabel("搜索目的地", { exact: true }).fill("巴黎");
+  await page.getByRole("button", { name: "搜索目的地结果" }).click();
+  await page.getByRole("button", { name: /巴黎/ }).first().click();
   await page
     .getByRole("dialog")
     .getByRole("button", { name: "创建行程", exact: true })

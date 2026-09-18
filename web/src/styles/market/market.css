@@ -65,28 +65,68 @@
   gap: 10px;
 }
 .market-event {
-  display: flex;
-  gap: 12px;
-  padding: 17px;
-  border-radius: 22px;
+  border-radius: 24px;
   background: #fff;
+  overflow: hidden;
+  box-shadow: 0 5px 20px #33264605;
 }
-.market-event > div {
-  min-width: 0;
+.market-event-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 18px 0;
+}
+.market-event-heading h4 {
+  font-size: 17px;
+  font-weight: 750;
   overflow-wrap: anywhere;
 }
-.market-event h4 {
-  font-weight: 750;
-  font-size: 17px;
-}
-.market-event p {
-  font-size: 14px;
-  margin: 5px 0;
-}
-.market-event-icon {
+.market-event-heading .travel-sticker {
+  width: 64px;
   flex-shrink: 0;
-  color: #6c4c96;
-  padding-top: 3px;
+}
+.market-event .ticket-route {
+  padding: 12px 18px 20px;
+}
+.market-event .route-endpoint > strong {
+  font-size: 21px;
+}
+.market-event .route-endpoint > span:empty {
+  display: none;
+}
+.market-event .route-endpoint time {
+  font-size: 25px;
+  margin-top: 12px;
+}
+.market-event .route-endpoint > small {
+  font-size: 11px;
+}
+.market-event .ticket-route-direction {
+  padding-top: 20px;
+}
+.market-event-content {
+  padding: 0 18px 18px;
+}
+.market-event-content p {
+  margin: 6px 0;
+  font-size: 14px;
+}
+.market-event-content .market-event-time {
+  font-size: 22px;
+  font-variant-numeric: tabular-nums;
+}
+.market-event-location {
+  border-top: 1px dashed #d9cede;
+  padding: 12px 18px;
+  background: #faf8fc;
+  overflow-wrap: anywhere;
+}
+.market-event-location p {
+  font-size: 12px;
+  line-height: 1.6;
+  color: #77727f;
+  margin: 0;
 }
 .market-privacy {
   font-size: 14px;
@@ -130,24 +170,42 @@
   padding: 10px;
   background: #fff;
 }
-.market-confirm {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  font-size: 14px;
-  line-height: 1.6;
+.trip-management-actions {
+  display: grid;
+  gap: 12px;
 }
-.market-confirm input {
-  width: 20px;
-  height: 20px;
-  flex-shrink: 0;
-  margin-top: 2px;
+.market-summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 70px;
+  gap: 12px;
 }
-.market-entry {
-  width: 100%;
-  margin: 0 0 24px;
-  text-align: left;
+.market-summary > .travel-sticker {
+  width: 76px;
+  align-self: center;
 }
-.market-entry strong {
+.market-summary > small {
+  grid-column: 1/-1;
+  border-top: 1px dashed #c9bad8;
+  padding-top: 14px;
+  font-size: 12px;
+}
+.market-publish-confirmation {
+  padding: 8px 0;
+}
+.market-publish-confirmation h3 {
+  font-size: 18px;
   font-weight: 750;
+  margin: 0 0 12px;
+  overflow-wrap: anywhere;
+}
+.market-publish-confirmation p {
+  font-size: 15px;
+  line-height: 1.7;
+}
+.market-publish-confirmation small {
+  display: block;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--muted);
+  margin-top: 12px;
 }

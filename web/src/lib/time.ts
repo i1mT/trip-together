@@ -72,7 +72,18 @@ export function countdown(target: string, now: number) {
   return days > 0 ? `${days} 天 ${clock}` : clock;
 }
 export { readableZone as zoneName } from "../../../shared/travel-options";
-export function eventTime(event: TripEvent, end = false) {
+export type EventTiming = Pick<
+  TripEvent,
+  | "timeMode"
+  | "kind"
+  | "endUnspecified"
+  | "end"
+  | "start"
+  | "endTimezone"
+  | "timezone"
+  | "dateEnd"
+>;
+export function eventTime(event: EventTiming, end = false) {
   if (event.timeMode === "date")
     return event.kind === "stay" ? (end ? "退房日期" : "入住日期") : "时间待定";
   if (end && event.endUnspecified) return "到达时间待定";
@@ -81,7 +92,7 @@ export function eventTime(event: TripEvent, end = false) {
     end ? (event.endTimezone ?? event.timezone) : event.timezone,
   );
 }
-export function eventEndDate(event: TripEvent) {
+export function eventEndDate(event: EventTiming) {
   return event.timeMode === "date" && event.dateEnd
     ? dateLabel(`${event.dateEnd}T12:00:00Z`, "UTC")
     : dateLabel(event.end, event.endTimezone ?? event.timezone);

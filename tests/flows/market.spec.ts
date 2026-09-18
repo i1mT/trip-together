@@ -23,11 +23,17 @@ test("手机公开发布、匿名预览、登录返回并复制为独立行程",
   const dialog = page.getByRole("dialog");
   await expect(dialog.getByText("市场演示航班")).toBeVisible();
   await expect(dialog.getByText("不应公开的私人备注")).toHaveCount(0);
+  await expect(dialog.getByRole("checkbox")).toHaveCount(0);
+  await dialog.getByRole("button", { name: "公开发布", exact: true }).click();
   await expect(
-    dialog.getByRole("button", { name: "确认公开发布" }),
-  ).toBeDisabled();
-  await dialog.getByRole("checkbox").check();
-  await dialog.getByRole("button", { name: "确认公开发布" }).click();
+    dialog.getByRole("heading", { name: "确认公开分享" }),
+  ).toBeVisible();
+  await dialog.getByRole("button", { name: "返回预览" }).click();
+  await expect(dialog.getByText("市场演示航班")).toBeVisible();
+  await dialog.getByRole("button", { name: "公开发布", exact: true }).click();
+  await dialog
+    .getByRole("button", { name: "确认公开发布", exact: true })
+    .click();
   await expect(dialog.getByLabel("公开分享链接")).toBeVisible();
   const link = await dialog.getByLabel("公开分享链接").inputValue();
   await page.screenshot({ path: `.local/share-publish-${browserName}.png` });

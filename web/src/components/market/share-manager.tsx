@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { Globe, Copy } from "lucide-react";
+import { Globe, Copy, ChevronRight } from "lucide-react";
 import { api } from "@/lib/api";
 import type { ShareDraft } from "../../../../shared/market";
 import { Sheet, SheetFooter } from "../ui";
@@ -11,13 +11,13 @@ export function ShareManager({ tripId }: { tripId: string }) {
     [error, setError] = useState(""),
     [notice, setNotice] = useState(""),
     [busy, setBusy] = useState(false),
-    [confirmed, setConfirmed] = useState(false),
+    [confirming, setConfirming] = useState(false),
     [revoking, setRevoking] = useState(false);
   const path = `/trips/${tripId}/share`;
   async function load() {
     setError("");
     setData(await api<ShareDraft>(path));
-    setConfirmed(false);
+    setConfirming(false);
   }
   useEffect(() => {
     if (open) {
@@ -41,7 +41,7 @@ export function ShareManager({ tripId }: { tripId: string }) {
                 hash: data?.hash,
                 publicationId: data?.current?.id ?? null,
                 version: data?.current?.version ?? 0,
-                confirmed,
+                confirmed: true,
               },
         ),
       });
@@ -67,6 +67,7 @@ export function ShareManager({ tripId }: { tripId: string }) {
           setOpen(true);
           setNotice("");
           setRevoking(false);
+          setConfirming(false);
         }}
       >
         <Globe size={21} />
@@ -74,14 +75,20 @@ export function ShareManager({ tripId }: { tripId: string }) {
           <strong>公开分享行程</strong>
           <small>发布到行程市场，供别人预览和复制</small>
         </span>
+        <ChevronRight size={18} />
       </button>
       <Sheet
         open={open}
-        title="公开分享行程"
-        onClose={() => !busy && setOpen(false)}
+        title={confirming ? "确认公开分享" : "公开分享行程"}
+        onClose={() => {
+          if (!busy) {
+            if (confirming) setConfirming(false);
+            else setOpen(false);
+          }
+        }}
       >
         <div className="market-share">
-          {data?.current && (
+          {data?.current && !confirming && !revoking && (
             <div className="market-share-link">
               <strong>这个行程已经公开</strong>
               <input aria-label="公开分享链接" readOnly value={url} />
@@ -108,7 +115,17 @@ export function ShareManager({ tripId }: { tripId: string }) {
               </button>
             </div>
           )}
-          {revoking ? (
+          {confirming ? (
+            <div className="market-publish-confirmation">
+              <h3>公开「{data?.snapshot?.trip.title}」？</h3>
+              <p>
+                任何人都可以查看名称、日期、时间、地点和路线，并复制为自己的行程。请确认这些内容没有私人信息。
+              </p>
+              <small>
+                资料、成员、账本、电话、预订编号和私人备注不会公开。之后可以取消分享。
+              </small>
+            </div>
+          ) : revoking ? (
             <p>
               取消后，公开链接和市场预览将无法访问。别人已经复制的行程会保留。
             </p>
@@ -120,14 +137,6 @@ export function ShareManager({ tripId }: { tripId: string }) {
               {data?.snapshot ? (
                 <>
                   <SnapshotView snapshot={data.snapshot} />
-                  <label className="market-confirm">
-                    <input
-                      type="checkbox"
-                      checked={confirmed}
-                      onChange={(e) => setConfirmed(e.target.checked)}
-                    />
-                    我已检查预览内容，同意公开分享
-                  </label>
                 </>
               ) : data ? (
                 <p className="empty-state">请先添加行程事项，再公开分享。</p>
@@ -149,7 +158,24 @@ export function ShareManager({ tripId }: { tripId: string }) {
           )}
           {notice && <p role="status">{notice}</p>}
           <SheetFooter>
-            {revoking ? (
+            {confirming ? (
+              <>
+                <button
+                  className="secondary-button"
+                  disabled={busy}
+                  onClick={() => setConfirming(false)}
+                >
+                  返回预览
+                </button>
+                <button
+                  className="primary-button"
+                  disabled={busy}
+                  onClick={() => void mutate()}
+                >
+                  {busy ? "正在发布…" : "确认公开发布"}
+                </button>
+              </>
+            ) : revoking ? (
               <>
                 <button
                   className="secondary-button"
@@ -169,14 +195,17 @@ export function ShareManager({ tripId }: { tripId: string }) {
             ) : (
               <button
                 className="primary-button"
-                disabled={busy || !data?.snapshot || !confirmed}
-                onClick={() => void mutate()}
+                disabled={busy || !data?.snapshot}
+                onClick={() => {
+                  setConfirming(true);
+                  setNotice("");
+                }}
               >
                 {busy
                   ? "正在发布…"
                   : data?.current
                     ? "更新公开版本"
-                    : "确认公开发布"}
+                    : "公开发布"}
               </button>
             )}
           </SheetFooter>

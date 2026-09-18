@@ -102,15 +102,20 @@ export function TripManagement({
       </div>
       {owner ? (
         <>
-          <button className="trip-setting-row" onClick={() => setEditing(true)}>
-            <Settings2 size={21} />
-            <span>
-              <strong>行程设置</strong>
-              <small>名称、日期、时区与币种</small>
-            </span>
-            <ChevronRight size={18} />
-          </button>
-          <ShareManager tripId={data.trip.id} />
+          <div className="trip-management-actions">
+            <button
+              className="trip-setting-row"
+              onClick={() => setEditing(true)}
+            >
+              <Settings2 size={21} />
+              <span>
+                <strong>行程设置</strong>
+                <small>名称、日期、时区与币种</small>
+              </span>
+              <ChevronRight size={18} />
+            </button>
+            <ShareManager tripId={data.trip.id} />
+          </div>
           <section className="trip-invitation">
             <div className="section-heading">
               <h2>

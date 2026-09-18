@@ -106,15 +106,17 @@ export function TripList({
           </span>
           <ArrowRight size={18} />
         </button>
+        <button className="trip-join-entry" onClick={onMarket}>
+          <span className="trip-action-icon">
+            <Ticket size={22} />
+          </span>
+          <span>
+            <strong>行程市场</strong>
+            <small>预览并复制别人分享的行程</small>
+          </span>
+          <ArrowRight size={18} />
+        </button>
       </div>
-      <button className="trip-setting-row market-entry" onClick={onMarket}>
-        <Ticket size={22} />
-        <span>
-          <strong>行程市场</strong>
-          <small>预览并复制别人分享的行程</small>
-        </span>
-        <ArrowRight size={18} />
-      </button>
       <div className="section-heading">
         <h2>行程列表</h2>
         <span className="muted">{data.trips.length} 个行程</span>

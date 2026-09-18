@@ -1,10 +1,21 @@
 import { ArrowRight } from "lucide-react";
 import type { TripEvent } from "@/lib/models";
 import { eventRoute } from "@/lib/event-route";
-import { eventTime, eventEndDate, dateLabel, zoneName } from "@/lib/time";
+import {
+  eventTime,
+  eventEndDate,
+  dateLabel,
+  zoneName,
+  type EventTiming,
+} from "@/lib/time";
 import { TravelSticker } from "../travel-sticker";
 
-export function TicketRoute({ event }: { event: TripEvent }) {
+export function TicketRoute({
+  event,
+}: {
+  event: EventTiming &
+    Pick<TripEvent, "from" | "to" | "place"> & { subtitle?: string };
+}) {
   const route = eventRoute(event);
   if (!route) return null;
   const endZone = event.endTimezone ?? event.timezone;

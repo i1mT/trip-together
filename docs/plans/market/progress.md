@@ -41,3 +41,9 @@
 阶段 03 审核与修复：DST 歧义候选按照实际时间升序；401 进入登录并保留分享地址；未完成复制状态提升到 AppShell，以 memberId:publicId 隔离，保留 requestId/date/copiedId，覆盖响应丢失、关闭重开和重新登录；Sheet 重开重置关闭确认界面。手机截图人工检查后增加发布正文左右间距。
 
 最终验证：TypeScript 与 Next.js build 通过；33 项单元/接口测试、Chromium 12 项、WebKit 12 项流程全部通过。市场用例包含响应丢失、关闭重开、复制401、bootstrap401、重新登录后恢复，并验证只创建一份副本。日志：`.local/market-final-tests.log`。本地预览保持运行，生产未变更。
+
+## 预览与分享体验调整
+- [x] SnapshotView 复用 TicketRoute 和 TravelSticker，左右展示真实路线及当地时间，活动与住宿使用对应贴纸。
+- [x] 创建、加入、市场入口共用布局，间距 12px、标题 17px；设置与分享入口使用 12px 分组间距。
+- [x] 删除勾选框，点击发布后在同一 Sheet 中二次确认，返回预览不提交；保持发布快照 hash 和版本校验。
+- [x] Chromium/WebKit 各 13 项流程及 35 项单元/接口测试通过，手机截图检查通过。最终类型检查与构建通过，更新本地预览并提交，未发布生产。日志 `.local/market-ui-verify.log`、`.local/market-ui-build.log`。

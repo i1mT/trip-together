@@ -4,6 +4,7 @@ import { ArrowLeft, ArrowRight, Compass, Search } from "lucide-react";
 import type { MarketCard, PublicItinerary } from "../../../../shared/market";
 import { api, ApiError } from "@/lib/api";
 import { Sheet, SheetForm, SheetFooter } from "../ui";
+import { MarketAuthor } from "./author";
 import { SnapshotView } from "./snapshot-view";
 export type CopyAttempt = { requestId: string; date: string; copiedId: string };
 export function Market({
@@ -137,6 +138,13 @@ export function Market({
           </div>
           {detail && (
             <>
+              <MarketAuthor author={detail.author} />
+              <span className="market-code">分享口令 {detail.code}</span>
+              {detail.introduction && (
+                <p className="market-introduction-full">
+                  {detail.introduction}
+                </p>
+              )}
               <SnapshotView snapshot={detail.snapshot} />
               <p className="market-privacy">
                 只复制行程安排，不包含资料、成员、账本或预订信息。复制不会加入原行程。
@@ -181,7 +189,7 @@ export function Market({
           >
             <input
               aria-label="搜索公开行程"
-              placeholder="搜索目的地或行程名称"
+              placeholder="搜索分享口令、目的地或行程名称"
               value={search}
               maxLength={100}
               onChange={(e) => setSearch(e.target.value)}
@@ -202,23 +210,32 @@ export function Market({
             </div>
           ) : (
             <div className="market-grid">
-              {items.map((item) => (
-                <button
-                  className="trip-ticket market-card"
-                  key={item.id}
-                  onClick={() => open(item.id)}
-                >
-                  <span className="market-tag">
-                    {item.days} 天 · {item.event_count} 个事项
-                  </span>
-                  <strong>{item.title}</strong>
-                  <span>{item.destinations.join(" · ") || "查看旅行路线"}</span>
-                  <span className="trip-ticket-bottom">
-                    预览行程
-                    <ArrowRight size={18} />
-                  </span>
-                </button>
-              ))}
+              {!loading &&
+                items.map((item) => (
+                  <button
+                    className="trip-ticket market-card"
+                    key={item.id}
+                    onClick={() => open(item.id)}
+                  >
+                    <span className="market-tag">
+                      {item.days} 天 · {item.event_count} 个事项
+                    </span>
+                    <strong>{item.title}</strong>
+                    <MarketAuthor author={item.author} />
+                    {item.introduction && (
+                      <span className="market-introduction-excerpt">
+                        {item.introduction}
+                      </span>
+                    )}
+                    <span>
+                      {item.destinations.join(" · ") || "查看旅行路线"}
+                    </span>
+                    <span className="trip-ticket-bottom">
+                      预览行程
+                      <ArrowRight size={18} />
+                    </span>
+                  </button>
+                ))}
             </div>
           )}
           {(page > 0 || more) && (

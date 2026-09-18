@@ -11,7 +11,13 @@ const titles = {
   recover: "重置密码",
   migrate: "旧账号绑定邮箱",
 };
-export function Login({ onLogin }: { onLogin: () => Promise<void> }) {
+export function Login({
+  onLogin,
+  onBrowseMarket,
+}: {
+  onLogin: () => Promise<void>;
+  onBrowseMarket?: () => void;
+}) {
   const [mode, setMode] = useState<Mode>("login");
   useEffect(() => {
     track("page_viewed", mode);
@@ -245,6 +251,15 @@ export function Login({ onLogin }: { onLogin: () => Promise<void> }) {
             </button>
           )}
         </div>
+        {mode === "login" && onBrowseMarket && (
+          <button
+            type="button"
+            className="secondary-button market-guest-entry"
+            onClick={onBrowseMarket}
+          >
+            通过口令浏览行程市场
+          </button>
+        )}
       </section>
     </main>
   );

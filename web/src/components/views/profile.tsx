@@ -1,6 +1,14 @@
 "use client";
 import { useState, type ReactNode } from "react";
-import { LogOut, Eye, EyeOff, Copy, ClipboardCheck } from "lucide-react";
+import {
+  LogOut,
+  Eye,
+  EyeOff,
+  Copy,
+  ClipboardCheck,
+  Pencil,
+  ShieldCheck,
+} from "lucide-react";
 import type { TripData, TripDocument } from "@/lib/models";
 import { PersonalDocuments } from "../profile/personal-documents";
 import { ProfileEditor, PasswordEditor } from "../account/profile-editor";
@@ -41,7 +49,7 @@ export function Profile({
     <section className="page-content">
       <div className="page-title">
         <h1>我的旅行</h1>
-        <p className="muted">查看个人证件和文件。</p>
+        <p className="muted">管理个人资料、行程与证件文件。</p>
       </div>
       <div className="profile-card">
         <Avatar member={data.me} className="profile-avatar" />
@@ -49,13 +57,12 @@ export function Profile({
           <h2>{data.me.name}</h2>
           <p>{data.me.english_name}</p>
         </div>
-      </div>
-      <div className="form-actions">
-        <button className="text-action" onClick={() => setEditing(true)}>
-          编辑个人资料
-        </button>
-        <button className="text-action" onClick={() => setPasswordOpen(true)}>
-          修改密码
+        <button
+          className="icon-button"
+          aria-label="编辑个人资料"
+          onClick={() => setEditing(true)}
+        >
+          <Pencil size={19} />
         </button>
       </div>
       {tripControls}
@@ -89,7 +96,13 @@ export function Profile({
           </div>
         </>
       )}
-      <SectionTitle>随身证件</SectionTitle>
+      <div className="section-heading">
+        <h2>证件与文件</h2>
+        <span className="personal-private">
+          <ShieldCheck size={13} />
+          仅本人可见
+        </span>
+      </div>
       <div className="surface passport-card">
         <div className="passport-top">
           <span>个人证件 · 仅本人可见</span>
@@ -136,25 +149,34 @@ export function Profile({
         data={data}
         onRefresh={onRefresh}
         onDocument={onDocument}
+        heading={false}
       />
+      <div className="profile-account-actions">
+        <button
+          className="secondary-button w-full"
+          onClick={() => setPasswordOpen(true)}
+        >
+          修改密码
+        </button>
+        <button
+          className="secondary-button w-full"
+          onClick={async () => {
+            try {
+              await onLogout();
+            } catch (e) {
+              setError(e instanceof Error ? e.message : "退出失败");
+            }
+          }}
+        >
+          <LogOut size={17} />
+          退出当前身份
+        </button>
+      </div>
       {error && (
         <p role="alert" className="error-message">
           {error}
         </p>
       )}
-      <button
-        className="secondary-button w-full logout-button"
-        onClick={async () => {
-          try {
-            await onLogout();
-          } catch (e) {
-            setError(e instanceof Error ? e.message : "退出失败");
-          }
-        }}
-      >
-        <LogOut size={17} />
-        退出当前身份
-      </button>
     </section>
   );
 }

@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Plus,
   ArrowLeft,
@@ -22,6 +22,7 @@ export function TripList({
   onRefresh,
   onBack,
   onMarket,
+  autoCreate = false,
 }: {
   data: Bootstrap;
   selected: string;
@@ -29,6 +30,7 @@ export function TripList({
   onRefresh: () => Promise<void>;
   onBack: () => void;
   onMarket: () => void;
+  autoCreate?: boolean;
 }) {
   const [detailId, setDetailId] = useState("");
   const detail = data.trips.find((t) => t.id === detailId);
@@ -37,6 +39,9 @@ export function TripList({
     [token, setToken] = useState(""),
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
+  useEffect(() => {
+    if (autoCreate) setCreating(true);
+  }, [autoCreate]);
   async function join(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);

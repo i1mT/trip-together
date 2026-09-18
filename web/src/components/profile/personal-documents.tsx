@@ -19,10 +19,12 @@ export function PersonalDocuments({
   data,
   onRefresh,
   onDocument,
+  heading = true,
 }: {
   data: Pick<TripData, "me" | "documents">;
   onRefresh: () => Promise<void>;
   onDocument: (doc: TripDocument) => void;
+  heading?: boolean;
 }) {
   const input = useRef<HTMLInputElement>(null);
   const [draft, setDraft] = useState<(FileTile & { file: File }) | null>(null);
@@ -79,13 +81,15 @@ export function PersonalDocuments({
   }
   return (
     <div className="personal-documents">
-      <div className="section-heading">
-        <h2>我的证件与文件</h2>
-        <span className="personal-private">
-          <ShieldCheck size={13} />
-          仅本人可见
-        </span>
-      </div>
+      {heading && (
+        <div className="section-heading">
+          <h2>我的证件与文件</h2>
+          <span className="personal-private">
+            <ShieldCheck size={13} />
+            仅本人可见
+          </span>
+        </div>
+      )}
       <div className="surface personal-files-card">
         <input
           hidden

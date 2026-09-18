@@ -2,8 +2,8 @@
 import { useEffect, useState } from "react";
 import { Globe, Copy, ChevronRight } from "lucide-react";
 import { api } from "@/lib/api";
-import type { ShareDraft } from "../../../../shared/market";
-import { Sheet, SheetFooter } from "../ui";
+import { introductionLimit, type ShareDraft } from "../../../../shared/market";
+import { Sheet, SheetFooter, SheetForm } from "../ui";
 import { SnapshotView } from "./snapshot-view";
 export function ShareManager({ tripId }: { tripId: string }) {
   const [open, setOpen] = useState(false),
@@ -13,10 +13,19 @@ export function ShareManager({ tripId }: { tripId: string }) {
     [busy, setBusy] = useState(false),
     [confirming, setConfirming] = useState(false),
     [revoking, setRevoking] = useState(false);
+  const [introduction, setIntroduction] = useState("");
+  const [title, setTitle] = useState("");
   const path = `/trips/${tripId}/share`;
   async function load() {
     setError("");
-    setData(await api<ShareDraft>(path));
+    const loaded = await api<ShareDraft>(path);
+    setData(loaded);
+    setIntroduction(loaded.current?.introduction ?? "");
+    setTitle(
+      loaded.current?.snapshot?.trip?.title ??
+        loaded.snapshot?.trip?.title ??
+        "",
+    );
     setConfirming(false);
   }
   useEffect(() => {
@@ -42,6 +51,8 @@ export function ShareManager({ tripId }: { tripId: string }) {
                 publicationId: data?.current?.id ?? null,
                 version: data?.current?.version ?? 0,
                 confirmed: true,
+                introduction,
+                title: title.trim() || undefined,
               },
         ),
       });
@@ -56,12 +67,10 @@ export function ShareManager({ tripId }: { tripId: string }) {
       setBusy(false);
     }
   }
-  const url = data?.current
-    ? `${typeof window === "undefined" ? "" : window.location.origin}/?share=${data.current.id}`
-    : "";
   return (
     <>
       <button
+        type="button"
         className="trip-setting-row"
         onClick={() => {
           setOpen(true);
@@ -79,6 +88,15 @@ export function ShareManager({ tripId }: { tripId: string }) {
       </button>
       <Sheet
         open={open}
+        hasChanges={
+          !confirming &&
+          !revoking &&
+          (introduction !== (data?.current?.introduction ?? "") ||
+            title.trim() !==
+              (data?.current?.snapshot?.trip?.title ??
+                data?.snapshot?.trip?.title ??
+                ""))
+        }
         title={confirming ? "确认公开分享" : "公开分享行程"}
         onClose={() => {
           if (!busy) {
@@ -87,26 +105,39 @@ export function ShareManager({ tripId }: { tripId: string }) {
           }
         }}
       >
-        <div className="market-share">
+        <SheetForm
+          className="market-share"
+          onSubmit={(e) => e.preventDefault()}
+        >
           {data?.current && !confirming && !revoking && (
             <div className="market-share-link">
               <strong>这个行程已经公开</strong>
-              <input aria-label="公开分享链接" readOnly value={url} />
+              <input
+                className="market-share-code"
+                aria-label="公开分享口令"
+                readOnly
+                value={data.current.code}
+              />
+              <small>
+                告诉朋友这个口令，在行程市场搜索即可预览和复制，不会加入你的行程。
+              </small>
               <button
+                type="button"
                 className="secondary-button"
                 onClick={async () => {
                   try {
-                    await navigator.clipboard.writeText(url);
-                    setNotice("分享链接已经复制");
+                    await navigator.clipboard.writeText(data.current!.code);
+                    setNotice("分享口令已经复制");
                   } catch {
-                    setError("无法自动复制，请选择上方链接手动复制");
+                    setError("无法自动复制，请选择上方口令手动复制");
                   }
                 }}
               >
                 <Copy size={16} />
-                复制分享链接
+                复制分享口令
               </button>
               <button
+                type="button"
                 className="text-action"
                 disabled={busy}
                 onClick={() => setRevoking(true)}
@@ -117,26 +148,59 @@ export function ShareManager({ tripId }: { tripId: string }) {
           )}
           {confirming ? (
             <div className="market-publish-confirmation">
-              <h3>公开「{data?.snapshot?.trip.title}」？</h3>
+              <h3>公开「{title.trim() || data?.snapshot?.trip.title}」？</h3>
               <p>
-                任何人都可以查看名称、日期、时间、地点和路线，并复制为自己的行程。请确认这些内容没有私人信息。
+                作者头像、昵称和介绍也会公开，任何人都可以查看名称、日期、时间、地点和路线，并复制为自己的行程。请确认这些内容没有私人信息。
               </p>
+              {introduction.trim() && (
+                <p className="market-introduction-full">
+                  {introduction.trim()}
+                </p>
+              )}
               <small>
-                资料、成员、账本、电话、预订编号和私人备注不会公开。之后可以取消分享。
+                资料、同行成员、账本、电话、预订编号和私人备注不会公开。之后可以取消分享。
               </small>
             </div>
           ) : revoking ? (
             <p>
-              取消后，公开链接和市场预览将无法访问。别人已经复制的行程会保留。
+              取消后，分享口令和市场预览将无法访问。别人已经复制的行程会保留。
             </p>
           ) : (
             <>
               <p className="market-privacy">
-                公开后，任何人都能查看下方名称、日期、时间、地点与路线，并复制行程。请确认这些内容中没有私人信息。资料、成员、账本、电话、预订编号与备注不会公开。
+                公开后，作者头像、昵称和介绍也会展示。任何人都能查看下方名称、日期、时间、地点与路线，并复制行程。请确认这些内容中没有私人信息。资料、同行成员、账本、电话、预订编号与备注不会公开。
               </p>
               {data?.snapshot ? (
                 <>
-                  <SnapshotView snapshot={data.snapshot} />
+                  <label className="market-introduction-editor">
+                    公开名称
+                    <input
+                      aria-label="公开名称"
+                      maxLength={100}
+                      placeholder="默认使用原行程名称"
+                      value={title}
+                      onChange={(e) => setTitle(e.target.value)}
+                    />
+                    <small>{title.length}/100 字</small>
+                  </label>
+                  <label className="market-introduction-editor">
+                    行程介绍（选填）
+                    <textarea
+                      aria-label="行程介绍"
+                      maxLength={introductionLimit}
+                      rows={3}
+                      placeholder="介绍适合谁、路线特色或旅行建议"
+                      value={introduction}
+                      onChange={(e) => setIntroduction(e.target.value)}
+                    />
+                    <small>
+                      {introduction.length}/{introductionLimit} 字
+                    </small>
+                  </label>
+                  <SnapshotView
+                    snapshot={data.snapshot}
+                    title={title.trim() || undefined}
+                  />
                 </>
               ) : data ? (
                 <p className="empty-state">请先添加行程事项，再公开分享。</p>
@@ -149,6 +213,7 @@ export function ShareManager({ tripId }: { tripId: string }) {
             <p role="alert" className="error-message">
               {error}
               <button
+                type="button"
                 className="text-action"
                 onClick={() => void load().catch((e) => setError(e.message))}
               >
@@ -161,6 +226,7 @@ export function ShareManager({ tripId }: { tripId: string }) {
             {confirming ? (
               <>
                 <button
+                  type="button"
                   className="secondary-button"
                   disabled={busy}
                   onClick={() => setConfirming(false)}
@@ -168,6 +234,7 @@ export function ShareManager({ tripId }: { tripId: string }) {
                   返回预览
                 </button>
                 <button
+                  type="button"
                   className="primary-button"
                   disabled={busy}
                   onClick={() => void mutate()}
@@ -178,6 +245,7 @@ export function ShareManager({ tripId }: { tripId: string }) {
             ) : revoking ? (
               <>
                 <button
+                  type="button"
                   className="secondary-button"
                   disabled={busy}
                   onClick={() => setRevoking(false)}
@@ -185,6 +253,7 @@ export function ShareManager({ tripId }: { tripId: string }) {
                   保留分享
                 </button>
                 <button
+                  type="button"
                   className="primary-button"
                   disabled={busy}
                   onClick={() => void mutate(true)}
@@ -194,6 +263,7 @@ export function ShareManager({ tripId }: { tripId: string }) {
               </>
             ) : (
               <button
+                type="button"
                 className="primary-button"
                 disabled={busy || !data?.snapshot}
                 onClick={() => {
@@ -209,7 +279,7 @@ export function ShareManager({ tripId }: { tripId: string }) {
               </button>
             )}
           </SheetFooter>
-        </div>
+        </SheetForm>
       </Sheet>
     </>
   );

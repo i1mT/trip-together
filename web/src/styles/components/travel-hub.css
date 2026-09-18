@@ -54,20 +54,18 @@
   line-height: 1.8;
   color: #766a82;
 }
-.onboarding-ticket > button {
+.onboarding-ticket-actions {
   position: relative;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  width: 100%;
-  padding: 22px 24px;
+  display: grid;
+  gap: 10px;
+  padding: 16px;
   border-top: 1px dashed #cbbbdc;
-  text-align: left;
-  font-size: 15px;
-  font-weight: 650;
 }
-.onboarding-ticket > button::before,
-.onboarding-ticket > button::after {
+.onboarding-ticket-actions button {
+  width: 100%;
+}
+.onboarding-ticket-actions::before,
+.onboarding-ticket-actions::after {
   content: "";
   position: absolute;
   top: -9px;
@@ -76,10 +74,10 @@
   border-radius: 50%;
   background: var(--paper);
 }
-.onboarding-ticket > button::before {
+.onboarding-ticket-actions::before {
   left: -9px;
 }
-.onboarding-ticket > button::after {
+.onboarding-ticket-actions::after {
   right: -9px;
 }
 .onboarding-note {

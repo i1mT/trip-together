@@ -163,3 +163,42 @@ test("空行程不可发布，成员无权发布，源行程删除后公开链�
   await owner.request(`/trips/${trip}`, "DELETE", { title: "测试旅行" });
   await new Client().request(`/market/${published.id}`, "GET", undefined, 404);
 });
+
+test("发布时自定义公开名称，市场、详情与复制均使用覆盖名称", async () => {
+  const owner = await new Client().register(),
+    reader = await new Client().register();
+  const trip = await createTrip(owner),
+    path = `/trips/${trip}/share`;
+  await owner.request(`/trips/${trip}/events`, "POST", eventInput);
+  const draft = await owner.request(path);
+  assert.equal(draft.snapshot.trip.title, "测试旅行");
+  const published = await owner.request(path, "POST", {
+    hash: draft.hash,
+    version: 0,
+    publicationId: null,
+    confirmed: true,
+    title: "巴黎慢游",
+  });
+  assert.equal(published.snapshot.trip.title, "巴黎慢游");
+  const market = await new Client().request(
+    `/market?q=${encodeURIComponent("巴黎慢游")}`,
+  );
+  assert.equal(market.items[0].title, "巴黎慢游");
+  const copied = await reader.request(`/market/${published.id}/copy`, "POST", {
+    requestId: crypto.randomUUID(),
+    version: published.version,
+    start_date: "2030-07-01",
+  });
+  assert.equal(
+    (await reader.request(`/trips/${copied.id}/data`)).trip.title,
+    "巴黎慢游",
+  );
+  // 不传公开名称时使用原行程名，且不因名称变化触发 hash 冲突。
+  const updated = await owner.request(path, "POST", {
+    hash: draft.hash,
+    version: published.version,
+    publicationId: published.id,
+    confirmed: true,
+  });
+  assert.equal(updated.snapshot.trip.title, "测试旅行");
+});

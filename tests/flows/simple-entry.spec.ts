@@ -230,8 +230,7 @@ test("目的地搜索、多城市保存和跨时区航班时间", async ({
 }) => {
   const account = await new Client().register();
   await login(page, account);
-  await page.getByRole("button", { name: "前往我的行程" }).click();
-  await page.getByRole("button", { name: /创建行程/ }).click();
+  await page.getByRole("button", { name: "创建行程", exact: true }).click();
   await page.getByRole("button", { name: "目的地", exact: true }).click();
   await page.getByLabel("搜索目的地").fill("东京");
   await page.getByRole("button", { name: "东京 · 日本", exact: true }).click();

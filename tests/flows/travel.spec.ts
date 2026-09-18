@@ -16,8 +16,7 @@ test("从注册到行程、文件、账本、证件和重新登录", async ({
   await page.getByLabel("密码", { exact: true }).fill(password);
   await page.getByRole("button", { name: "注册", exact: true }).click();
   await expect(page.getByRole("heading", { name: "还没有行程" })).toBeVisible();
-  await page.getByRole("button", { name: "前往我的行程" }).click();
-  await page.getByRole("button", { name: /创建行程/ }).click();
+  await page.getByRole("button", { name: "创建行程", exact: true }).click();
   await page
     .getByLabel("行程名称（选填）", { exact: true })
     .fill("周末城市旅行");

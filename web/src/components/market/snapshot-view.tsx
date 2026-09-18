@@ -5,7 +5,13 @@ import { zoneName, eventTime, eventEndDate } from "@/lib/time";
 import { eventRoute } from "@/lib/event-route";
 import { TicketRoute } from "../home/ticket-route";
 import { TravelSticker } from "../travel-sticker";
-export function SnapshotView({ snapshot }: { snapshot: PublicSnapshot }) {
+export function SnapshotView({
+  snapshot,
+  title,
+}: {
+  snapshot: PublicSnapshot;
+  title?: string;
+}) {
   const { trip, events } = snapshot;
   const days =
     Math.round(
@@ -21,7 +27,7 @@ export function SnapshotView({ snapshot }: { snapshot: PublicSnapshot }) {
           <span className="market-tag">
             {days} 天 · {events.length} 个事项
           </span>
-          <h2>{trip.title}</h2>
+          <h2>{title ?? trip.title}</h2>
           <p>
             {trip.destinations.map((d) => d.name).join(" · ") ||
               zoneName(trip.timezone)}

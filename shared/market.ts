@@ -42,13 +42,30 @@ export const snapshotSchema = z.object({
   events: z.array(publicEventSchema).min(1).max(200),
 });
 export type PublicSnapshot = z.infer<typeof snapshotSchema>;
+export const introductionLimit = 500;
+export const introductionSchema = z
+  .string()
+  .trim()
+  .max(introductionLimit, "介绍最多 500 字");
+export const shareTitleSchema = z
+  .string()
+  .trim()
+  .max(100, "公开名称最多 100 字")
+  .optional();
+export type PublicAuthor = { name: string; avatar: string | null };
 export type PublicItinerary = {
+  code: string;
+  introduction: string;
+  author: PublicAuthor;
   id: string;
   version: number;
   updated_at: string;
   snapshot: PublicSnapshot;
 };
 export type MarketCard = {
+  code: string;
+  introduction: string;
+  author: PublicAuthor;
   id: string;
   title: string;
   updated_at: string;

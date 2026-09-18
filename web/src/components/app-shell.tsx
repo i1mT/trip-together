@@ -29,6 +29,7 @@ export function AppShell() {
     [selected, setSelected] = useState(""),
     [tab, setTab] = useState("today"),
     [managing, setManaging] = useState(false),
+    [manageCreate, setManageCreate] = useState(false),
     [loading, setLoading] = useState(true),
     [error, setError] = useState("");
   const [doc, setDoc] = useState<TripDocument | null>(null);
@@ -40,6 +41,15 @@ export function AppShell() {
     setShareId(params.get("share") ?? "");
     setMarket(params.has("share") || params.has("market"));
   }, []);
+  function browseMarket() {
+    setShareId("");
+    setMarket(true);
+    setMarketLogin(false);
+    const url = new URL(window.location.href);
+    url.searchParams.delete("share");
+    url.searchParams.set("market", "1");
+    window.history.replaceState(null, "", url);
+  }
   function closeMarket() {
     setMarket(false);
     setMarketLogin(false);
@@ -106,6 +116,13 @@ export function AppShell() {
     setDoc(null);
   }
   function manage() {
+    setManageCreate(false);
+    setManaging(true);
+    void refresh().catch((e) => setError(e.message));
+    window.scrollTo({ top: 0, behavior: "instant" });
+  }
+  function manageAndCreate() {
+    setManageCreate(true);
     setManaging(true);
     void refresh().catch((e) => setError(e.message));
     window.scrollTo({ top: 0, behavior: "instant" });
@@ -151,7 +168,7 @@ export function AppShell() {
             返回行程预览
           </button>
         )}
-        <Login onLogin={refresh} />
+        <Login onLogin={refresh} onBrowseMarket={browseMarket} />
         {error && (
           <p role="alert" className="error-message">
             {error}
@@ -175,15 +192,16 @@ export function AppShell() {
         <TripList
           data={boot}
           selected={selected}
-          onBack={() => setManaging(false)}
-          onMarket={() => {
-            setShareId("");
-            setMarket(true);
-            setMarketLogin(false);
+          autoCreate={manageCreate}
+          onBack={() => {
+            setManageCreate(false);
+            setManaging(false);
           }}
+          onMarket={browseMarket}
           onRefresh={refresh}
           onSelect={(id) => {
             select(id);
+            setManageCreate(false);
             setManaging(false);
             setTab("today");
           }}
@@ -225,7 +243,12 @@ export function AppShell() {
                   onDocument={setDoc}
                 />
               ) : (
-                <EmptyWorkspace tab={tab} onManage={manage} />
+                <EmptyWorkspace
+                  tab={tab}
+                  onManage={manage}
+                  onCreate={manageAndCreate}
+                  onMarket={browseMarket}
+                />
               )}
             </main>
           )}

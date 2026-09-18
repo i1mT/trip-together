@@ -3,9 +3,13 @@ import { TravelSticker } from "../travel-sticker";
 export function EmptyWorkspace({
   tab,
   onManage,
+  onCreate,
+  onMarket,
 }: {
   tab: string;
   onManage: () => void;
+  onCreate: () => void;
+  onMarket: () => void;
 }) {
   const content =
     tab === "itinerary"
@@ -34,11 +38,16 @@ export function EmptyWorkspace({
               <span className="status-pill">尚未添加行程</span>
               <TravelSticker kind="luggage" />
               <h1>还没有行程</h1>
-              <p>创建自己的旅行计划，或使用同行人的邀请口令加入行程。</p>
+              <p>创建自己的旅行计划，或去行程市场复制一份参考行程。</p>
             </div>
-            <button onClick={onManage}>
-              前往我的行程 <ArrowRight size={19} />
-            </button>
+            <div className="onboarding-ticket-actions">
+              <button className="primary-button" onClick={onCreate}>
+                创建行程 <ArrowRight size={18} />
+              </button>
+              <button className="secondary-button" onClick={onMarket}>
+                逛逛行程市场 <ArrowRight size={18} />
+              </button>
+            </div>
           </article>
           <div className="onboarding-note">
             <CalendarDays size={19} />

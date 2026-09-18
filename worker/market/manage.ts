@@ -1,3 +1,4 @@
+import { introductionSchema, shareTitleSchema } from "../../shared/market";
 import { z } from "zod";
 import { body, HttpError, json } from "../http";
 import { requireOwner, type Trip } from "../trips/access";
@@ -45,6 +46,8 @@ export async function manageShare(
       hash: z.string().length(64),
       version: z.number().int().nonnegative(),
       confirmed: z.literal(true),
+      introduction: introductionSchema.default(""),
+      title: shareTitleSchema,
       publicationId: z.string().uuid().nullable(),
     }),
   );
@@ -60,28 +63,59 @@ export async function manageShare(
     throw new HttpError(409, "分享状态已经变化，请重新预览");
   const id = existing?.id ?? crypto.randomUUID(),
     s = latest.snapshot;
-  const searchText = [
-    s.trip.title,
-    ...s.trip.destinations.map((d) => d.name),
-  ].join(" ");
-  const result = existing
-    ? await env.DB.prepare(
-        "UPDATE public_itineraries SET title=?,search_text=?,snapshot=?,version=version+1,updated_at=CURRENT_TIMESTAMP WHERE id=? AND trip_id=? AND version=?",
-      )
-        .bind(
-          s.trip.title,
-          searchText,
-          JSON.stringify(s),
-          id,
-          trip.id,
-          v.version,
+  const title = v.title?.trim() || s.trip.title;
+  const snapshot =
+    title === s.trip.title ? s : { ...s, trip: { ...s.trip, title } };
+  const searchText = [title, ...s.trip.destinations.map((d) => d.name)].join(
+    " ",
+  );
+  let result;
+  for (let attempt = 0; attempt < 10; attempt++) {
+    const code = Array.from(
+      crypto.getRandomValues(new Uint8Array(8)),
+      (n) => "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"[n % 32],
+    ).join("");
+    try {
+      result = existing
+        ? await env.DB.prepare(
+            "UPDATE public_itineraries SET title=?,search_text=?,snapshot=?,introduction=?,version=version+1,updated_at=CURRENT_TIMESTAMP WHERE id=? AND trip_id=? AND version=?",
+          )
+            .bind(
+              title,
+              searchText,
+              JSON.stringify(snapshot),
+              v.introduction,
+              id,
+              trip.id,
+              v.version,
+            )
+            .run()
+        : await env.DB.prepare(
+            "INSERT INTO public_itineraries(id,trip_id,title,search_text,snapshot,introduction,code) VALUES (?,?,?,?,?,?,?) ON CONFLICT(trip_id) DO NOTHING",
+          )
+            .bind(
+              id,
+              trip.id,
+              title,
+              searchText,
+              JSON.stringify(snapshot),
+              v.introduction,
+              code,
+            )
+            .run();
+      break;
+    } catch (error) {
+      if (
+        existing ||
+        !(error instanceof Error) ||
+        !error.message.includes(
+          "UNIQUE constraint failed: public_itineraries.code",
         )
-        .run()
-    : await env.DB.prepare(
-        "INSERT INTO public_itineraries(id,trip_id,title,search_text,snapshot) VALUES (?,?,?,?,?) ON CONFLICT(trip_id) DO NOTHING",
       )
-        .bind(id, trip.id, s.trip.title, searchText, JSON.stringify(s))
-        .run();
+        throw error;
+    }
+  }
+  if (!result) throw new HttpError(503, "暂时无法生成分享口令，请重试");
   if (!result.meta.changes) throw new HttpError(409, "分享已经更新，请刷新");
   return json(await readPublic(env, id));
 }

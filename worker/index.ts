@@ -1,3 +1,4 @@
+import { publicAvatar } from "./market/author";
 import { publicMarket } from "./market/public";
 import { copyItinerary } from "./market/copy";
 import { analyticsConfig } from "./analytics/config";
@@ -43,6 +44,11 @@ export default {
         return secure(await summaryResponse(request, env));
       if (path === "/api/analytics/track" && method === "POST")
         return secure(await trackResponse(request, env));
+      if (
+        method === "GET" &&
+        /^\/api\/market\/[a-f0-9-]{36}\/avatar$/.test(path)
+      )
+        return secure(await publicAvatar(env, path.split("/")[3]));
       if (method === "GET" && /^\/api\/market(?:\/[a-f0-9-]{36})?$/.test(path))
         return secure(await publicMarket(request, env, path.split("/")[3]));
       if (path === "/api/auth-config" && method === "GET")

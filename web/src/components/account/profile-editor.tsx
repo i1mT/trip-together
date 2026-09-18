@@ -65,7 +65,40 @@ export function ProfileEditor({
   return (
     <Sheet open title="编辑个人资料" onClose={() => !busy && onClose()}>
       <SheetForm className="editor-form" onSubmit={save}>
-        <p className="muted">昵称和头像供同行成员查看，证件信息仅本人可见。</p>
+        <label className="profile-editor-avatar">
+          <Avatar member={v} className="profile-avatar-large" />
+          <span>点击更换头像</span>
+          <input
+            type="file"
+            hidden
+            aria-label="上传头像"
+            accept="image/jpeg,image/png,image/webp"
+            disabled={busy}
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              e.target.value = "";
+              if (file) void avatar(file);
+            }}
+          />
+        </label>
+        {progress !== null && (
+          <progress
+            className="profile-editor-progress"
+            value={progress}
+            max={100}
+            aria-label="头像上传进度"
+          />
+        )}
+        {v.has_avatar ? (
+          <button
+            type="button"
+            className="text-action profile-editor-remove"
+            disabled={busy}
+            onClick={() => void avatar()}
+          >
+            移除头像
+          </button>
+        ) : null}
         <Field
           label="昵称"
           value={v.name}
@@ -99,35 +132,6 @@ export function ProfileEditor({
             保存个人资料
           </button>
         </SheetFooter>
-        <div className="optional-fields">
-          <Avatar member={v} className="profile-avatar" />
-          <label>
-            上传头像
-            <input
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              disabled={busy}
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) void avatar(file);
-              }}
-            />
-          </label>
-          {progress !== null && (
-            <progress value={progress} max={100} aria-label="头像上传进度" />
-          )}
-          {v.has_avatar ? (
-            <button
-              type="button"
-              className="text-action"
-              disabled={busy}
-              onClick={() => void avatar()}
-            >
-              移除头像
-            </button>
-          ) : null}
-          <small>头像修改后立即生效，其他资料可以继续填写。</small>
-        </div>
       </SheetForm>
     </Sheet>
   );

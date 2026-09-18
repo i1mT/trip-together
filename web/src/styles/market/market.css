@@ -156,13 +156,38 @@
   gap: 14px;
 }
 .market-share-link {
-  display: grid;
-  gap: 12px;
-  padding: 16px;
   background: #ebe4f4;
   border-radius: 20px;
+  overflow: hidden;
 }
-.market-share-link input {
+.market-share-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  text-align: left;
+  padding: 16px;
+}
+.market-share-toggle > span {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.market-share-toggle strong {
+  font-size: 14px;
+}
+.market-share-toggle small {
+  color: var(--muted);
+  font-size: 12px;
+}
+.market-share-link-body {
+  display: grid;
+  gap: 12px;
+  padding: 14px 16px 16px;
+  border-top: 1px dashed #d5c6e6;
+}
+.market-share-link-body input {
   width: 100%;
   min-width: 0;
   font-size: 14px;
@@ -300,7 +325,8 @@
   border-radius: 3px;
 }
 .market-day-picker {
-  margin-top: 18px;
+  margin: 18px 0 0;
+  padding: 2px 0 12px;
 }
 .market-share-link .market-share-code {
   font-size: 26px;

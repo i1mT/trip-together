@@ -23,6 +23,11 @@ test("手机公开发布、匿名预览、登录返回并复制为独立行程",
   const dialog = page.getByRole("dialog");
   await expect(dialog.getByText("市场演示航班")).toBeVisible();
   await expect(dialog.getByText("不应公开的私人备注")).toHaveCount(0);
+  await expect(dialog.getByRole("checkbox")).toHaveCount(0);
+  await dialog.getByRole("button", { name: "公开发布", exact: true }).click();
+  await expect(
+    dialog.getByRole("heading", { name: "确认公开分享" }),
+  ).toBeVisible();
   await dialog.getByLabel("公开名称").fill("巴黎慢游");
   await dialog
     .getByLabel("行程介绍")
@@ -31,17 +36,14 @@ test("手机公开发布、匿名预览、登录返回并复制为独立行程",
     "maxlength",
     "500",
   );
-  await expect(dialog.getByRole("checkbox")).toHaveCount(0);
-  await dialog.getByRole("button", { name: "公开发布", exact: true }).click();
-  await expect(
-    dialog.getByRole("heading", { name: "确认公开分享" }),
-  ).toBeVisible();
   await dialog.getByRole("button", { name: "返回预览" }).click();
   await expect(dialog.getByText("市场演示航班")).toBeVisible();
   await dialog.getByRole("button", { name: "公开发布", exact: true }).click();
+  await expect(dialog.getByLabel("公开名称")).toHaveValue("巴黎慢游");
   await dialog
     .getByRole("button", { name: "确认公开发布", exact: true })
     .click();
+  await dialog.getByRole("button", { name: /这个行程已经公开/ }).click();
   await expect(dialog.getByLabel("公开分享口令")).toBeVisible();
   const code = await dialog.getByLabel("公开分享口令").inputValue();
   expect(code).toMatch(/^[A-Z2-9]{8}$/);

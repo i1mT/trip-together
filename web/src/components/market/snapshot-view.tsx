@@ -2,9 +2,8 @@
 import { useState } from "react";
 import type { PublicSnapshot } from "../../../../shared/market";
 import { localInput } from "@/lib/zoned-input";
-import { zoneName, eventTime, eventEndDate } from "@/lib/time";
+import { zoneName, eventTime } from "@/lib/time";
 import { eventRoute } from "@/lib/event-route";
-import { TicketRoute } from "../home/ticket-route";
 import { TravelSticker } from "../travel-sticker";
 export function SnapshotView({
   snapshot,
@@ -75,60 +74,31 @@ export function SnapshotView({
           </button>
         ))}
       </div>
-      <div className="market-events">
+      <div className="section-heading">
+        <h2>{items[0]?.location?.name || items[0]?.place || "当天安排"}</h2>
+        <span className="list-caption">{items.length} 项安排</span>
+      </div>
+      <div className="timeline">
         {items.map((e, index) => {
           const route = eventRoute(e);
-          const range = e.timeRange ?? ["flight", "stay"].includes(e.kind);
           return (
-            <article
-              key={index}
-              className={`market-event ${route ? "has-route" : ""}`}
-            >
-              <header className="market-event-heading">
-                <h4>{e.title}</h4>
-                {!route && <TravelSticker kind={e.kind} />}
-              </header>
-              {route ? (
-                <TicketRoute event={e} />
-              ) : (
-                <div className="market-event-content">
-                  <p className="market-event-time">
-                    {eventTime(e)}
-                    {range && ` — ${eventTime(e, true)}`}
-                  </p>
-                  <small>
-                    {zoneName(e.timezone)}
-                    {range && e.endTimezone && e.endTimezone !== e.timezone
-                      ? ` → ${zoneName(e.endTimezone)}`
-                      : ""}
-                  </small>
-                  {range && <small>至 {eventEndDate(e)}</small>}
-                  <p>{e.location?.name || e.place}</p>
-                </div>
-              )}
-              {(e.address ||
-                e.location?.address ||
-                e.departureLocation ||
-                (route && (e.place || e.location?.name))) && (
-                <div className="market-event-location">
-                  {route && (e.location?.name || e.place) && (
-                    <p>地点：{e.location?.name || e.place}</p>
-                  )}
-                  {e.departureLocation && (
-                    <p>
-                      出发：{e.departureLocation.name} ·{" "}
-                      {e.departureLocation.address}
-                    </p>
-                  )}
-                  {(e.location?.address || e.address) && (
-                    <p>
-                      {route ? "抵达：" : ""}
-                      {e.location?.address || e.address}
-                    </p>
-                  )}
-                </div>
-              )}
-            </article>
+            <div className="timeline-event" key={index}>
+              <div className="timeline-time">
+                <strong>{eventTime(e)}</strong>
+              </div>
+              <div className={`timeline-icon ${e.kind}`}>
+                <TravelSticker kind={e.kind} />
+              </div>
+              <div className="timeline-card">
+                <small>{zoneName(e.timezone)}</small>
+                <h3>{e.title}</h3>
+                <p>
+                  {route
+                    ? `${route.from.name} → ${route.to.name}`
+                    : e.location?.name || e.place}
+                </p>
+              </div>
+            </div>
           );
         })}
       </div>

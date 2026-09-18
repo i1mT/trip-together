@@ -261,7 +261,7 @@ button:active {
   font-size: 14px;
   background: #fdeaea;
   color: #c0392b;
-  border: 1px solid #f3c4c4;
+  border: 0;
 }
 .danger-button:hover {
   background: #fbdcdc;

@@ -1,6 +1,12 @@
 "use client";
 import { useEffect, useState } from "react";
-import { Globe, Copy, ChevronRight } from "lucide-react";
+import {
+  Globe,
+  Copy,
+  ChevronRight,
+  ChevronDown,
+  ChevronUp,
+} from "lucide-react";
 import { api } from "@/lib/api";
 import { introductionLimit, type ShareDraft } from "../../../../shared/market";
 import { Sheet, SheetFooter, SheetForm } from "../ui";
@@ -12,7 +18,8 @@ export function ShareManager({ tripId }: { tripId: string }) {
     [notice, setNotice] = useState(""),
     [busy, setBusy] = useState(false),
     [confirming, setConfirming] = useState(false),
-    [revoking, setRevoking] = useState(false);
+    [revoking, setRevoking] = useState(false),
+    [expanded, setExpanded] = useState(false);
   const [introduction, setIntroduction] = useState("");
   const [title, setTitle] = useState("");
   const path = `/trips/${tripId}/share`;
@@ -89,8 +96,7 @@ export function ShareManager({ tripId }: { tripId: string }) {
       <Sheet
         open={open}
         hasChanges={
-          !confirming &&
-          !revoking &&
+          confirming &&
           (introduction !== (data?.current?.introduction ?? "") ||
             title.trim() !==
               (data?.current?.snapshot?.trip?.title ??
@@ -111,52 +117,87 @@ export function ShareManager({ tripId }: { tripId: string }) {
         >
           {data?.current && !confirming && !revoking && (
             <div className="market-share-link">
-              <strong>这个行程已经公开</strong>
-              <input
-                className="market-share-code"
-                aria-label="公开分享口令"
-                readOnly
-                value={data.current.code}
-              />
-              <small>
-                告诉朋友这个口令，在行程市场搜索即可预览和复制，不会加入你的行程。
-              </small>
               <button
                 type="button"
-                className="secondary-button"
-                onClick={async () => {
-                  try {
-                    await navigator.clipboard.writeText(data.current!.code);
-                    setNotice("分享口令已经复制");
-                  } catch {
-                    setError("无法自动复制，请选择上方口令手动复制");
-                  }
-                }}
+                className="market-share-toggle"
+                aria-expanded={expanded}
+                onClick={() => setExpanded((v) => !v)}
               >
-                <Copy size={16} />
-                复制分享口令
+                <span>
+                  <strong>这个行程已经公开</strong>
+                  <small>分享口令 {data.current.code}</small>
+                </span>
+                {expanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
               </button>
-              <button
-                type="button"
-                className="text-action"
-                disabled={busy}
-                onClick={() => setRevoking(true)}
-              >
-                取消公开分享
-              </button>
+              {expanded && (
+                <div className="market-share-link-body">
+                  <input
+                    className="market-share-code"
+                    aria-label="公开分享口令"
+                    readOnly
+                    value={data.current.code}
+                  />
+                  <small>
+                    告诉朋友这个口令，在行程市场搜索即可预览和复制，不会加入你的行程。
+                  </small>
+                  <button
+                    type="button"
+                    className="secondary-button"
+                    onClick={async () => {
+                      try {
+                        await navigator.clipboard.writeText(data.current!.code);
+                        setNotice("分享口令已经复制");
+                      } catch {
+                        setError("无法自动复制，请选择上方口令手动复制");
+                      }
+                    }}
+                  >
+                    <Copy size={16} />
+                    复制分享口令
+                  </button>
+                  <button
+                    type="button"
+                    className="text-danger"
+                    disabled={busy}
+                    onClick={() => setRevoking(true)}
+                  >
+                    取消公开分享
+                  </button>
+                </div>
+              )}
             </div>
           )}
           {confirming ? (
             <div className="market-publish-confirmation">
               <h3>公开「{title.trim() || data?.snapshot?.trip.title}」？</h3>
+              <label className="market-introduction-editor">
+                公开名称
+                <input
+                  aria-label="公开名称"
+                  maxLength={100}
+                  placeholder="默认使用原行程名称"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                />
+                <small>{title.length}/100 字</small>
+              </label>
+              <label className="market-introduction-editor">
+                行程介绍（选填）
+                <textarea
+                  aria-label="行程介绍"
+                  maxLength={introductionLimit}
+                  rows={3}
+                  placeholder="介绍适合谁、路线特色或旅行建议"
+                  value={introduction}
+                  onChange={(e) => setIntroduction(e.target.value)}
+                />
+                <small>
+                  {introduction.length}/{introductionLimit} 字
+                </small>
+              </label>
               <p>
                 作者头像、昵称和介绍也会公开，任何人都可以查看名称、日期、时间、地点和路线，并复制为自己的行程。请确认这些内容没有私人信息。
               </p>
-              {introduction.trim() && (
-                <p className="market-introduction-full">
-                  {introduction.trim()}
-                </p>
-              )}
               <small>
                 资料、同行成员、账本、电话、预订编号和私人备注不会公开。之后可以取消分享。
               </small>
@@ -171,37 +212,10 @@ export function ShareManager({ tripId }: { tripId: string }) {
                 公开后，作者头像、昵称和介绍也会展示。任何人都能查看下方名称、日期、时间、地点与路线，并复制行程。请确认这些内容中没有私人信息。资料、同行成员、账本、电话、预订编号与备注不会公开。
               </p>
               {data?.snapshot ? (
-                <>
-                  <label className="market-introduction-editor">
-                    公开名称
-                    <input
-                      aria-label="公开名称"
-                      maxLength={100}
-                      placeholder="默认使用原行程名称"
-                      value={title}
-                      onChange={(e) => setTitle(e.target.value)}
-                    />
-                    <small>{title.length}/100 字</small>
-                  </label>
-                  <label className="market-introduction-editor">
-                    行程介绍（选填）
-                    <textarea
-                      aria-label="行程介绍"
-                      maxLength={introductionLimit}
-                      rows={3}
-                      placeholder="介绍适合谁、路线特色或旅行建议"
-                      value={introduction}
-                      onChange={(e) => setIntroduction(e.target.value)}
-                    />
-                    <small>
-                      {introduction.length}/{introductionLimit} 字
-                    </small>
-                  </label>
-                  <SnapshotView
-                    snapshot={data.snapshot}
-                    title={title.trim() || undefined}
-                  />
-                </>
+                <SnapshotView
+                  snapshot={data.snapshot}
+                  title={title.trim() || undefined}
+                />
               ) : data ? (
                 <p className="empty-state">请先添加行程事项，再公开分享。</p>
               ) : (

@@ -292,15 +292,6 @@
   background: var(--color-accent-100);
   color: var(--accent);
 }
-.danger-button {
-  display: flex;
-  gap: 7px;
-  align-items: center;
-  justify-content: center;
-  margin: 20px auto 0;
-  color: var(--color-error);
-  font-size: 12px;
-}
 .delete-confirm {
   text-align: center;
   color: var(--color-error);

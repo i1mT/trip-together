@@ -144,6 +144,17 @@
   font-size: 14px;
   font-weight: 650;
 }
+.select-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 650;
+  min-width: 0;
+}
+.select-field > span {
+  font-weight: 650;
+}
 .choice-trigger {
   width: 100%;
   border: 1px solid #e8e4eb;

@@ -6,7 +6,7 @@ import {
   readableZone,
 } from "../../../../shared/travel-options";
 import { useId, useState } from "react";
-import { ChoiceField } from "./choice-field";
+import { Select } from "antd";
 export function Field({
   label,
   value,
@@ -81,16 +81,20 @@ export function ZoneField({
     ]),
   ];
   return (
-    <ChoiceField
-      label={label}
-      value={value}
-      onChange={onChange}
-      options={zones.map((z) => ({
-        value: z,
-        label: readableZone(z),
-        search: z,
-      }))}
-    />
+    <label className="select-field">
+      <span>{label}</span>
+      <Select
+        aria-label={label}
+        showSearch
+        value={value}
+        onChange={onChange}
+        optionFilterProp="label"
+        options={zones.map((z) => ({
+          value: z,
+          label: readableZone(z),
+        }))}
+      />
+    </label>
   );
 }
 export function CurrencyField({
@@ -103,15 +107,19 @@ export function CurrencyField({
   onChange: (v: string) => void;
 }) {
   return (
-    <ChoiceField
-      label={label}
-      value={value}
-      onChange={onChange}
-      options={currencies.map((c) => ({
-        value: c,
-        label: currencyNames[c],
-        search: c,
-      }))}
-    />
+    <label className="select-field">
+      <span>{label}</span>
+      <Select
+        aria-label={label}
+        showSearch
+        value={value}
+        onChange={onChange}
+        optionFilterProp="label"
+        options={currencies.map((c) => ({
+          value: c,
+          label: currencyNames[c],
+        }))}
+      />
+    </label>
   );
 }

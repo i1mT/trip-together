@@ -88,7 +88,7 @@ export function ShareManager({ tripId }: { tripId: string }) {
       >
         <Globe size={21} />
         <span>
-          <strong>公开分享行程</strong>
+          <strong>分享我的行程攻略</strong>
           <small>发布到行程市场，供别人预览和复制</small>
         </span>
         <ChevronRight size={18} />
@@ -103,7 +103,7 @@ export function ShareManager({ tripId }: { tripId: string }) {
                 data?.snapshot?.trip?.title ??
                 ""))
         }
-        title={confirming ? "确认公开分享" : "公开分享行程"}
+        title={confirming ? "确认分享攻略" : "分享我的行程攻略"}
         onClose={() => {
           if (!busy) {
             if (confirming) setConfirming(false);

@@ -1,5 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import { ConfigProvider } from "antd";
+import zhCN from "antd/locale/zh_CN";
 import type { Trip } from "@/lib/models";
 import { api } from "@/lib/api";
 import { localDate } from "@/lib/time";
@@ -109,88 +111,105 @@ export function TripForm({
     }
   }
   return (
-    <Sheet
-      open
-      title={trip ? "行程设置" : "创建行程"}
-      onClose={() => !busy && onClose()}
+    <ConfigProvider
+      locale={zhCN}
+      getPopupContainer={(trigger) =>
+        trigger?.closest<HTMLElement>(".sheet") ?? document.body
+      }
+      theme={{
+        token: {
+          colorPrimary: "#9685b0",
+          motion: false,
+          borderRadius: 12,
+          controlHeight: 44,
+          fontSize: 15,
+          fontFamily: "inherit",
+        },
+      }}
     >
-      <SheetForm className="editor-form" onSubmit={save}>
-        <DestinationPicker value={places} onChange={changePlaces} />
-        <div className="form-grid">
-          <Field
-            label="出发日期"
-            type="date"
-            value={v.start_date}
-            required
-            onChange={(start_date) =>
-              setV({
-                ...v,
-                start_date,
-                end_date: v.end_date < start_date ? start_date : v.end_date,
-              })
-            }
-          />
-          <Field
-            label="返回日期"
-            type="date"
-            value={v.end_date}
-            min={v.start_date}
-            required
-            onChange={(x) => change("end_date", x)}
-          />
-        </div>
-        <Field
-          label="行程名称（选填）"
-          value={v.title}
-          placeholder={suggested}
-          maxLength={100}
-          onChange={(x) => change("title", x)}
-        />
-        <p className="muted">
-          使用{currencyNames[v.currency as keyof typeof currencyNames]} ·{" "}
-          {readableZone(v.timezone)}
-        </p>
-        <details className="optional-details">
-          <summary>调整时间与币种</summary>
-          <div className="optional-fields">
-            <div className="form-grid">
-              <ZoneField
-                label="目的地当地时间"
-                value={v.timezone}
-                onChange={(x) => change("timezone", x)}
-              />
-              <CurrencyField
-                label="目的地币种"
-                value={v.currency}
-                onChange={(x) => change("currency", x)}
-              />
-            </div>
-            <div className="form-grid">
-              <ZoneField
-                label="常住地时间"
-                value={v.home_timezone}
-                onChange={(x) => change("home_timezone", x)}
-              />
-              <CurrencyField
-                label="常用币种"
-                value={v.home_currency}
-                onChange={(x) => change("home_currency", x)}
-              />
-            </div>
-            <small>跨国旅行的每个事项可以选择自己的当地时间。</small>
+      <Sheet
+        open
+        title={trip ? "行程设置" : "创建行程"}
+        onClose={() => !busy && onClose()}
+      >
+        <SheetForm className="editor-form" onSubmit={save}>
+          <DestinationPicker value={places} onChange={changePlaces} />
+          <div className="form-grid">
+            <Field
+              label="出发日期"
+              type="date"
+              value={v.start_date}
+              required
+              onChange={(start_date) =>
+                setV({
+                  ...v,
+                  start_date,
+                  end_date: v.end_date < start_date ? start_date : v.end_date,
+                })
+              }
+            />
+            <Field
+              label="返回日期"
+              type="date"
+              value={v.end_date}
+              min={v.start_date}
+              required
+              onChange={(x) => change("end_date", x)}
+            />
           </div>
-        </details>
-        {error && (
-          <p role="alert" className="error-message">
-            {error}
+          <Field
+            label="行程名称（选填）"
+            value={v.title}
+            placeholder={suggested}
+            maxLength={100}
+            onChange={(x) => change("title", x)}
+          />
+          <p className="muted">
+            使用{currencyNames[v.currency as keyof typeof currencyNames]} ·{" "}
+            {readableZone(v.timezone)}
           </p>
-        )}
-        <SheetFooter>
-          <button className="primary-button" disabled={busy}>
-            {busy ? "正在保存…" : trip ? "保存行程" : "创建行程"}
-          </button>
-        </SheetFooter>
-      </SheetForm>
-    </Sheet>
+          <details className="optional-details">
+            <summary>调整时间与币种</summary>
+            <div className="optional-fields">
+              <div className="form-grid">
+                <ZoneField
+                  label="目的地当地时间"
+                  value={v.timezone}
+                  onChange={(x) => change("timezone", x)}
+                />
+                <CurrencyField
+                  label="目的地币种"
+                  value={v.currency}
+                  onChange={(x) => change("currency", x)}
+                />
+              </div>
+              <div className="form-grid">
+                <ZoneField
+                  label="常住地时间"
+                  value={v.home_timezone}
+                  onChange={(x) => change("home_timezone", x)}
+                />
+                <CurrencyField
+                  label="常用币种"
+                  value={v.home_currency}
+                  onChange={(x) => change("home_currency", x)}
+                />
+              </div>
+              <small>跨国旅行的每个事项可以选择自己的当地时间。</small>
+            </div>
+          </details>
+          {error && (
+            <p role="alert" className="error-message">
+              {error}
+            </p>
+          )}
+          <SheetFooter>
+            <button className="primary-button" disabled={busy}>
+              {busy ? "正在保存…" : trip ? "保存行程" : "创建行程"}
+            </button>
+          </SheetFooter>
+        </SheetForm>
+      </Sheet>
+    </ConfigProvider>
   );
 }

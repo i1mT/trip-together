@@ -157,7 +157,11 @@
 .market-share {
   padding: 0 18px 18px;
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 14px;
+}
+.market-preview {
+  min-width: 0;
 }
 .market-share-link {
   background: #ebe4f4;
@@ -348,6 +352,7 @@
 .market-preview .market-day-picker {
   margin: 18px 0 0;
   padding: 2px 0 12px;
+  max-width: 100%;
 }
 .market-share-link .market-share-code {
   font-size: 26px;

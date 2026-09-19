@@ -19,14 +19,14 @@ test("手机公开发布、匿名预览、登录返回并复制为独立行程",
   await page.getByRole("button", { name: "我的", exact: true }).click();
   await page.getByRole("button", { name: /我的行程.*创建/ }).click();
   await page.getByRole("button", { name: "管理行程：测试旅行" }).click();
-  await page.getByRole("button", { name: /公开分享行程/ }).click();
+  await page.getByRole("button", { name: /分享我的行程攻略/ }).click();
   const dialog = page.getByRole("dialog");
   await expect(dialog.getByText("市场演示航班")).toBeVisible();
   await expect(dialog.getByText("不应公开的私人备注")).toHaveCount(0);
   await expect(dialog.getByRole("checkbox")).toHaveCount(0);
   await dialog.getByRole("button", { name: "公开发布", exact: true }).click();
   await expect(
-    dialog.getByRole("heading", { name: "确认公开分享" }),
+    dialog.getByRole("heading", { name: "确认分享攻略" }),
   ).toBeVisible();
   await dialog.getByLabel("公开名称").fill("巴黎慢游");
   await dialog

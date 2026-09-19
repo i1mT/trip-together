@@ -137,6 +137,7 @@
 
 /* Simple entry controls retain the existing paper / lavender palette. */
 .choice-field {
+  position: relative;
   display: grid;
   gap: 6px;
   min-width: 0;
@@ -158,9 +159,15 @@
   color: var(--muted);
 }
 .choice-panel {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 20;
   padding: 10px;
   background: #f4f1f7;
   border-radius: 16px;
+  box-shadow: var(--shadow);
 }
 .choice-options {
   max-height: 220px;

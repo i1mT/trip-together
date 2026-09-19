@@ -295,7 +295,7 @@ button:active {
   color: var(--ink);
 }
 .empty-state-sticker {
-  width: 84px;
+  width: 68px;
   margin-bottom: 10px;
   transform: rotate(-6deg);
 }

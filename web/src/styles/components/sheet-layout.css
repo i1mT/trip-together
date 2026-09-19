@@ -52,9 +52,6 @@
 .sheet-actions .error-message {
   margin: 0;
 }
-.sheet-actions .danger-button {
-  flex-basis: 100%;
-}
 .sheet .entry-step-actions {
   position: static;
   margin: 0;

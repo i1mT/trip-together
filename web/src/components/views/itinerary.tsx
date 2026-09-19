@@ -77,7 +77,7 @@ export function Itinerary({
           <h1>完整行程</h1>
           <button
             className="icon-button page-add-button"
-            aria-label="添加事项"
+            aria-label="添加安排"
             onClick={() => setEditing(true)}
           >
             <Plus size={23} />
@@ -145,7 +145,7 @@ export function Itinerary({
               kind="explore"
               title="这一天还没有安排"
               text="可以先添加活动名称，具体时间稍后完善。"
-              action="添加当天事项"
+              action="添加当天安排"
               onAction={() => setEditing(true)}
             />
           )}
@@ -352,10 +352,10 @@ export function EventDetail({
         <p className="source-note">资料来源：{event.source || "手动添加"}</p>
         <SheetFooter>
           <button className="secondary-button" onClick={() => onEdit(event)}>
-            修改事项
+            修改安排
           </button>
           <button className="danger-button" onClick={() => onDelete(event)}>
-            删除事项
+            删除安排
           </button>
         </SheetFooter>
       </div>

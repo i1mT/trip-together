@@ -262,7 +262,7 @@ export function TripManagement({
           <div className="editor-form">
             <p>
               将删除「{data.trip.title}
-              」的所有事项、共享文件、账本、邀请和清单。个人账号与个人证件保留。
+              」的所有安排、共享文件、账本、邀请和清单。个人账号与个人证件保留。
             </p>
             <label>
               输入行程名称确认

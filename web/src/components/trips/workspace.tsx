@@ -257,7 +257,7 @@ export function TripWorkspace({
       {deletingEvent && (
         <Sheet
           open
-          title="删除事项"
+          title="删除安排"
           onClose={() => !deleting && setDeletingEvent(null)}
         >
           <div className="editor-form">
@@ -275,7 +275,7 @@ export function TripWorkspace({
                     });
                     setDeletingEvent(null);
                     await refresh();
-                    toast("事项已删除");
+                    toast("安排已删除");
                   } catch (e) {
                     setError((e as Error).message);
                   } finally {
@@ -283,7 +283,7 @@ export function TripWorkspace({
                   }
                 }}
               >
-                确认删除事项
+                确认删除安排
               </button>
             </SheetFooter>
           </div>

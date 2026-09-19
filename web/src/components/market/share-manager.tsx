@@ -216,7 +216,7 @@ export function ShareManager({ tripId }: { tripId: string }) {
                   title={title.trim() || undefined}
                 />
               ) : data ? (
-                <p className="empty-state">请先添加行程事项，再公开分享。</p>
+                <p className="empty-state">请先添加行程安排，再公开分享。</p>
               ) : (
                 !error && <p role="status">正在准备预览…</p>
               )}

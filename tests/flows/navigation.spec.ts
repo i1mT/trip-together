@@ -49,7 +49,7 @@ test("个人页切换、独立行程管理、非当前行程邀请与原页面�
     .getByRole("button", { name: "创建行程", exact: true })
     .click();
   await expect(
-    page.getByRole("heading", { name: "还没有行程事项" }),
+    page.getByRole("heading", { name: "还没有行程安排" }),
   ).toBeVisible();
   await expect(page.getByRole("button", { name: /当前行程：/ })).toHaveCount(0);
   const other = await account.request(
@@ -116,7 +116,7 @@ test("个人页切换、独立行程管理、非当前行程邀请与原页面�
     page.getByRole("button", { name: "当前行程：另一段旅行更新，切换行程" }),
   ).toBeVisible();
   for (const [tab, title, action] of [
-    ["行程", "完整行程", "添加事项"],
+    ["行程", "完整行程", "添加安排"],
     ["资料", "旅行资料", "上传旅行资料"],
   ]) {
     await page.getByRole("button", { name: tab, exact: true }).click();

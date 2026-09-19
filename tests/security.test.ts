@@ -95,7 +95,7 @@ test("不能跨行程关联文件、预订、清单或他人私有文件", async
   ]);
   const item = await a.request(p + "/preparation", "POST", {
     group_name: "测试",
-    title: "测试事项",
+    title: "测试安排",
   });
   await a.request(
     q + "/packing",

@@ -207,7 +207,7 @@ export function DeleteDocument({
   return (
     <Sheet open title="删除旅行资料" onClose={() => !busy && onClose()}>
       <div className="editor-form">
-        <p>确认删除「{doc.name}」？相关事项将不再关联这份文件。</p>
+        <p>确认删除「{doc.name}」？相关安排将不再关联这份文件。</p>
         {error && <p role="alert">{error}</p>}
         <SheetFooter>
           <button

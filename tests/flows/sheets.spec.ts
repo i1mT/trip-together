@@ -11,7 +11,7 @@ test("短弹窗自然高度、长表单只滚动内容、底部按钮关联原�
   await page.getByLabel("密码", { exact: true }).fill(account.password);
   await page.getByRole("button", { name: "登录", exact: true }).click();
   await page.getByRole("button", { name: "行程", exact: true }).click();
-  await page.getByRole("button", { name: "添加事项", exact: true }).click();
+  await page.getByRole("button", { name: "添加安排", exact: true }).click();
   const dialog = page.getByRole("dialog");
   expect((await dialog.boundingBox())!.height).toBeLessThan(450);
   await expect(

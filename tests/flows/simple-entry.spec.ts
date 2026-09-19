@@ -16,7 +16,7 @@ test("活动只需名称和日期；住宿、上传关联、头像与昵称保�
   await login(page, account);
   await page.getByRole("button", { name: "行程", exact: true }).click();
   await page.getByRole("button", { name: /第 2 天/ }).click();
-  await page.getByRole("button", { name: "添加事项", exact: true }).click();
+  await page.getByRole("button", { name: "添加安排", exact: true }).click();
   await page.screenshot({ path: `.local/event-step-one-${browserName}.png` });
   await page.getByLabel("活动名称").fill("公园散步");
   await page.getByRole("button", { name: "下一步", exact: true }).click();
@@ -52,7 +52,7 @@ test("活动只需名称和日期；住宿、上传关联、头像与昵称保�
   ).toBeVisible();
   let data = await account.request(`/trips/${id}/data`);
   expect(data.events[0].timeMode).toBe("date");
-  await page.getByRole("button", { name: "添加事项", exact: true }).click();
+  await page.getByRole("button", { name: "添加安排", exact: true }).click();
   await page.getByRole("button", { name: "住宿", exact: true }).click();
   await page.getByLabel("酒店名称").fill("湖边酒店");
   await page.getByRole("button", { name: "下一步", exact: true }).click();
@@ -249,15 +249,15 @@ test("目的地搜索、多城市保存和跨时区航班时间", async ({
     .getByRole("button", { name: "创建行程", exact: true })
     .click();
   await expect(
-    page.getByRole("heading", { name: "还没有行程事项" }),
+    page.getByRole("heading", { name: "还没有行程安排" }),
   ).toBeVisible();
   const trip = (await account.request("/bootstrap")).trips[0];
   expect(trip.destinations).toHaveLength(2);
   expect(trip.currency).toBe("JPY");
   await page.getByRole("button", { name: "行程", exact: true }).click();
-  await page.getByRole("button", { name: "添加事项", exact: true }).click();
+  await page.getByRole("button", { name: "添加安排", exact: true }).click();
   await page.getByRole("button", { name: "航班", exact: true }).click();
-  await page.getByLabel("事项名称", { exact: true }).fill("上海 → 东京");
+  await page.getByLabel("安排名称", { exact: true }).fill("上海 → 东京");
   await page.getByRole("button", { name: "下一步", exact: true }).click();
   await chooseTime(page, "起飞时间", "09", "00");
   await page.getByRole("switch", { name: "时间段" }).click();

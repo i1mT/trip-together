@@ -198,7 +198,7 @@ export function TripForm({
                   onChange={(x) => change("home_currency", x)}
                 />
               </div>
-              <small>跨国旅行的每个事项可以选择自己的当地时间。</small>
+              <small>跨国旅行的每项安排可以选择自己的当地时间。</small>
             </div>
           </details>
           {error && (

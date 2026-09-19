@@ -101,7 +101,7 @@ test("全量查询失败只推迟上报，业务数据保留，下一次发送�
   }
 });
 
-test("多人、事项总量共享一次采样；浏览事件不附带全量", async () => {
+test("多人、安排总量共享一次采样；浏览事件不附带全量", async () => {
   const f = await fixture();
   const original = globalThis.fetch;
   try {

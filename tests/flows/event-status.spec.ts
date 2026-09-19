@@ -38,7 +38,7 @@ test("手机结束与取消从首页移除、完整行程保留标签、详情�
   await page.getByRole("button", { name: "关闭", exact: true }).click();
   await expect(page.getByText("游览花园", { exact: true })).toHaveCount(0);
   await page.getByRole("button", { name: "查看湖边住宿详情" }).click();
-  await page.getByRole("button", { name: "取消事项", exact: true }).click();
+  await page.getByRole("button", { name: "取消安排", exact: true }).click();
   await expect(page.getByRole("button", { name: "恢复安排" })).toBeVisible();
   await page.getByRole("button", { name: "关闭", exact: true }).click();
   await expect(page.getByText("湖边住宿", { exact: true })).toHaveCount(0);

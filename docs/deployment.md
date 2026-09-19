@@ -113,7 +113,7 @@ npx wrangler d1 time-travel info DB --config infra/wrangler.production.jsonc
 
 ## 地点搜索
 
-事项通过服务端调用 [Geoapify Geocoding](https://apidocs.geoapify.com/docs/geocoding/)，前端仅请求本站 `/api/places`，不依赖用户浏览器访问 Google。搜索需要登录，限制每个账号 15 分钟 120 次，8 秒超时，不使用 IP 推测位置。没有 Key 时搜索显示暂不可用，其余事项录入仍可使用。
+安排通过服务端调用 [Geoapify Geocoding](https://apidocs.geoapify.com/docs/geocoding/)，前端仅请求本站 `/api/places`，不依赖用户浏览器访问 Google。搜索需要登录，限制每个账号 15 分钟 120 次，8 秒超时，不使用 IP 推测位置。没有 Key 时搜索显示暂不可用，其余安排录入仍可使用。
 
 先按照完整文字搜索；没有匹配结果时，再使用同样关键词按城市名称查询。最多两次上游调用，共用 8 秒超时；已有匹配时不增加调用，服务错误仍然显示失败。结果最多 6 个，不默认限制国家或根据 IP 排序。
 

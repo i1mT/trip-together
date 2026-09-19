@@ -238,7 +238,7 @@ export function Market({
                     onClick={() => open(item.id)}
                   >
                     <span className="market-tag">
-                      {item.days} 天 · {item.event_count} 个事项
+                      {item.days} 天 · {item.event_count} 项安排
                     </span>
                     <strong>{item.title}</strong>
                     {item.introduction && (
@@ -315,7 +315,7 @@ export function Market({
             />
           </label>
           <small>
-            全部事项按日期整体调整，保留各地当地时间；机票、住宿等需要自行重新预订。
+            全部安排按日期整体调整，保留各地当地时间；机票、住宿等需要自行重新预订。
           </small>
           {error && (
             <p role="alert" className="error-message">

@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { Client, tripInput, eventInput } from "./support/api";
 import { currencies } from "../shared/travel-options";
 import { money, splitAmount } from "../web/src/lib/money";
-test("多个目的地、日元泰铢持久保存，日期事项与未知结束时间可重新读取", async () => {
+test("多个目的地、日元泰铢持久保存，日期安排与未知结束时间可重新读取", async () => {
   const c = await new Client().register();
   const destinations = [
     { name: "东京", timezone: "Asia/Tokyo", currency: "JPY" },

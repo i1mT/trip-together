@@ -7,10 +7,10 @@
 | 用户数 | 当前注册账号数 | 是 |
 | 邮箱验证用户数 | 邮箱验证时间非空的账号数，不是验证码发送次数 | 是 |
 | 创建行程用户数 | 当前仍有自己创建行程的账号去重 | 是 |
-| 行程事项数 | 航班、住宿、交通、游玩等全部事项 | 是 |
-| 游玩活动数 | 事项类型为 explore | 是 |
+| 行程安排数 | 航班、住宿、交通、游玩等全部安排 | 是 |
+| 游玩活动数 | 安排类型为 explore | 是 |
 | 多人行程数 | 至少两名不同成员实际加入的行程 | 是 |
-| 有安排的行程 | 至少有一个事项的行程数 | 是 |
+| 有安排的行程 | 至少有一个安排的行程数 | 是 |
 | 参与行程用户 | 创建或加入行程的账号去重 | 是 |
 | 资料 / 支出数 | 行程资料数、支出记录数，不读取文件或金额 | 是 |
 | 活跃账号 | 最近 24 小时、7 天、30 天有页面浏览或成功业务操作的登录账号去重 | 仅采集启用后 |
@@ -18,7 +18,7 @@
 | 邮箱验证率 | 验证用户 / 注册用户 | 是 |
 | 多人行程占比 | 多人行程 / 全部行程 | 是 |
 
-总量由 D1 查询，删除资料或行程后相应当前总量会减少。新增趋势来自 OpenPanel，不会因为删除业务数据而减少。旧账号和事项缺少可靠创建时间，不进行历史事件回填。OpenPanel visitors、visits 均不能代替账号总量。
+总量由 D1 查询，删除资料或行程后相应当前总量会减少。新增趋势来自 OpenPanel，不会因为删除业务数据而减少。旧账号和安排缺少可靠创建时间，不进行历史事件回填。OpenPanel visitors、visits 均不能代替账号总量。
 
 ## 事件
 
@@ -30,12 +30,12 @@
 | trip_created | 新建行程成功 |
 | trip_joined | 实际新增非创建人的成员关系，重复加入不重复记录 |
 | trip_became_multiplayer | 首次加入第二名成员 |
-| event_created | 新增事项成功；kind 类型 |
+| event_created | 新增安排成功；kind 类型 |
 | document_uploaded | 新增行程资料成功；visibility 与 image/pdf 分类 |
 | expense_created | 记账成功，不发送金额或币种 |
 | page_viewed | 预定义页面打开，发送为 OpenPanel screen_view |
-| event_form_opened | 打开事项编辑 |
-| event_step_viewed | 浏览事项步骤；step 1–4 |
+| event_form_opened | 打开安排编辑 |
+| event_step_viewed | 浏览安排步骤；step 1–4 |
 | document_upload_started | 开始上传一批资料 |
 
 业务事件通过 D1 触发器与业务写入同事务记录；上传重试、重复加入不会重复产生业务创建事件。业务记录保留当前权限校验。浏览事件只接受白名单字段，限制请求频率；匿名访问不计入活跃账号。本地不向 OpenPanel 发送。浏览端尊重 DNT，也可用 `localStorage.setItem('analytics-disabled','true')` 停止当前浏览器的浏览行为采集；业务数据库计数不因此消失。
@@ -44,17 +44,17 @@
 
 ## 业务事件附带当前全量
 
-注册成功、首次邮箱验证、创建或加入行程、首次形成多人行程、新增事项、上传资料、记账成功的事件，都由后台附带全量统计。包括接入之前已有的账号与业务数据。不会把全量值作为另一次注册事件，也不会修改账号、验证码或会话。
+注册成功、首次邮箱验证、创建或加入行程、首次形成多人行程、新增安排、上传资料、记账成功的事件，都由后台附带全量统计。包括接入之前已有的账号与业务数据。不会把全量值作为另一次注册事件，也不会修改账号、验证码或会话。
 
 | OpenPanel 事件属性 | 含义 |
 |---|---|
 | total_users | 当前全部注册账号数 |
 | total_verified_users | 当前邮箱已验证账号数 |
 | total_trip_creators | 当前拥有自己创建行程的账号数 |
-| total_events | 全部行程事项数 |
+| total_events | 全部行程安排数 |
 | total_activities | 其中游玩活动数 |
 | total_multiplayer_trips | 当前至少两名成员的行程数 |
-| total_trips / total_planned_trips | 全部行程 / 已有事项的行程数 |
+| total_trips / total_planned_trips | 全部行程 / 已有安排的行程数 |
 | total_trip_members | 参与任意行程的账号去重数 |
 | total_documents / total_expenses | 行程资料 / 支出记录数 |
 | totals_sampled_at | 全量统计实际采样时间，UTC |
@@ -70,9 +70,9 @@
 OpenPanel 看板使用私有访问。完整指标方案在 `scripts/analytics/definition.mjs`：
 
 1. 新增账号和邮箱验证趋势，按 profile 去重。
-2. 创建行程的用户数，按 profile 去重；新增行程、事项、多人形成次数。
-3. 新用户「注册 → 创建行程 → 添加事项」七日转化漏斗；加入行程的用户单独分析。
-4. 事项类型分布、资料与记账使用人数、填写步骤漏斗、页面使用分布。
+2. 创建行程的用户数，按 profile 去重；新增行程、安排、多人形成次数。
+3. 新用户「注册 → 创建行程 → 添加安排」七日转化漏斗；加入行程的用户单独分析。
+4. 安排类型分布、资料与记账使用人数、填写步骤漏斗、页面使用分布。
 
 所有业务报告排除 `source=integration_test`。当前总量（包含历史用户、活动、多人行程）通过业务事件的 total_* 属性查看，也可使用受 Bearer Token 保护的 `/api/analytics/summary` 实时核验；不能把新增事件或每天的存量相加冒充总量。OpenPanel 的日期筛选只作用于行为报告。
 
@@ -95,7 +95,7 @@ Worker Secrets：
 - `ANALYTICS_HASH_KEY`：独立随机密钥，至少 32 字符；不是 SESSION_SIGNING_KEY，变更会断开匿名账号连续性。
 - `ANALYTICS_READ_TOKEN`：至少 32 字符，用于受保护的 `/api/analytics/summary`。
 
-生产配置添加 `triggers.crons = ["*/5 * * * *"]`。事件每 5 分钟最多发送 50 条，并发 10 条。应用 `0006_product_analytics.sql` 增量迁移，新增分析表、触发器和事项记录人字段，不修改旧用户资料。首次迁移时记录采集起点，旧数据只通过当前总量展示。
+生产配置添加 `triggers.crons = ["*/5 * * * *"]`。事件每 5 分钟最多发送 50 条，并发 10 条。应用 `0006_product_analytics.sql` 增量迁移，新增分析表、触发器和安排记录人字段，不修改旧用户资料。首次迁移时记录采集起点，旧数据只通过当前总量展示。
 
 ```sh
 npm run analytics:setup -- --env=.local/openpanel.env
@@ -121,6 +121,6 @@ npm run analytics:setup -- --env=.local/openpanel.env --send-test
 
 ## 在 OpenPanel 查看与排查
 
-打开项目的 Events，时间范围选择今天，清除事件筛选；登录查找 session_started，页面浏览查找 screen_view，新增事项查找 event_created。注册和首次邮箱验证分别是 account_registered / email_verified。展开事件查看 total_* 和 totals_sampled_at；登录、浏览不附加全量。事件使用原始发生时间，补发后应按发生时间查找。Overview 的浏览统计不能代替这些业务事件列表。
+打开项目的 Events，时间范围选择今天，清除事件筛选；登录查找 session_started，页面浏览查找 screen_view，新增安排查找 event_created。注册和首次邮箱验证分别是 account_registered / email_verified。展开事件查看 total_* 和 totals_sampled_at；登录、浏览不附加全量。事件使用原始发生时间，补发后应按发生时间查找。Overview 的浏览统计不能代替这些业务事件列表。
 
 正常情况下后台每 5 分钟发送一批。若超过一个周期仍无数据，检查受保护 summary 的 pending_events / retrying_events，以及后台 analytics_event_failed 的 stage / status / error。status=0 表示尚未取得 HTTP 响应，不能误判为平台拒绝。外部请求使用 manual 拒绝重定向；真实 Worker 运行时不支持 error 模式，Node 模拟测试可能无法发现差异。

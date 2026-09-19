@@ -35,7 +35,7 @@ test("四步录入保留草稿、分钟时间与浮层选择、地点搜索和�
   await page.getByLabel("密码", { exact: true }).fill(account.password);
   await page.getByRole("button", { name: "登录", exact: true }).click();
   await page.getByRole("button", { name: "行程", exact: true }).click();
-  await page.getByRole("button", { name: "添加事项", exact: true }).click();
+  await page.getByRole("button", { name: "添加安排", exact: true }).click();
   await expect(page.locator(".entry-step")).toHaveCount(0);
   await expect(page.getByText("安排已确认", { exact: true })).toHaveCount(0);
   await page.getByLabel("活动名称").fill("午后参观");

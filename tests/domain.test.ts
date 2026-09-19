@@ -5,7 +5,7 @@ import { splitAmount } from "../web/src/lib/money";
 import { zonedInstant, localInput } from "../web/src/lib/zoned-input";
 import { eventInput } from "./support/api";
 import type { TripEvent } from "../web/src/lib/models";
-test("日期由真实事项决定，空行程不会误报结束", () => {
+test("日期由真实安排决定，空行程不会误报结束", () => {
   assert.equal(selectEvents([], Date.now()).finished, false);
   const e = { ...eventInput, id: "event", version: 1 } as TripEvent;
   assert.equal(selectEvents([e], Date.parse(e.start)).current?.id, e.id);
@@ -49,7 +49,7 @@ test("跨时区输入和夏令时缺失、重复时刻", () => {
     "2030-11-03T06:30:00.000Z",
   );
 });
-test("日期事项不产生虚假倒计时或提前结束，未知结束时间保留当天安排", () => {
+test("日期安排不产生虚假倒计时或提前结束，未知结束时间保留当天安排", () => {
   const dated = {
     ...eventInput,
     id: "date",
@@ -74,7 +74,7 @@ test("日期事项不产生虚假倒计时或提前结束，未知结束时间�
   assert.equal(selectEvents([partial], noon).current, undefined);
 });
 
-test("事项时间支持分钟、单点、跨日跨区时间段及待定日期", async () => {
+test("安排时间支持分钟、单点、跨日跨区时间段及待定日期", async () => {
   const { resolveTiming } =
     await import("../web/src/components/editors/event/timing");
   const base = {

@@ -70,7 +70,7 @@ export function EventStatusActions({
               }
             }}
           >
-            刷新事项
+            刷新安排
           </button>
         ) : isPlanned(event) ? (
           <>
@@ -88,7 +88,7 @@ export function EventStatusActions({
               onClick={() => void change("cancelled")}
             >
               <CircleX size={17} />
-              取消事项
+              取消安排
             </button>
           </>
         ) : (

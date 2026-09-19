@@ -25,18 +25,18 @@ export function EventExtras({
     <div className="event-extras">
       <div className="event-neighbors">
         {previous && (
-          <button onClick={() => onEvent(previous)} aria-label="查看上一事项">
+          <button onClick={() => onEvent(previous)} aria-label="查看上一项">
             <span>
               <ArrowLeft size={15} />
-              上一事项
+              上一项
             </span>
             <strong>{previous.title}</strong>
           </button>
         )}
         {next && (
-          <button onClick={() => onEvent(next)} aria-label="查看下一事项">
+          <button onClick={() => onEvent(next)} aria-label="查看下一项">
             <span>
-              下一事项
+              下一项
               <ArrowRight size={15} />
             </span>
             <strong>{next.title}</strong>

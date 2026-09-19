@@ -43,7 +43,7 @@ export function SnapshotView({
       <div className="market-summary">
         <div>
           <span className="market-tag">
-            {dayCount} 天 · {events.length} 个事项
+            {dayCount} 天 · {events.length} 项安排
           </span>
           <h2>{title ?? trip.title}</h2>
           <p>

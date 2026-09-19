@@ -165,7 +165,7 @@ export function EventEditor({
   return (
     <Sheet
       open
-      title={event ? "修改事项" : "添加事项"}
+      title={event ? "修改安排" : "添加安排"}
       className="event-entry-sheet event-wizard"
       hasChanges={draft !== initialDraft.current}
       onClose={() => !busy && onClose()}
@@ -176,7 +176,7 @@ export function EventEditor({
             <div
               className="event-type-picker"
               role="group"
-              aria-label="事项类型"
+              aria-label="安排类型"
             >
               {Object.entries(kinds).map(([kind, name]) => (
                 <button
@@ -191,7 +191,7 @@ export function EventEditor({
               ))}
             </div>
             <Field
-              label={stay ? "酒店名称" : transport ? "事项名称" : "活动名称"}
+              label={stay ? "酒店名称" : transport ? "安排名称" : "活动名称"}
               value={v.title}
               required
               maxLength={150}

@@ -4,7 +4,7 @@ import { Client, createTrip, eventInput } from "../support/api";
 import { selectEvents } from "../../web/src/lib/time";
 import type { TripEvent } from "../../web/src/lib/models";
 
-test("结束/取消排除定时、时间待定事项，恢复及历史缺失状态仍兼容", () => {
+test("结束/取消排除定时、时间待定安排，恢复及历史缺失状态仍兼容", () => {
   const event = { ...eventInput, id: "one", version: 1 } as TripEvent;
   const now = Date.parse(event.start) + 1000;
   for (const status of ["completed", "cancelled"] as const) {
@@ -30,7 +30,7 @@ test("结束/取消排除定时、时间待定事项，恢复及历史缺失状�
   );
 });
 
-test("事项状态权限、并发保护、资料保留、编辑不重置与公开隔离", async () => {
+test("安排状态权限、并发保护、资料保留、编辑不重置与公开隔离", async () => {
   const owner = await new Client().register(),
     outsider = await new Client().register();
   const trip = await createTrip(owner),

@@ -152,7 +152,7 @@ export function Today({
               ? activeEvents.length
                 ? "行程已结束"
                 : "暂无待进行的安排"
-              : "还没有行程事项"
+              : "还没有行程安排"
           }
           text={
             data.events.length

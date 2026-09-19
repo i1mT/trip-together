@@ -246,9 +246,6 @@ export function Market({
                         {item.introduction}
                       </span>
                     )}
-                    <span>
-                      {item.destinations.join(" · ") || "查看旅行路线"}
-                    </span>
                     <span className="trip-ticket-bottom market-card-footer">
                       <MarketAuthor author={item.author} />
                       <span className="market-preview-link">

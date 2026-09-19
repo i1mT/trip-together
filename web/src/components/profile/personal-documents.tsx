@@ -15,6 +15,7 @@ import { DocumentRow, DocumentPreview } from "../views/documents";
 import { uploadFile, validateFiles } from "@/lib/files/upload";
 import { api } from "@/lib/api";
 import { SheetFooter, Sheet } from "../ui";
+import { useToast } from "../toast";
 export function PersonalDocuments({
   data,
   onRefresh,
@@ -26,6 +27,7 @@ export function PersonalDocuments({
   onDocument: (doc: TripDocument) => void;
   heading?: boolean;
 }) {
+  const toast = useToast();
   const input = useRef<HTMLInputElement>(null);
   const [draft, setDraft] = useState<(FileTile & { file: File }) | null>(null);
   const [preview, setPreview] = useState<(FileTile & { file: File }) | null>(
@@ -60,6 +62,7 @@ export function PersonalDocuments({
       );
       URL.revokeObjectURL(item.url);
       setDraft(null);
+      toast("证件已上传");
     } catch (e) {
       setDraft({ ...item, status: "error", error: (e as Error).message });
       setError((e as Error).message);
@@ -73,6 +76,7 @@ export function PersonalDocuments({
       await api(`/personal-documents/${removeId}`, { method: "DELETE" });
       await onRefresh();
       setRemoveId(null);
+      toast("证件已删除");
     } catch (e) {
       setError((e as Error).message);
     } finally {

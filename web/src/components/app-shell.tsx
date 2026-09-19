@@ -13,6 +13,7 @@ import { Profile } from "./views/profile";
 import { DocumentPreview } from "./views/documents";
 import { NavigationDock } from "./navigation/dock";
 import { EmptyWorkspace } from "./navigation/empty-workspace";
+import { ToastProvider } from "./toast";
 function savedTrip(memberId: string) {
   try {
     return localStorage.getItem(`active-trip:${memberId}`) || "";
@@ -26,6 +27,13 @@ function rememberTrip(memberId: string, id: string) {
   } catch {}
 }
 export function AppShell() {
+  return (
+    <ToastProvider>
+      <AppShellContent />
+    </ToastProvider>
+  );
+}
+function AppShellContent() {
   const [boot, setBoot] = useState<Bootstrap | null>(null),
     [selected, setSelected] = useState(""),
     [tab, setTab] = useState("today"),

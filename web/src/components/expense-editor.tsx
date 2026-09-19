@@ -9,6 +9,7 @@ import { localDate, selectEvents } from "@/lib/time";
 import { currencyLabel, money, splitAmount } from "@/lib/money";
 import { api } from "@/lib/api";
 import { SheetForm, SheetFooter, Sheet } from "./ui";
+import { useToast } from "./toast";
 export function ExpenseEditor({
   expense,
   data,
@@ -20,6 +21,7 @@ export function ExpenseEditor({
   onClose: () => void;
   onSaved: () => Promise<void>;
 }) {
+  const toast = useToast();
   const [title, setTitle] = useState(expense?.title ?? "");
   const [amount, setAmount] = useState(
     expense ? (expense.amount / 100).toFixed(2) : "",
@@ -83,6 +85,7 @@ export function ExpenseEditor({
         }),
       });
       await onSaved();
+      toast(expense ? "支出已更新" : "支出已记录");
       close();
     } catch (error) {
       setError(error instanceof Error ? error.message : "保存失败");
@@ -100,6 +103,7 @@ export function ExpenseEditor({
         body: JSON.stringify({ version: expense.version }),
       });
       await onSaved();
+      toast("支出已删除");
       close();
     } catch (error) {
       setError(error instanceof Error ? error.message : "删除失败");

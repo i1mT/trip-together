@@ -6,6 +6,7 @@ import { uploadFile, validateFiles } from "@/lib/files/upload";
 import { SheetForm, SheetFooter, Sheet } from "../ui";
 import { Avatar } from "../avatar";
 import { Field } from "../editors/fields";
+import { useToast } from "../toast";
 export function ProfileEditor({
   profile,
   onClose,
@@ -15,6 +16,7 @@ export function ProfileEditor({
   onClose: () => void;
   onSaved: () => Promise<void>;
 }) {
+  const toast = useToast();
   const [v, setV] = useState(profile),
     [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
@@ -33,6 +35,7 @@ export function ProfileEditor({
     try {
       await api("/profile", { method: "PUT", body: JSON.stringify(v) });
       await onSaved();
+      toast("个人资料已保存");
       onClose();
     } catch (e) {
       setError((e as Error).message);
@@ -55,6 +58,7 @@ export function ProfileEditor({
         has_avatar: result.me.has_avatar,
       }));
       await onSaved();
+      toast(file ? "头像已更新" : "头像已移除");
     } catch (e) {
       setError((e as Error).message);
     } finally {

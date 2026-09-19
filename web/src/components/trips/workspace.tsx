@@ -16,6 +16,7 @@ import { Itinerary, EventDetail } from "../views/itinerary";
 import { Documents, DocumentPreview } from "../views/documents";
 import { Ledger } from "../views/ledger";
 import { Profile } from "../views/profile";
+import { useToast } from "../toast";
 export function TripWorkspace({
   onTripList,
   onSessionExpired,
@@ -31,6 +32,7 @@ export function TripWorkspace({
   onAccountRefresh: () => Promise<void>;
   tripControls: ReactNode;
 }) {
+  const toast = useToast();
   const [data, setData] = useState<TripData | null>(null),
     [loading, setLoading] = useState(true),
     [error, setError] = useState("");
@@ -273,6 +275,7 @@ export function TripWorkspace({
                     });
                     setDeletingEvent(null);
                     await refresh();
+                    toast("事项已删除");
                   } catch (e) {
                     setError((e as Error).message);
                   } finally {

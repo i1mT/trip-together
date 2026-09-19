@@ -15,6 +15,7 @@ import { api } from "@/lib/api";
 import { SheetFooter, Sheet } from "../ui";
 import { ShareManager } from "../market/share-manager";
 import { TripForm } from "./trip-form";
+import { useToast } from "../toast";
 export function TripManagement({
   data,
   active,
@@ -30,6 +31,7 @@ export function TripManagement({
   onSelect: () => void;
   onDeleted: () => Promise<void>;
 }) {
+  const toast = useToast();
   const [editing, setEditing] = useState(false),
     [invite, setInvite] = useState(""),
     [error, setError] = useState(""),
@@ -284,6 +286,7 @@ export function TripManagement({
                       body: JSON.stringify({ title: confirmation }),
                     });
                     await onDeleted();
+                    toast("行程已删除");
                   } catch (e) {
                     setError((e as Error).message);
                   } finally {

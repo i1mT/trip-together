@@ -13,6 +13,7 @@ import { DocumentChoices } from "./document-choices";
 import { DocumentUpload } from "../files/document-manager";
 import { resolveTiming } from "./event/timing";
 import { PlacePicker } from "./event/place-picker";
+import { useToast } from "../toast";
 import type { Place } from "../../../../shared/places";
 const kinds = {
   explore: "活动",
@@ -36,6 +37,7 @@ export function EventEditor({
   onClose: () => void;
   onSaved: (date?: string) => Promise<void>;
 }) {
+  const toast = useToast();
   const [step, setStep] = useState<number>(initialStep);
   useEffect(() => {
     track("event_form_opened", "itinerary");
@@ -148,6 +150,7 @@ export function EventEditor({
         }),
       });
       await onSaved(timing.date);
+      toast(event ? "安排已更新" : "安排已创建");
       onClose();
     } catch (e) {
       setError((e as Error).message);

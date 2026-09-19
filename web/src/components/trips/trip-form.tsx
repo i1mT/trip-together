@@ -13,6 +13,7 @@ import {
 import { SheetForm, SheetFooter, Sheet } from "../ui";
 import { Field, ZoneField, CurrencyField } from "../editors/fields";
 import { DestinationPicker } from "./destination-picker";
+import { useToast } from "../toast";
 export function TripForm({
   trip,
   onClose,
@@ -22,6 +23,7 @@ export function TripForm({
   onClose: () => void;
   onSaved: (id: string) => Promise<void>;
 }) {
+  const toast = useToast();
   const preferenceKey = useRef("");
   const deviceZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const [v, setV] = useState({
@@ -103,6 +105,7 @@ export function TripForm({
           );
       } catch {}
       await onSaved(trip?.id ?? result.id);
+      toast(trip ? "行程已更新" : "行程已创建");
       onClose();
     } catch (e) {
       setError((e as Error).message);

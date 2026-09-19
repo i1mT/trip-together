@@ -7,6 +7,7 @@ import { uploadFile } from "@/lib/files/upload";
 import { SheetForm, SheetFooter, Sheet } from "../ui";
 import { CategorySelect } from "./category-select";
 import { UploadGrid, type UploadItem } from "./upload-grid";
+import { useToast } from "../toast";
 export function DocumentUpload({
   onClose,
   onSaved,
@@ -20,6 +21,7 @@ export function DocumentUpload({
   category?: string;
   categories?: string[];
 }) {
+  const toast = useToast();
   const [items, setItems] = useState<UploadItem[]>([]),
     [category, setCategory] = useState(initialCategory),
     [privateFile, setPrivate] = useState(false),
@@ -81,7 +83,10 @@ export function DocumentUpload({
     }
     try {
       await onSaved();
-      if (!failed) onClose();
+      if (!failed) {
+        toast("资料已上传");
+        onClose();
+      }
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -196,6 +201,7 @@ export function DeleteDocument({
   onClose: () => void;
   onSaved: () => Promise<void>;
 }) {
+  const toast = useToast();
   const [busy, setBusy] = useState(false),
     [error, setError] = useState("");
   return (
@@ -205,13 +211,14 @@ export function DeleteDocument({
         {error && <p role="alert">{error}</p>}
         <SheetFooter>
           <button
-            className="primary-button"
+            className="danger-button"
             disabled={busy}
             onClick={async () => {
               setBusy(true);
               try {
                 await api(`/documents/${doc.id}`, { method: "DELETE" });
                 await onSaved();
+                toast("资料已删除");
                 onClose();
               } catch (e) {
                 setError((e as Error).message);

@@ -11,11 +11,12 @@ import { api } from "@/lib/api";
 import { introductionLimit, type ShareDraft } from "../../../../shared/market";
 import { Sheet, SheetFooter, SheetForm } from "../ui";
 import { SnapshotView } from "./snapshot-view";
+import { useToast } from "../toast";
 export function ShareManager({ tripId }: { tripId: string }) {
+  const toast = useToast();
   const [open, setOpen] = useState(false),
     [data, setData] = useState<ShareDraft | null>(null),
     [error, setError] = useState(""),
-    [notice, setNotice] = useState(""),
     [busy, setBusy] = useState(false),
     [confirming, setConfirming] = useState(false),
     [revoking, setRevoking] = useState(false),
@@ -42,6 +43,7 @@ export function ShareManager({ tripId }: { tripId: string }) {
     }
   }, [open, tripId]);
   async function mutate(remove = false) {
+    const updating = Boolean(data?.current);
     setBusy(true);
     setError("");
     try {
@@ -65,9 +67,7 @@ export function ShareManager({ tripId }: { tripId: string }) {
       });
       await load();
       setRevoking(false);
-      setNotice(
-        remove ? "已经取消公开分享" : "公开行程已经发布，可在旅行攻略市场查看",
-      );
+      toast(remove ? "已取消分享攻略" : updating ? "攻略已更新" : "攻略已发布");
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -81,7 +81,6 @@ export function ShareManager({ tripId }: { tripId: string }) {
         className="trip-setting-row"
         onClick={() => {
           setOpen(true);
-          setNotice("");
           setRevoking(false);
           setConfirming(false);
         }}
@@ -143,7 +142,7 @@ export function ShareManager({ tripId }: { tripId: string }) {
                     onClick={async () => {
                       try {
                         await navigator.clipboard.writeText(data.current!.code);
-                        setNotice("分享口令已经复制");
+                        toast("分享口令已复制");
                       } catch {
                         setError("无法自动复制，请选择上方口令手动复制");
                       }
@@ -235,7 +234,6 @@ export function ShareManager({ tripId }: { tripId: string }) {
               </button>
             </p>
           )}
-          {notice && <p role="status">{notice}</p>}
           <SheetFooter>
             {confirming ? (
               <>
@@ -282,7 +280,6 @@ export function ShareManager({ tripId }: { tripId: string }) {
                 disabled={busy || !data?.snapshot}
                 onClick={() => {
                   setConfirming(true);
-                  setNotice("");
                 }}
               >
                 {busy

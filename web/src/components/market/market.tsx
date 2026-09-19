@@ -134,7 +134,7 @@ export function Market({
             <button
               className="icon-button page-back-button"
               onClick={() => open("")}
-              aria-label="返回行程市场"
+              aria-label="返回旅行攻略市场"
             >
               <ArrowLeft size={22} />
             </button>
@@ -195,7 +195,7 @@ export function Market({
               <ArrowLeft size={22} />
             </button>
             <div>
-              <h1>行程市场</h1>
+              <h1>旅行攻略市场</h1>
               <p>参考公开行程，复制成自己的旅行安排。</p>
             </div>
           </div>

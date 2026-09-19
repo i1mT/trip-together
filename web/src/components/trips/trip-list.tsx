@@ -126,7 +126,7 @@ export function TripList({
             <Ticket size={22} />
           </span>
           <span>
-            <strong>行程市场</strong>
+            <strong>旅行攻略市场</strong>
             <small>预览并复制别人分享的行程</small>
           </span>
           <ArrowRight size={18} />

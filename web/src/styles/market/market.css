@@ -134,6 +134,10 @@
   color: #77727f;
   margin: 14px 0;
 }
+.market-privacy strong {
+  color: var(--ink);
+  font-weight: 700;
+}
 .market-copy-bar {
   position: fixed;
   z-index: 40;
@@ -164,30 +168,20 @@
   min-width: 0;
 }
 .market-share-link {
-  background: #ebe4f4;
-  border-radius: 20px;
+  background: #f3edf8;
+  border-radius: 14px;
   overflow: hidden;
 }
 .market-share-toggle {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 10px;
   width: 100%;
   text-align: left;
-  padding: 16px;
-}
-.market-share-toggle > span {
-  display: grid;
-  gap: 4px;
-  min-width: 0;
-}
-.market-share-toggle strong {
-  font-size: 14px;
-}
-.market-share-toggle small {
-  color: var(--muted);
+  padding: 10px 14px;
   font-size: 12px;
+  color: var(--muted);
 }
 .market-share-link-body {
   display: grid;

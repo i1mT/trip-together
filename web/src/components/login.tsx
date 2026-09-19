@@ -240,7 +240,7 @@ export function Login({
                   disabled={busy}
                   onClick={onBrowseMarket}
                 >
-                  先看看行程市场
+                  先看看旅行攻略市场
                 </button>
               )}
             </div>

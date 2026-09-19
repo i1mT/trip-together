@@ -38,14 +38,14 @@ export function EmptyWorkspace({
               <span className="status-pill">尚未添加行程</span>
               <TravelSticker kind="luggage" />
               <h1>还没有行程</h1>
-              <p>创建自己的旅行计划，或去行程市场复制一份参考行程。</p>
+              <p>创建自己的旅行计划，或去旅行攻略市场复制一份参考行程。</p>
             </div>
             <div className="onboarding-ticket-actions">
               <button className="primary-button" onClick={onCreate}>
                 创建行程 <ArrowRight size={18} />
               </button>
               <button className="secondary-button" onClick={onMarket}>
-                逛逛行程市场 <ArrowRight size={18} />
+                逛逛旅行攻略市场 <ArrowRight size={18} />
               </button>
             </div>
           </article>

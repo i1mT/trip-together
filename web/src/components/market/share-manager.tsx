@@ -66,7 +66,7 @@ export function ShareManager({ tripId }: { tripId: string }) {
       await load();
       setRevoking(false);
       setNotice(
-        remove ? "已经取消公开分享" : "公开行程已经发布，可在行程市场查看",
+        remove ? "已经取消公开分享" : "公开行程已经发布，可在旅行攻略市场查看",
       );
     } catch (e) {
       setError((e as Error).message);
@@ -89,7 +89,7 @@ export function ShareManager({ tripId }: { tripId: string }) {
         <Globe size={21} />
         <span>
           <strong>分享我的行程攻略</strong>
-          <small>发布到行程市场，供别人预览和复制</small>
+          <small>发布到旅行攻略市场，供别人预览和复制</small>
         </span>
         <ChevronRight size={18} />
       </button>
@@ -123,11 +123,8 @@ export function ShareManager({ tripId }: { tripId: string }) {
                 aria-expanded={expanded}
                 onClick={() => setExpanded((v) => !v)}
               >
-                <span>
-                  <strong>这个行程已经公开</strong>
-                  <small>分享口令 {data.current.code}</small>
-                </span>
-                {expanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                <span>这个行程已经公开</span>
+                {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
               </button>
               {expanded && (
                 <div className="market-share-link-body">
@@ -138,7 +135,7 @@ export function ShareManager({ tripId }: { tripId: string }) {
                     value={data.current.code}
                   />
                   <small>
-                    告诉朋友这个口令，在行程市场搜索即可预览和复制，不会加入你的行程。
+                    告诉朋友这个口令，在旅行攻略市场搜索即可预览和复制，不会加入你的行程。
                   </small>
                   <button
                     type="button"
@@ -209,7 +206,10 @@ export function ShareManager({ tripId }: { tripId: string }) {
           ) : (
             <>
               <p className="market-privacy">
-                公开后，作者头像、昵称和介绍也会展示。任何人都能查看下方名称、日期、时间、地点与路线，并复制行程。请确认这些内容中没有私人信息。资料、同行成员、账本、电话、预订编号与备注不会公开。
+                公开后会展示在旅行攻略市场，任何人都能查看地点与路线，并复制行程。
+                <strong>
+                  资料、同行成员、账本、电话、预订编号与备注不会公开。
+                </strong>
               </p>
               {data?.snapshot ? (
                 <SnapshotView

@@ -1,42 +1,27 @@
-.toast-stack {
-  position: fixed;
-  z-index: 70;
-  top: max(14px, env(safe-area-inset-top));
-  left: 50%;
-  transform: translateX(-50%);
-  display: grid;
-  gap: 8px;
-  width: min(calc(100% - 32px), 420px);
+/* antd v6 message: centered paper card whose width follows the text */
+.ant-message {
+  --notification-top: 0px !important;
+  top: 0 !important;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   pointer-events: none;
 }
-.toast {
-  margin: 0;
+.ant-message .ant-message-notice {
+  width: fit-content;
+  max-width: min(86vw, 420px);
+  margin: 0 auto;
   padding: 11px 16px;
-  border-radius: 14px;
-  background: #332e3d;
-  color: #fff;
+  border-radius: 16px;
+  background: var(--paper);
+  color: var(--ink);
   font-size: 13px;
   line-height: 1.5;
-  text-align: center;
-  box-shadow: 0 10px 30px #29253126;
+  box-shadow:
+    0 2px 4px #3930440f,
+    0 8px 24px #39304414;
+}
+.ant-message .ant-message-notice-wrapper {
   overflow-wrap: anywhere;
-  animation: toast-in 0.18s ease-out;
-}
-.toast-error {
-  background: #963e47;
-}
-@keyframes toast-in {
-  from {
-    opacity: 0;
-    transform: translateY(-6px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .toast {
-    animation: none;
-  }
 }

@@ -13,7 +13,8 @@ import { Profile } from "./views/profile";
 import { DocumentPreview } from "./views/documents";
 import { NavigationDock } from "./navigation/dock";
 import { EmptyWorkspace } from "./navigation/empty-workspace";
-import { ToastProvider } from "./toast";
+import { App as AntApp, ConfigProvider } from "antd";
+import zhCN from "antd/locale/zh_CN";
 function savedTrip(memberId: string) {
   try {
     return localStorage.getItem(`active-trip:${memberId}`) || "";
@@ -28,9 +29,23 @@ function rememberTrip(memberId: string, id: string) {
 }
 export function AppShell() {
   return (
-    <ToastProvider>
-      <AppShellContent />
-    </ToastProvider>
+    <ConfigProvider
+      locale={zhCN}
+      theme={{
+        token: {
+          colorPrimary: "#9685b0",
+          motion: false,
+          borderRadius: 12,
+          controlHeight: 44,
+          fontSize: 15,
+          fontFamily: "inherit",
+        },
+      }}
+    >
+      <AntApp>
+        <AppShellContent />
+      </AntApp>
+    </ConfigProvider>
   );
 }
 function AppShellContent() {

@@ -13,12 +13,15 @@ import { resolve } from "node:path";
 import { assertPrivateBucket, cloudflare } from "./production/cloudflare.mjs";
 
 const root = resolve(import.meta.dirname, "..");
-let configPath = process.env.WRANGLER_CONFIG ?? "infra/wrangler.production.jsonc";
+let configPath =
+  process.env.WRANGLER_CONFIG ?? "infra/wrangler.production.jsonc";
 let fullConfigPath = resolve(root, configPath);
 
 // 如果是开源环境自动构建（没有 wrangler.production.jsonc 实体文件），根据公开模板与环境变量动态生成临时配置
 if (!existsSync(fullConfigPath)) {
-  console.log(`\n▶ [CI Deploy] 未找到 ${configPath}，检查是否为 Cloudflare CI 动态配置模式...`);
+  console.log(
+    `\n▶ [CI Deploy] 未找到 ${configPath}，检查是否为 Cloudflare CI 动态配置模式...`,
+  );
   const templatePath = resolve(root, "infra/wrangler.jsonc");
   if (!existsSync(templatePath)) {
     throw new Error("未找到基础模板 infra/wrangler.jsonc");
@@ -27,7 +30,8 @@ if (!existsSync(fullConfigPath)) {
   const baseConfig = JSON.parse(await readFile(templatePath, "utf8"));
 
   // 从环境变量中注入关键生产配置（如 CLOUDFLARE_ACCOUNT_ID, D1_DATABASE_ID 等）
-  const accountId = process.env.CLOUDFLARE_ACCOUNT_ID ?? process.env.CF_ACCOUNT_ID;
+  const accountId =
+    process.env.CLOUDFLARE_ACCOUNT_ID ?? process.env.CF_ACCOUNT_ID;
   const d1DatabaseId = process.env.D1_DATABASE_ID;
   const workerName = process.env.WORKER_NAME ?? "trip-public";
   const r2BucketName = process.env.R2_BUCKET_NAME ?? "trip-public-private";
@@ -55,9 +59,15 @@ if (!existsSync(fullConfigPath)) {
     APP_ENV: "production",
     EMAIL_FROM: emailFrom,
     // Analytics 相关非敏感配置支持从构建环境注入；缺省保持模板默认（开源用户默认关闭）
-    ...(process.env.ANALYTICS_ENABLED ? { ANALYTICS_ENABLED: process.env.ANALYTICS_ENABLED } : {}),
-    ...(process.env.ANALYTICS_HOSTNAME ? { ANALYTICS_HOSTNAME: process.env.ANALYTICS_HOSTNAME } : {}),
-    ...(process.env.OPENPANEL_CLIENT_ID ? { OPENPANEL_CLIENT_ID: process.env.OPENPANEL_CLIENT_ID } : {}),
+    ...(process.env.ANALYTICS_ENABLED
+      ? { ANALYTICS_ENABLED: process.env.ANALYTICS_ENABLED }
+      : {}),
+    ...(process.env.ANALYTICS_HOSTNAME
+      ? { ANALYTICS_HOSTNAME: process.env.ANALYTICS_HOSTNAME }
+      : {}),
+    ...(process.env.OPENPANEL_CLIENT_ID
+      ? { OPENPANEL_CLIENT_ID: process.env.OPENPANEL_CLIENT_ID }
+      : {}),
   };
   baseConfig.send_email = [
     {
@@ -92,7 +102,9 @@ const email = config.send_email?.find((binding) => binding.name === "EMAIL");
 if (
   config.vars?.APP_ENV !== "production" ||
   !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(config.vars?.EMAIL_FROM ?? "") ||
-  /@(?:example\.(?:com|test|invalid)|localhost)$/.test(config.vars.EMAIL_FROM) ||
+  /@(?:example\.(?:com|test|invalid)|localhost)$/.test(
+    config.vars.EMAIL_FROM,
+  ) ||
   !email?.allowed_sender_addresses?.includes(config.vars.EMAIL_FROM) ||
   email.destination_address ||
   email.allowed_destination_addresses
@@ -142,7 +154,11 @@ if (process.env.CLOUDFLARE_API_TOKEN && config.account_id) {
 }
 
 // 4. R2 私有桶安全复核（部署前）
-if (process.env.CLOUDFLARE_API_TOKEN && config.account_id && config.r2_buckets?.length) {
+if (
+  process.env.CLOUDFLARE_API_TOKEN &&
+  config.account_id &&
+  config.r2_buckets?.length
+) {
   console.log("▶ [CI Deploy] 验证 R2 存储桶私有访问权限...");
   assertPrivateBucket(config);
 }
@@ -156,7 +172,9 @@ function runWrangler(args, label) {
     { cwd: root, stdio: "inherit" },
   );
   if (result.status !== 0) {
-    console.error(`\n✗ [CI Deploy] ${label} 失败，中断发布！(退出码: ${result.status})`);
+    console.error(
+      `\n✗ [CI Deploy] ${label} 失败，中断发布！(退出码: ${result.status})`,
+    );
     process.exit(result.status ?? 1);
   }
 }
@@ -165,13 +183,20 @@ function runWrangler(args, label) {
 runWrangler(["deploy", "--dry-run"], "部署前 dry-run 检查");
 
 // 6. 执行 D1 数据库 Migration（与发版强制捆绑）
-runWrangler(["d1", "migrations", "apply", "DB", "--remote"], "D1 数据库远程 Migration");
+runWrangler(
+  ["d1", "migrations", "apply", "DB", "--remote"],
+  "D1 数据库远程 Migration",
+);
 
 // 7. 正式部署 Worker 与前端资源
 runWrangler(["deploy"], "正式部署 Worker & 静态前端");
 
 // 8. 部署后再次复核 R2 私有性
-if (process.env.CLOUDFLARE_API_TOKEN && config.account_id && config.r2_buckets?.length) {
+if (
+  process.env.CLOUDFLARE_API_TOKEN &&
+  config.account_id &&
+  config.r2_buckets?.length
+) {
   console.log("▶ [CI Deploy] 部署后再次复核 R2 存储桶私有权限...");
   assertPrivateBucket(config);
 }

@@ -6,7 +6,7 @@ export const placeSchema = z.object({
   latitude: z.number().min(-90).max(90),
   longitude: z.number().min(-180).max(180),
   countryCode: z.string().max(3).default(""),
-  provider: z.literal("geoapify"),
+  provider: z.enum(["geoapify", "amap"]),
 });
 export type Place = z.infer<typeof placeSchema>;
 export function mapLink(place: Place) {

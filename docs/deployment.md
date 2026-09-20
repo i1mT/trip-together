@@ -115,10 +115,10 @@ npx wrangler d1 time-travel info DB --config infra/wrangler.production.jsonc
 
 ## 地点搜索
 
-安排通过服务端调用 [Geoapify Geocoding](https://apidocs.geoapify.com/docs/geocoding/)，前端仅请求本站 `/api/places`，不依赖用户浏览器访问 Google。搜索需要登录，限制每个账号 15 分钟 120 次，8 秒超时，不使用 IP 推测位置。没有 Key 时搜索显示暂不可用，其余安排录入仍可使用。
+安排通过服务端调用 [高德 Web 服务 API](https://lbs.amap.com/api/webservice/guide/api/newpoisearch) 与 [Geoapify Geocoding](https://apidocs.geoapify.com/docs/geocoding/)，前端仅请求本站 `/api/places`，不依赖用户浏览器访问 Google。搜索需要登录，限制每个账号 15 分钟 120 次，8 秒超时，不使用 IP 推测位置。没有 Key 时搜索显示暂不可用，其余安排录入仍可使用。
 
-先按照完整文字搜索；没有匹配结果时，再使用同样关键词按城市名称查询。最多两次上游调用，共用 8 秒超时；已有匹配时不增加调用，服务错误仍然显示失败。结果最多 6 个，不默认限制国家或根据 IP 排序。
+关键词包含中文字符且按 POI 意图搜索时（安排编辑中的地点），服务端并行调用高德搜索POI 2.0（`restapi.amap.com/v5/place/text`）与 Geoapify，合并去重后高德结果排在前面：高德的国内商户、民宿和小店覆盖明显优于 OSM 系数据源，Geoapify 兜底高德不覆盖的海外地点。目的地选择按城市意图（`/places?mode=city`）仅调用 Geoapify，因为高德会把「东京」这类海外城市名模糊匹配到国内同名门店。关键词不含中文时直接走 Geoapify。Geoapify 先按完整文字搜索，没有匹配结果时再按城市名称查询。所有上游调用共用 8 秒超时。合并结果最多 6 个。高德故障时仍返回 Geoapify 结果，仅当两路都失败时显示搜索失败。
 
-在 Geoapify 创建项目后，本地将 `GEOAPIFY_API_KEY` 设置到忽略文件 `infra/.dev.vars`，重启预览；生产环境通过 `npx wrangler secret put GEOAPIFY_API_KEY --config infra/wrangler.production.jsonc` 配置，并将该名称加入生产配置 `secrets.required`。不要把值写入 vars、源码或前端。请求仅包含用户主动提交的地点关键词，不发送账号或行程信息。
+高德在控制台创建「Web 服务」类型 Key（不要开启数字签名），个人认证免费月配额 5,000 次。本地将 `AMAP_API_KEY` 与 `GEOAPIFY_API_KEY` 设置到忽略文件 `infra/.dev.vars`，重启预览；生产环境通过 `npx wrangler secret put AMAP_API_KEY --config infra/wrangler.production.jsonc` 配置，并将该名称加入生产配置 `secrets.required`。不要把值写入 vars、源码或前端。请求仅包含用户主动提交的地点关键词，不发送账号或行程信息。未配置高德 Key 时国内关键词也走 Geoapify，行为与旧版一致。
 
-用户确认候选地点后保存名称、地址、WGS84 经纬度和来源；旧文字地址仍然保留。数据署名显示 Geoapify / OpenStreetMap。不同地区与中文别名的覆盖存在差异，没有精确结果时可尝试城市名及当地名称，或稍后补充。导航使用 Apple Maps 坐标路线链接，旧文字地址使用搜索链接；不将 WGS84 坐标直接当作高德 GCJ-02 坐标使用。
+用户确认候选地点后保存名称、地址、WGS84 经纬度和来源（`provider` 为 `amap` 或 `geoapify`）；旧文字地址仍然保留。高德返回 GCJ-02 坐标，服务端在保存前转换为 WGS84（出境坐标不偏移，直接视为 WGS84），导航、展示与存储全程使用 WGS84，不将 GCJ-02 当作 WGS84 保存。数据署名按来源显示高德地图或 Geoapify / OpenStreetMap。不同地区与中文别名的覆盖存在差异，没有精确结果时可尝试城市名及当地名称，或稍后补充。导航使用 Apple Maps 坐标路线链接，旧文字地址使用搜索链接。

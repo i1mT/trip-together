@@ -7,12 +7,14 @@ export function PlacePicker({
   label,
   value,
   legacy,
+  mode,
   placeholder = "搜索城市、酒店、景点或机场",
   onChange,
 }: {
   label: string;
   value: Place | null;
   legacy?: string;
+  mode?: "poi" | "city";
   placeholder?: string;
   onChange: (place: Place | null) => void;
 }) {
@@ -38,7 +40,7 @@ export function PlacePicker({
     setSearched(false);
     try {
       const data = await api<{ places: Place[] }>(
-        `/places?q=${encodeURIComponent(query.trim())}`,
+        `/places?q=${encodeURIComponent(query.trim())}${mode ? `&mode=${mode}` : ""}`,
         { signal: controller.signal },
       );
       if (!controller.signal.aborted) {
@@ -150,17 +152,29 @@ export function PlacePicker({
       {(searched || value) && (
         <small className="place-attribution">
           地点数据：
-          <a href="https://www.geoapify.com/" target="_blank" rel="noreferrer">
-            Geoapify
-          </a>{" "}
-          /{" "}
-          <a
-            href="https://www.openstreetmap.org/copyright"
-            target="_blank"
-            rel="noreferrer"
-          >
-            OpenStreetMap
-          </a>
+          {value?.provider === "amap" ? (
+            <a href="https://www.amap.com/" target="_blank" rel="noreferrer">
+              高德地图
+            </a>
+          ) : (
+            <>
+              <a
+                href="https://www.geoapify.com/"
+                target="_blank"
+                rel="noreferrer"
+              >
+                Geoapify
+              </a>{" "}
+              /{" "}
+              <a
+                href="https://www.openstreetmap.org/copyright"
+                target="_blank"
+                rel="noreferrer"
+              >
+                OpenStreetMap
+              </a>
+            </>
+          )}
         </small>
       )}
     </section>

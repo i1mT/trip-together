@@ -60,6 +60,7 @@ export function DestinationPicker({
         <PlacePicker
           label="目的地"
           value={null}
+          mode="city"
           placeholder="搜索城市"
           onChange={add}
         />

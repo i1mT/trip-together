@@ -9,7 +9,8 @@
   "secrets": {
     "required": [
       "SESSION_SIGNING_KEY",
-      "GEOAPIFY_API_KEY"
+      "GEOAPIFY_API_KEY",
+      "AMAP_API_KEY"
     ]
   },
   "assets": {

@@ -124,3 +124,124 @@ test("地点无结果时按城市查询；已有匹配和请求失败均不额�
   );
   assert.equal(count, 1);
 });
+
+test("中文 POI 搜索并行合并高德与 Geoapify；city 模式与外文直接走 Geoapify", async () => {
+  const { findPlaces } = await import("../worker/places/provider");
+  const amapPoi = {
+    id: "B0K6ASO8ZD",
+    name: "Yoho·羊玉小院(潮州古城牌坊街店)",
+    address: "太平路牌坊街羊玉巷9号",
+    location: "116.649335,23.665522",
+    pname: "广东省",
+    cityname: "潮州市",
+    adcode: "445102",
+  };
+  const geoapifyPlace = {
+    place_id: "test-geo",
+    name: "Tokyo Tower",
+    formatted: "Tokyo Tower, Tokyo, Japan",
+    lat: 35.6586,
+    lon: 139.7454,
+    country_code: "jp",
+  };
+  const hosts: Record<string, unknown> = {
+    "restapi.amap.com": { status: "1", pois: [amapPoi] },
+    "api.geoapify.com": { results: [geoapifyPlace] },
+  };
+  const mock = (url: URL) => Response.json(hosts[url.hostname] ?? {});
+  // 中文 POI 查询：两路并行合并，高德在前；坐标从 GCJ-02 转回 WGS84。
+  const hit = await findPlaces(
+    "潮州市yoho羊玉小院",
+    "test-key",
+    mock,
+    "amap-key",
+  );
+  assert.equal(hit[0].provider, "amap");
+  assert.equal(hit[0].name, amapPoi.name);
+  assert.equal(hit[0].address, "广东省潮州市太平路牌坊街羊玉巷9号");
+  assert.equal(hit[0].countryCode, "cn");
+  assert.ok(hit[0].longitude < 116.649335, "GCJ-02 应转回 WGS84");
+  assert.equal(hit.length, 2);
+  assert.equal(hit[1].provider, "geoapify");
+  // 高德故障不影响 Geoapify 结果；仅当两路都失败时才抛错。
+  const fallbackOn = await findPlaces(
+    "西湖",
+    "test-key",
+    (url) =>
+      url.hostname === "restapi.amap.com"
+        ? Response.json({ status: "0", info: "DAILY_QUERY_OVER_LIMIT" })
+        : Response.json({ results: [geoapifyPlace] }),
+    "amap-key",
+  );
+  assert.equal(fallbackOn[0].provider, "geoapify");
+  await assert.rejects(() =>
+    findPlaces(
+      "西湖",
+      "test-key",
+      () => new Response(null, { status: 503 }),
+      "amap-key",
+    ),
+  );
+  // city 模式（目的地选择）：不调用高德，保持 Geoapify 城市查询行为。
+  let amapCalls = 0;
+  const cityMode = await findPlaces(
+    "东京",
+    "test-key",
+    (url) => {
+      if (url.hostname === "restapi.amap.com") amapCalls++;
+      return Response.json({ results: [geoapifyPlace] });
+    },
+    "amap-key",
+    "city",
+  );
+  assert.equal(amapCalls, 0);
+  assert.equal(cityMode[0].provider, "geoapify");
+  // 纯外文：不调用高德。
+  amapCalls = 0;
+  await findPlaces(
+    "Tokyo Tower",
+    "test-key",
+    (url) => {
+      if (url.hostname === "restapi.amap.com") amapCalls++;
+      return Response.json({ results: [geoapifyPlace] });
+    },
+    "amap-key",
+  );
+  assert.equal(amapCalls, 0);
+  // 无高德 key：中文关键词也走 Geoapify。
+  const noKey = await findPlaces("杭州", "test-key", () =>
+    Response.json({ results: [] }),
+  );
+  assert.equal(noKey.length, 0);
+});
+
+test("GCJ-02 转 WGS84：境内收敛在米级内，出境坐标原样返回", async () => {
+  const { gcj02ToWgs84, delta } = await import("../worker/places/coord");
+  const cases = [
+    { lon: 116.649335, lat: 23.665522 }, // 潮州
+    { lon: 120.15507, lat: 30.274085 }, // 杭州
+    { lon: 116.397428, lat: 39.90923 }, // 北京
+    { lon: 113.264385, lat: 23.129112 }, // 广州
+  ];
+  for (const { lon, lat } of cases) {
+    const wgs = gcj02ToWgs84(lon, lat);
+    assert.ok(
+      Math.abs(wgs.lon - lon) < 0.01,
+      "偏移应在 0.01 度（约 1 公里）内",
+    );
+    assert.ok(Math.abs(wgs.lat - lat) < 0.01);
+    // 往返收敛：对逆变换结果再做一次正向偏移应回到原 GCJ-02 点（亚米级）。
+    const d = delta(wgs.lon, wgs.lat);
+    assert.ok(Math.abs(wgs.lon + d.dLon - lon) < 0.00002);
+    assert.ok(Math.abs(wgs.lat + d.dLat - lat) < 0.00002);
+  }
+  // 出境坐标不偏移。
+  assert.deepEqual(gcj02ToWgs84(139.7454, 35.6586), {
+    lon: 139.7454,
+    lat: 35.6586,
+  });
+  assert.deepEqual(gcj02ToWgs84(2.2945, 48.8583), {
+    lon: 2.2945,
+    lat: 48.8583,
+  });
+});

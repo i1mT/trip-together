@@ -48,7 +48,8 @@ for (let index = 0; index < 256; index++) {
 }
 function crc32(buffer) {
   let value = 0xffffffff;
-  for (const byte of buffer) value = table[(value ^ byte) & 0xff] ^ (value >>> 8);
+  for (const byte of buffer)
+    value = table[(value ^ byte) & 0xff] ^ (value >>> 8);
   return (value ^ 0xffffffff) >>> 0;
 }
 // 固定时间戳（2026-01-01 00:00:00）让重复构建得到完全相同的字节。
@@ -58,7 +59,9 @@ const dosTime = 0,
   central = [];
 let offset = 0;
 for (const file of files) {
-  const name = Buffer.from(prefix + relative(source, file).split("\\").join("/")),
+  const name = Buffer.from(
+      prefix + relative(source, file).split("\\").join("/"),
+    ),
     content = readFileSync(file),
     deflated = deflateRawSync(content, { level: 9 }),
     crc = crc32(content),

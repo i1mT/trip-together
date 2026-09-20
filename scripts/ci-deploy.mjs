@@ -54,6 +54,10 @@ if (!existsSync(fullConfigPath)) {
     ...baseConfig.vars,
     APP_ENV: "production",
     EMAIL_FROM: emailFrom,
+    // Analytics 相关非敏感配置支持从构建环境注入；缺省保持模板默认（开源用户默认关闭）
+    ...(process.env.ANALYTICS_ENABLED ? { ANALYTICS_ENABLED: process.env.ANALYTICS_ENABLED } : {}),
+    ...(process.env.ANALYTICS_HOSTNAME ? { ANALYTICS_HOSTNAME: process.env.ANALYTICS_HOSTNAME } : {}),
+    ...(process.env.OPENPANEL_CLIENT_ID ? { OPENPANEL_CLIENT_ID: process.env.OPENPANEL_CLIENT_ID } : {}),
   };
   baseConfig.send_email = [
     {

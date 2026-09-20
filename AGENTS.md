@@ -2,6 +2,7 @@
 
 - 使用中文交流，使用完整、自然的语句；保留代码中的英文标识符。
 - 技术栈：Next.js、Tailwind CSS、Cloudflare Workers、D1、R2。先完成 Wrangler 本地成品，再进行线上发布。
+- 前端最低支持 iOS 15.5 Safari。根目录 package.json 的 browserslist 必须保留 `safari >= 15.4`（Next.js 16 默认按 safari 16.4 编译，会输出 iOS 15.5 无法解析的 class static block），`npm run build` 通过 scripts/check-browser-support.mjs 校验产物语法；不得为了提高压缩率删除该配置或跳过这项检查。
 - DESIGN.md 是设计规范的唯一来源。优先手机布局、单页切换和 iOS 风格底部导航。
 - 动态语言代码文件尽量不超过 400 行；每层目录文件尽量不超过 8 个。本地私人原件不进入通用版本。
 - 避免重复逻辑、循环依赖、过度设计和含义不清的代码。

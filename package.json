@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "npm run build && npm run preview",
-    "build": "next build web",
+    "build": "next build web && npm run check:browser",
+    "check:browser": "node scripts/check-browser-support.mjs",
     "preview": "wrangler dev --config infra/wrangler.jsonc --local --persist-to .local/travel-state --ip 0.0.0.0 --port 8790",
     "setup": "node scripts/setup.mjs",
     "typecheck": "tsc -p web/tsconfig.json --noEmit && tsc -p infra/tsconfig.json --noEmit",
@@ -55,5 +56,11 @@
   "homepage": "https://github.com/i1mT/trip-together#readme",
   "bugs": {
     "url": "https://github.com/i1mT/trip-together/issues"
-  }
+  },
+  "browserslist": [
+    "chrome >= 111",
+    "edge >= 111",
+    "firefox >= 111",
+    "safari >= 15.4"
+  ]
 }

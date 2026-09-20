@@ -160,6 +160,52 @@
   gap: 10px;
   margin-top: 28px;
 }
+.token-list {
+  display: grid;
+  gap: 10px;
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.token-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background: white;
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+  color: #a59aaf;
+}
+.token-row > div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  flex: 1;
+}
+.token-row strong {
+  font-size: 14px;
+  color: var(--ink);
+}
+.token-row small {
+  font-size: 11px;
+  color: #8d8298;
+}
+.token-row .icon-button {
+  color: #c0392b;
+}
+.token-confirm {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+.token-confirm .danger-button {
+  min-height: 38px;
+  margin: 0;
+  padding: 4px 14px;
+  font-size: 13px;
+}
 
 .member-gallery {
   display: grid;

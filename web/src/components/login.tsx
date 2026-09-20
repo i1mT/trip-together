@@ -14,9 +14,11 @@ const titles = {
 export function Login({
   onLogin,
   onBrowseMarket,
+  intro,
 }: {
   onLogin: () => Promise<void>;
   onBrowseMarket?: () => void;
+  intro?: React.ReactNode;
 }) {
   const [mode, setMode] = useState<Mode>("login");
   useEffect(() => {
@@ -108,6 +110,7 @@ export function Login({
             ? "使用原账号和密码绑定邮箱，保留已有行程与资料。"
             : "创建自己的行程，与同行成员共享安排和账本。"}
         </p>
+        {intro}
         <form className="editor-form" onSubmit={submit}>
           {mode === "migrate" && (
             <label>

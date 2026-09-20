@@ -30,12 +30,18 @@ export async function signSession(request: Request, env: Env, token: string) {
   return `${token}.${hex}`;
 }
 
-export async function verifiedSession(request: Request, env: Env) {
-  const cookie =
-    request.headers
-      .get("cookie")
-      ?.match(/(?:^|;\s*)travel_session=([^;]+)/)?.[1] ?? "";
-  const match = cookie.match(/^([a-f0-9]{64})\.([a-f0-9]{64})$/);
+export function bearerToken(request: Request) {
+  return (
+    request.headers.get("authorization")?.match(/^Bearer\s+(\S+)$/i)?.[1] ?? ""
+  );
+}
+
+export async function verifiedCredential(
+  request: Request,
+  env: Env,
+  value: string,
+) {
+  const match = value.match(/^([a-f0-9]{64})\.([a-f0-9]{64})$/);
   if (!match) return null;
   const signature = Uint8Array.from(match[2].match(/../g)!, (byte) =>
     parseInt(byte, 16),
@@ -47,4 +53,14 @@ export async function verifiedSession(request: Request, env: Env) {
     payload(request, match[1]),
   );
   return valid ? match[1] : null;
+}
+
+export async function verifiedSession(request: Request, env: Env) {
+  return verifiedCredential(
+    request,
+    env,
+    request.headers
+      .get("cookie")
+      ?.match(/(?:^|;\s*)travel_session=([^;]+)/)?.[1] ?? "",
+  );
 }

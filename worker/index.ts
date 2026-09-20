@@ -7,6 +7,15 @@ import { summaryResponse } from "./analytics/summary";
 import { trackResponse } from "./analytics/track";
 import { searchPlaces } from "./places/search";
 import { sendCode, verificationRequired } from "./security/email";
+import {
+  deviceCode,
+  deviceLookup,
+  deviceExchange,
+  deviceApprove,
+  deviceDeny,
+} from "./security/device";
+import { bearerToken } from "./security/session";
+import { listApiTokens, revokeApiToken } from "./accounts/tokens";
 import { HttpError, json, sameOrigin, secure } from "./http";
 import {
   identity,
@@ -37,7 +46,12 @@ export default {
           r.headers.set("Cache-Control", "no-store");
         return r;
       }
-      if (!["GET", "HEAD"].includes(method)) sameOrigin(request);
+      // 浏览器请求始终校验来源；只有不带 Cookie 的令牌请求可以跳过，脚本不会自动携带凭据。
+      if (
+        !["GET", "HEAD"].includes(method) &&
+        !(bearerToken(request) && !request.headers.get("cookie"))
+      )
+        sameOrigin(request);
       if (path === "/api/analytics/config" && method === "GET")
         return secure(json({ enabled: Boolean(analyticsConfig(env)) }));
       if (path === "/api/analytics/summary" && method === "GET")
@@ -57,6 +71,12 @@ export default {
             emailVerificationRequired: verificationRequired(request, env),
           }),
         );
+      if (path === "/api/device" && method === "GET")
+        return secure(await deviceLookup(request, env));
+      if (path === "/api/device/code" && method === "POST")
+        return secure(await deviceCode(request, env));
+      if (path === "/api/device/token" && method === "POST")
+        return secure(await deviceExchange(request, env));
       if (method === "POST") {
         if (path === "/api/email-code")
           return secure(await sendCode(request, env));
@@ -93,6 +113,14 @@ export default {
         r = await createTrip(request, env, memberId);
       else if (path === "/api/join" && method === "POST")
         r = await join(request, env, memberId);
+      else if (path === "/api/device/approve" && method === "POST")
+        r = await deviceApprove(request, env, memberId);
+      else if (path === "/api/device/deny" && method === "POST")
+        r = await deviceDeny(request, env, memberId);
+      else if (path === "/api/api-tokens" && method === "GET")
+        r = await listApiTokens(env, memberId);
+      else if (/^\/api\/api-tokens\/[^/]+$/.test(path) && method === "DELETE")
+        r = await revokeApiToken(env, memberId, path.split("/").at(-1)!);
       else if (path.startsWith("/api/trips/"))
         r = await tripRouter(request, env, memberId, path.slice(11).split("/"));
       else if (

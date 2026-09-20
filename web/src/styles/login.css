@@ -105,3 +105,35 @@
 .login-form > .form-actions {
   margin: 16px 0 0;
 }
+.device-code {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 8px;
+  margin: 0 0 26px;
+  font-size: 13px;
+  color: #7f748b;
+}
+.device-pending {
+  margin: -20px 0 18px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #7f748b;
+  text-align: center;
+}
+.device-code b {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: 3px;
+  color: var(--ink);
+}
+.login-form > .device-code + .muted {
+  margin-bottom: 24px;
+}
+.device-note {
+  margin: 22px 0 0;
+  font-size: 12px;
+  line-height: 1.6;
+  color: #8d8298;
+  text-align: center;
+}

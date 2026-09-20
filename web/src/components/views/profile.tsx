@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import type { TripData, TripDocument } from "@/lib/models";
 import { PersonalDocuments } from "../profile/personal-documents";
+import { ApiTokens } from "../profile/api-tokens";
 import { ProfileEditor, PasswordEditor } from "../account/profile-editor";
 import { Avatar } from "../avatar";
 import { SectionTitle, Sheet, SheetFooter } from "../ui";
@@ -30,7 +31,8 @@ export function Profile({
   onDocument: (doc: TripDocument) => void;
 }) {
   const [editing, setEditing] = useState(false),
-    [passwordOpen, setPasswordOpen] = useState(false);
+    [passwordOpen, setPasswordOpen] = useState(false),
+    [tokensOpen, setTokensOpen] = useState(false);
   const [visible, setVisible] = useState(false),
     [error, setError] = useState(""),
     [copied, setCopied] = useState(false),
@@ -80,6 +82,7 @@ export function Profile({
           onClose={() => setPasswordOpen(false)}
         />
       )}
+      {tokensOpen && <ApiTokens onClose={() => setTokensOpen(false)} />}
       {data.trip && data.members.length > 2 && (
         <>
           <SectionTitle>
@@ -158,6 +161,12 @@ export function Profile({
           onClick={() => setPasswordOpen(true)}
         >
           修改密码
+        </button>
+        <button
+          className="secondary-button w-full"
+          onClick={() => setTokensOpen(true)}
+        >
+          已授权的设备
         </button>
         <button
           className="danger-button w-full"

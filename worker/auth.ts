@@ -1,7 +1,13 @@
 import { z } from "zod";
 import { body, HttpError, json } from "./http";
-import { signSession, verifiedSession } from "./security/session";
+import {
+  signSession,
+  verifiedSession,
+  verifiedCredential,
+  bearerToken,
+} from "./security/session";
 import { sha, randomToken, passwordHash, equal } from "./accounts/password";
+import { apiTokenIdentity } from "./accounts/tokens";
 import { rateLimit } from "./security/rate-limit";
 export { rateLimit } from "./security/rate-limit";
 import { emailAddress, consumeCode } from "./security/email";
@@ -15,13 +21,15 @@ function cookie(request: Request, value: string, age: number) {
   return `travel_session=${value}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${age}${new URL(request.url).protocol === "https:" ? "; Secure" : ""}`;
 }
 export async function identity(request: Request, env: Env) {
-  const token = await verifiedSession(request, env);
-  if (!token) return null;
-  return env.DB.prepare(
-    "SELECT member_id FROM sessions WHERE token_hash=? AND expires_at>?",
-  )
-    .bind(await sha(token), Date.now())
-    .first<string>("member_id");
+  const session = await verifiedSession(request, env);
+  if (session)
+    return env.DB.prepare(
+      "SELECT member_id FROM sessions WHERE token_hash=? AND expires_at>?",
+    )
+      .bind(await sha(session), Date.now())
+      .first<string>("member_id");
+  const token = await verifiedCredential(request, env, bearerToken(request));
+  return token ? apiTokenIdentity(env, token) : null;
 }
 async function session(
   request: Request,
@@ -164,10 +172,17 @@ export async function migrateAccount(request: Request, env: Env) {
   return session(request, env, member.id);
 }
 export async function logout(request: Request, env: Env) {
-  const token = await verifiedSession(request, env);
-  if (token)
-    await env.DB.prepare("DELETE FROM sessions WHERE token_hash=?")
-      .bind(await sha(token))
-      .run();
+  const session = await verifiedSession(request, env),
+    token =
+      session ||
+      (await verifiedCredential(request, env, bearerToken(request))) ||
+      "";
+  if (token) {
+    const hash = await sha(token);
+    await env.DB.batch([
+      env.DB.prepare("DELETE FROM sessions WHERE token_hash=?").bind(hash),
+      env.DB.prepare("DELETE FROM api_tokens WHERE token_hash=?").bind(hash),
+    ]);
+  }
   return json({ ok: true }, 200, { "Set-Cookie": cookie(request, "", 0) });
 }

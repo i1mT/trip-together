@@ -9,6 +9,7 @@ import { localDate, selectEvents } from "@/lib/time";
 import { currencyLabel, money, splitAmount } from "@/lib/money";
 import { api } from "@/lib/api";
 import { SheetForm, SheetFooter, Sheet } from "./ui";
+import { DateTimeWheelField } from "./editors/fields";
 import { useToast } from "./toast";
 export function ExpenseEditor({
   expense,
@@ -171,15 +172,12 @@ export function ExpenseEditor({
               disabled={busy}
             />
           </div>
-          <label>
-            支付日期
-            <input
-              type="date"
-              required
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-            />
-          </label>
+          <DateTimeWheelField
+            label="支付日期"
+            mode="date"
+            value={date}
+            onChange={setDate}
+          />
         </div>
         <fieldset>
           <legend>

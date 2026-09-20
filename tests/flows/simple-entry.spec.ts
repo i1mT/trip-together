@@ -20,7 +20,7 @@ test("活动只需名称和日期；住宿、上传关联、头像与昵称保�
   await page.screenshot({ path: `.local/event-step-one-${browserName}.png` });
   await page.getByLabel("活动名称").fill("公园散步");
   await page.getByRole("button", { name: "下一步", exact: true }).click();
-  await expect(page.getByLabel("开始时间", { exact: true })).toHaveValue(
+  await expect(page.getByLabel("开始时间", { exact: true })).toContainText(
     "2030-06-02",
   );
   await page.getByRole("button", { name: "上一步", exact: true }).click();
@@ -237,8 +237,8 @@ test("目的地搜索、多城市保存和跨时区航班时间", async ({
   await page.getByLabel("搜索目的地", { exact: true }).fill("曼谷");
   await page.getByRole("button", { name: "搜索目的地结果" }).click();
   await page.getByRole("button", { name: /曼谷/ }).first().click();
-  await page.getByLabel("出发日期", { exact: true }).fill("2030-06-01");
-  await page.getByLabel("返回日期", { exact: true }).fill("2030-06-07");
+  await chooseDate(page, "出发日期", "2030-06-01");
+  await chooseDate(page, "返回日期", "2030-06-07");
   await expect(
     page.getByText("使用日元 · 东京 · 日本", { exact: true }),
   ).toBeVisible();

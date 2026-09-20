@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { Client, createTrip, eventInput } from "../support/api";
+import { chooseDate } from "../support/event-controls";
 test("手机公开发布、匿名预览、登录返回并复制为独立行程", async ({
   page,
   browser,
@@ -82,7 +83,7 @@ test("手机公开发布、匿名预览、登录返回并复制为独立行程",
   await preview
     .getByRole("button", { name: "复制为我的行程", exact: true })
     .click();
-  await preview.getByLabel("我的出发日期").fill("2030-06-05");
+  await chooseDate(preview, "我的出发日期", "2030-06-05");
   await preview.route(
     "**/api/market/*/copy",
     async (route) => {
@@ -117,7 +118,7 @@ test("手机公开发布、匿名预览、登录返回并复制为独立行程",
   await preview
     .getByRole("button", { name: "复制为我的行程", exact: true })
     .click();
-  await expect(preview.getByLabel("我的出发日期")).toHaveValue("2030-06-05");
+  await expect(preview.getByLabel("我的出发日期")).toContainText("2030-06-05");
   await preview.route(
     "**/api/market/*/copy",
     async (route) => {

@@ -53,8 +53,8 @@ test("四步录入保留草稿、分钟时间与浮层选择、地点搜索和�
   await page.screenshot({ path: `.local/wizard-time-${browserName}.png` });
   await page.getByRole("switch", { name: "时间段", exact: true }).click();
   await page.getByRole("switch", { name: "时间段", exact: true }).click();
-  await expect(page.getByLabel("结束时间", { exact: true })).toHaveValue(
-    "2030-06-01 10:42",
+  await expect(page.getByLabel("结束时间", { exact: true }).locator("..")).toHaveText(
+    /2030-06-01 10:42/,
   );
   await next();
   await page.getByLabel("搜索地点", { exact: true }).fill("巴黎 铁塔");
@@ -110,7 +110,7 @@ test("四步录入保留草稿、分钟时间与浮层选择、地点搜索和�
     await page.getByRole("button", { name: "上一步", exact: true }).click();
   await expect(page.getByLabel("活动名称")).toHaveValue("午后参观");
   await next();
-  await expect(page.getByLabel("开始时间", { exact: true })).toHaveValue(
+  await expect(page.getByLabel("开始时间", { exact: true })).toContainText(
     "2030-06-01 09:17",
   );
   await next();

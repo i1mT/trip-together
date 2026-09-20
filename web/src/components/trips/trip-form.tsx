@@ -12,7 +12,12 @@ import {
 } from "../../../../shared/travel-options";
 import { SheetForm, SheetFooter, Sheet } from "../ui";
 import { AiGuideEntry, AiGuideSheet } from "../ai-guide";
-import { Field, ZoneField, CurrencyField } from "../editors/fields";
+import {
+  CurrencyField,
+  DateTimeWheelField,
+  Field,
+  ZoneField,
+} from "../editors/fields";
 import { DestinationPicker } from "./destination-picker";
 import { useToast } from "../toast";
 export function TripForm({
@@ -152,11 +157,10 @@ export function TripForm({
         <SheetForm className="editor-form" onSubmit={save}>
           <DestinationPicker value={places} onChange={changePlaces} />
           <div className="form-grid">
-            <Field
+            <DateTimeWheelField
               label="出发日期"
-              type="date"
+              mode="date"
               value={v.start_date}
-              required
               onChange={(start_date) =>
                 setV({
                   ...v,
@@ -165,12 +169,11 @@ export function TripForm({
                 })
               }
             />
-            <Field
+            <DateTimeWheelField
               label="返回日期"
-              type="date"
+              mode="date"
               value={v.end_date}
               min={v.start_date}
-              required
               onChange={(x) => change("end_date", x)}
             />
           </div>

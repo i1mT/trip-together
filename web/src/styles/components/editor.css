@@ -443,3 +443,84 @@ button:focus-visible {
   font-size: 12px;
   padding: 8px;
 }
+
+/* 滚轮式日期/时间选择字段:输入框外观与其他表单控件一致。 */
+.wheel-field {
+  display: grid;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 650;
+  min-width: 0;
+}
+.wheel-field-input {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 46px;
+  border: 1px solid #e8e4eb;
+  border-radius: 14px;
+  padding: 12px;
+  background: white;
+  color: var(--ink);
+  font-size: 16px;
+  font-weight: 400;
+  text-align: left;
+  cursor: pointer;
+  user-select: none;
+}
+.wheel-field-input:focus-visible {
+  outline: 2px solid var(--color-accent-400);
+  outline-offset: 1px;
+}
+.wheel-field-empty {
+  color: var(--muted);
+}
+.wheel-field-input[aria-disabled="true"] {
+  opacity: 0.55;
+  cursor: default;
+}
+.wheel-field-clear {
+  position: absolute;
+  right: 10px;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #c9c2d1;
+  color: white;
+  font-size: 16px;
+  line-height: 1;
+}
+/* antd-mobile 弹层适配项目设计语言:紫主色、圆角、层级高过 sheet。 */
+.adm-picker {
+  --adm-color-primary: #6c4c96;
+  --adm-color-text: var(--ink, #241f2e);
+  --adm-font-family: inherit;
+}
+.adm-picker > .adm-picker-body {
+  font-size: 17px;
+}
+.adm-picker > .adm-picker-header {
+  font-size: 15px;
+}
+.adm-picker > .adm-picker-header > .adm-picker-header-button {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--accent);
+}
+.adm-picker-view {
+  --adm-picker-view-mask-background: linear-gradient(
+    180deg,
+    rgba(246, 245, 243, 0.95),
+    rgba(246, 245, 243, 0.4)
+  );
+}
+.adm-picker > .adm-picker-body .adm-picker-view-column-item {
+  color: #8d8798;
+}
+.adm-picker > .adm-picker-body .adm-picker-view-column-item-active {
+  color: var(--ink, #241f2e);
+  font-weight: 600;
+}

@@ -7,6 +7,13 @@ import {
 } from "../../../../shared/travel-options";
 import { useId, useState } from "react";
 import { Select } from "antd";
+import { DatePicker } from "antd-mobile";
+import dayjs from "dayjs";
+// Radix sheet 是 modal:body 下其他元素的指针事件会被禁用,
+// 滚轮弹层必须挂进最近的 .sheet 才能交互(无 sheet 时挂 body)。
+function nearestSheet() {
+  return (document.querySelector(".sheet") ?? document.body) as HTMLElement;
+}
 export function Field({
   label,
   value,
@@ -119,6 +126,100 @@ export function CurrencyField({
           value: c,
           label: currencyNames[c],
         }))}
+      />
+    </label>
+  );
+}
+// 滚轮式日期/时间选择:只读输入框打开底部弹层,滚轮选完点「确定」提交。
+// value 为空字符串表示未选择(如"时间待定"),用 placeholder 展示。
+export function DateTimeWheelField({
+  label,
+  value,
+  mode,
+  min,
+  max,
+  disabled = false,
+  placeholder = "请选择",
+  onClear,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  mode: "date" | "datetime";
+  min?: string;
+  max?: string;
+  disabled?: boolean;
+  placeholder?: string;
+  onClear?: () => void;
+  onChange: (v: string) => void;
+}) {
+  const [visible, setVisible] = useState(false);
+  const format = mode === "datetime" ? "YYYY-MM-DD HH:mm" : "YYYY-MM-DD";
+  const precision =
+    mode === "datetime" ? ("minute" as const) : ("day" as const);
+  const current = value ? dayjs(value) : undefined;
+  const now = dayjs();
+  const boundary = (text: string | undefined, fallback: dayjs.Dayjs) => {
+    const parsed = text ? dayjs(text) : fallback;
+    return parsed.isValid() ? parsed.toDate() : fallback.toDate();
+  };
+  return (
+    <label className="wheel-field">
+      {label}
+      <span
+        role="button"
+        tabIndex={0}
+        aria-label={label}
+        aria-haspopup="dialog"
+        className={`wheel-field-input${value ? "" : " wheel-field-empty"}`}
+        aria-disabled={disabled || undefined}
+        onClick={() => !disabled && setVisible(true)}
+        onKeyDown={(e) => {
+          if (!disabled && (e.key === "Enter" || e.key === " ")) {
+            e.preventDefault();
+            setVisible(true);
+          }
+        }}
+      >
+        {value || placeholder}
+        {value && onClear && !disabled && (
+          <span
+            role="button"
+            tabIndex={-1}
+            aria-label={`清除${label}`}
+            className="wheel-field-clear"
+            onClick={(e) => {
+              e.stopPropagation();
+              onClear();
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                e.stopPropagation();
+                onClear();
+              }
+            }}
+          >
+            ×
+          </span>
+        )}
+      </span>
+      <DatePicker
+        visible={visible}
+        onClose={() => setVisible(false)}
+        onConfirm={(date) => {
+          onChange(dayjs(date).format(format));
+          setVisible(false);
+        }}
+        getContainer={nearestSheet}
+        value={current?.toDate()}
+        defaultValue={current?.toDate() ?? now.toDate()}
+        min={boundary(min, now.subtract(10, "year"))}
+        max={boundary(max, now.add(15, "year"))}
+        precision={precision}
+        title={`选择${label}`}
+        cancelText="取消"
+        confirmText="确定"
       />
     </label>
   );

@@ -4,6 +4,7 @@ import { ArrowLeft, ArrowRight, Search } from "lucide-react";
 import type { MarketCard, PublicItinerary } from "../../../../shared/market";
 import { api, ApiError } from "@/lib/api";
 import { Sheet, SheetForm, SheetFooter } from "../ui";
+import { DateTimeWheelField } from "../editors/fields";
 import { MarketAuthor } from "./author";
 import { SnapshotView } from "./snapshot-view";
 import { EmptyState } from "../empty-state";
@@ -303,17 +304,13 @@ export function Market({
       >
         <SheetForm className="editor-form" onSubmit={copy}>
           <p>会创建独立行程。原行程之后的修改不会影响你的安排。</p>
-          <label>
-            我的出发日期
-            <input
-              aria-label="我的出发日期"
-              type="date"
-              required
-              value={date}
-              disabled={busy || attempted || Boolean(copiedId)}
-              onChange={(e) => setDate(e.target.value)}
-            />
-          </label>
+          <DateTimeWheelField
+            label="我的出发日期"
+            mode="date"
+            value={date}
+            disabled={busy || attempted || Boolean(copiedId)}
+            onChange={setDate}
+          />
           <small>
             全部安排按日期整体调整，保留各地当地时间；机票、住宿等需要自行重新预订。
           </small>

@@ -1,6 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { Client, createTrip, png, tripInput } from "../support/api";
 import { mkdir } from "node:fs/promises";
+import { chooseDate } from "../support/event-controls";
 test("从注册到行程、文件、账本、证件和重新登录", async ({
   page,
   browserName,
@@ -20,8 +21,8 @@ test("从注册到行程、文件、账本、证件和重新登录", async ({
   await page
     .getByLabel("行程名称（选填）", { exact: true })
     .fill("周末城市旅行");
-  await page.getByLabel("出发日期", { exact: true }).fill("2030-06-01");
-  await page.getByLabel("返回日期", { exact: true }).fill("2030-06-10");
+  await chooseDate(page, "出发日期", "2030-06-01");
+  await chooseDate(page, "返回日期", "2030-06-10");
   await page.getByLabel("搜索目的地", { exact: true }).fill("巴黎");
   await page.getByRole("button", { name: "搜索目的地结果" }).click();
   await page.getByRole("button", { name: /巴黎/ }).first().click();

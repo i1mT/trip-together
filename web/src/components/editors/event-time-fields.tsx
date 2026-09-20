@@ -1,10 +1,10 @@
 "use client";
 import { useId } from "react";
-import { ConfigProvider, DatePicker, Select, Switch } from "antd";
+import { ConfigProvider, Select, Switch } from "antd";
 import zhCN from "antd/locale/zh_CN";
-import dayjs from "dayjs";
 import { zonedChoices } from "@/lib/zoned-input";
 import { destinations, readableZone } from "../../../../shared/travel-options";
+import { DateTimeWheelField } from "./fields";
 import type { Timing } from "./event/timing";
 export { resolveLocal, type Timing } from "./event/timing";
 function RepeatedTime({
@@ -75,9 +75,7 @@ export function EventTimeFields({
       ...(key === "startTime" ? { timeMode: value ? "timed" : "date" } : {}),
     });
   }
-  // 日期与时间合并为一个控件：时间待定时只显示日期，确认后显示完整时分。
   const timed = v.timeMode === "timed";
-  const format = timed ? "YYYY-MM-DD HH:mm" : "YYYY-MM-DD";
   const row = (end: boolean) => {
     const label = end
       ? stay
@@ -94,35 +92,34 @@ export function EventTimeFields({
     const time = end ? v.endTime : v.startTime;
     const zoneLabel = end ? "到达地当地时间" : "当地时间";
     const key = end ? "endTime" : "startTime";
+    const display = timed && time ? `${date} ${time}` : date;
     return (
       <div className="time-controls">
         <div className="time-control">
-          <label htmlFor={`${id}-${end}`}>{label}</label>
-          <DatePicker
-            id={`${id}-${end}`}
-            aria-label={label}
-            showTime={{ format: "HH:mm" }}
-            format={format}
-            inputReadOnly
-            needConfirm
-            showNow={false}
+          <DateTimeWheelField
+            label={label}
+            mode="datetime"
+            value={display}
             placeholder="时间待定"
-            value={dayjs(`${date}T${timed && time ? time : "00:00"}`)}
-            onChange={(value) => {
-              if (!value) {
-                // 清空只去掉时间，日期保留，回到时间待定。
-                onChange({
-                  ...v,
-                  [key]: "",
-                  timeMode: "date",
-                  ...(end ? { lastChoice: "" } : { firstChoice: "" }),
-                });
-                return;
-              }
-              const nextDate = value.format("YYYY-MM-DD");
-              const nextTime = value.format("HH:mm");
-              // 时间待定时只改日期（时分保持默认 00:00）不引入时间，保持待定。
-              const staysDate = !timed && nextTime === "00:00" && !time;
+            min={`${v.date}T00:00`}
+            max={end ? undefined : "2099-12-31T23:59"}
+            onClear={
+              timed
+                ? () =>
+                    onChange({
+                      ...v,
+                      [key]: "",
+                      timeMode: "date",
+                      ...(end ? { lastChoice: "" } : { firstChoice: "" }),
+                    })
+                : undefined
+            }
+            onChange={(next) => {
+              const spaceAt = next.indexOf(" ");
+              const nextDate = spaceAt > 0 ? next.slice(0, spaceAt) : next;
+              const nextTime = spaceAt > 0 ? next.slice(spaceAt + 1) : "";
+              // 时间待定时选了整点 00:00 视为只改日期,不引入时间。
+              const staysDate = !timed && nextTime === "00:00";
               onChange({
                 ...v,
                 ...(end
@@ -194,7 +191,7 @@ export function EventTimeFields({
         </div>
         {v.range && row(true)}
         <p className="muted time-help">
-          时间待定时只记录日期；在面板中选定日期和时分并确认后即记录完整时间，清空输入框可回到时间待定。
+          时间待定时只记录日期；选择年月日和时分并确定后记录完整时间，清除按钮可回到时间待定。
         </p>
         {timed && (
           <>

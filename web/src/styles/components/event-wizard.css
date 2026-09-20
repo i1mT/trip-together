@@ -159,6 +159,33 @@
     border-radius: 0 0 28px 28px;
   }
 }
+/* 手机上日期与时间面板并排放不下（约 537px 宽），堆叠显示并限制在视口内。 */
+@media (max-width: 599px) {
+  .event-wizard .ant-picker-panel {
+    width: calc(100vw - 24px);
+    max-width: 343px;
+  }
+  .event-wizard .ant-picker-datetime-panel {
+    display: block;
+  }
+  .event-wizard .ant-picker-datetime-panel .ant-picker-date-panel {
+    width: 100%;
+  }
+  .event-wizard .ant-picker-datetime-panel .ant-picker-time-panel {
+    display: flex;
+    width: 100%;
+    padding: 8px 0;
+    border-top: 1px solid var(--line);
+    border-inline-start: 0;
+  }
+  .event-wizard .ant-picker-time-panel-column {
+    flex: 1;
+    width: auto;
+  }
+  .event-wizard .ant-picker-time-panel > .ant-picker-time-panel-header {
+    width: 100%;
+  }
+}
 .place-search-spinner {
   animation: place-search-spin 0.8s linear infinite;
 }

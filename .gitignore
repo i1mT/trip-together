@@ -14,6 +14,9 @@ assets/
 info.md
 infra/wrangler.production.jsonc
 release/
+dist/
+infra/dist/
+.claude/launch.json
 
 .env*
 !.env.example

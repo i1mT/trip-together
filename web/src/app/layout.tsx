@@ -11,6 +11,10 @@ export const metadata: Metadata = {
     title: "旅行计划",
   },
   manifest: "/manifest.webmanifest",
+  icons: {
+    icon: [{ url: "/favicon-32.png", type: "image/png", sizes: "32x32" }],
+    apple: "/apple-touch-icon.png",
+  },
 };
 export const viewport: Viewport = {
   width: "device-width",

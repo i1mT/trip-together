@@ -1,0 +1,1 @@
+This folder contains the built output assets for the worker "trip-public" generated at 2026-09-20T09:37:45.187Z.

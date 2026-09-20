@@ -1,4 +1,4 @@
-import { chooseTime, chooseZone } from "../support/event-controls";
+import { chooseDate, chooseTime, chooseZone } from "../support/event-controls";
 import { test, expect } from "@playwright/test";
 import { Client, createTrip, png } from "../support/api";
 async function login(page: import("@playwright/test").Page, account: Client) {
@@ -20,10 +20,9 @@ test("活动只需名称和日期；住宿、上传关联、头像与昵称保�
   await page.screenshot({ path: `.local/event-step-one-${browserName}.png` });
   await page.getByLabel("活动名称").fill("公园散步");
   await page.getByRole("button", { name: "下一步", exact: true }).click();
-  await expect(page.getByLabel("日期", { exact: true })).toHaveValue(
+  await expect(page.getByLabel("开始时间", { exact: true })).toHaveValue(
     "2030-06-02",
   );
-  await expect(page.getByLabel("开始时间", { exact: true })).toHaveValue("");
   await page.getByRole("button", { name: "上一步", exact: true }).click();
   await expect(page.getByLabel("活动名称")).toHaveValue("公园散步");
   await page.getByRole("button", { name: "关闭", exact: true }).click();
@@ -57,7 +56,7 @@ test("活动只需名称和日期；住宿、上传关联、头像与昵称保�
   await page.getByLabel("酒店名称").fill("湖边酒店");
   await page.getByRole("button", { name: "下一步", exact: true }).click();
   await page.getByRole("switch", { name: "时间段" }).click();
-  await page.getByLabel("退房日期").fill("2030-06-04");
+  await chooseDate(page, "退房时间", "2030-06-04");
   for (let i = 0; i < 2; i++)
     await page.getByRole("button", { name: "下一步", exact: true }).click();
   await page.getByRole("button", { name: "上传并关联资料" }).click();

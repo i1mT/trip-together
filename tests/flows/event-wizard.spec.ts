@@ -54,7 +54,7 @@ test("四步录入保留草稿、分钟时间与浮层选择、地点搜索和�
   await page.getByRole("switch", { name: "时间段", exact: true }).click();
   await page.getByRole("switch", { name: "时间段", exact: true }).click();
   await expect(page.getByLabel("结束时间", { exact: true })).toHaveValue(
-    "10:42",
+    "2030-06-01 10:42",
   );
   await next();
   await page.getByLabel("搜索地点", { exact: true }).fill("巴黎 铁塔");
@@ -111,7 +111,7 @@ test("四步录入保留草稿、分钟时间与浮层选择、地点搜索和�
   await expect(page.getByLabel("活动名称")).toHaveValue("午后参观");
   await next();
   await expect(page.getByLabel("开始时间", { exact: true })).toHaveValue(
-    "09:17",
+    "2030-06-01 09:17",
   );
   await next();
   await expect(page.getByText("埃菲尔铁塔", { exact: true })).toBeVisible();

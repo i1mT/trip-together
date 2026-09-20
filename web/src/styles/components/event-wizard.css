@@ -27,7 +27,7 @@
 }
 .time-controls {
   display: grid;
-  grid-template-columns: minmax(105px, 0.8fr) minmax(0, 1.2fr);
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
   gap: 12px;
 }
 .time-control {

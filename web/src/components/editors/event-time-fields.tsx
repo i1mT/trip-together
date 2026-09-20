@@ -1,9 +1,8 @@
 "use client";
 import { useId } from "react";
-import { ConfigProvider, Select, Switch, TimePicker } from "antd";
+import { ConfigProvider, DatePicker, Select, Switch } from "antd";
 import zhCN from "antd/locale/zh_CN";
 import dayjs from "dayjs";
-import { Field } from "./fields";
 import { zonedChoices } from "@/lib/zoned-input";
 import { destinations, readableZone } from "../../../../shared/travel-options";
 import type { Timing } from "./event/timing";
@@ -76,6 +75,9 @@ export function EventTimeFields({
       ...(key === "startTime" ? { timeMode: value ? "timed" : "date" } : {}),
     });
   }
+  // 日期与时间合并为一个控件：时间待定时只显示日期，确认后显示完整时分。
+  const timed = v.timeMode === "timed";
+  const format = timed ? "YYYY-MM-DD HH:mm" : "YYYY-MM-DD";
   const row = (end: boolean) => {
     const label = end
       ? stay
@@ -88,25 +90,52 @@ export function EventTimeFields({
         : flight
           ? "起飞时间"
           : "开始时间";
+    const date = end ? v.endDate : v.date;
     const time = end ? v.endTime : v.startTime;
     const zoneLabel = end ? "到达地当地时间" : "当地时间";
+    const key = end ? "endTime" : "startTime";
     return (
       <div className="time-controls">
         <div className="time-control">
           <label htmlFor={`${id}-${end}`}>{label}</label>
-          <TimePicker
+          <DatePicker
             id={`${id}-${end}`}
             aria-label={label}
-            format="HH:mm"
+            showTime={{ format: "HH:mm" }}
+            format={format}
             inputReadOnly
-            minuteStep={1}
-            needConfirm={false}
+            needConfirm
             showNow={false}
             placeholder="时间待定"
-            value={time ? dayjs(`2000-01-01T${time}:00`) : null}
-            onChange={(value) =>
-              set(end ? "endTime" : "startTime", value?.format("HH:mm") ?? "")
-            }
+            value={dayjs(`${date}T${timed && time ? time : "00:00"}`)}
+            onChange={(value) => {
+              if (!value) {
+                // 清空只去掉时间，日期保留，回到时间待定。
+                onChange({
+                  ...v,
+                  [key]: "",
+                  timeMode: "date",
+                  ...(end ? { lastChoice: "" } : { firstChoice: "" }),
+                });
+                return;
+              }
+              const nextDate = value.format("YYYY-MM-DD");
+              const nextTime = value.format("HH:mm");
+              // 时间待定时只改日期（时分保持默认 00:00）不引入时间，保持待定。
+              const staysDate = !timed && nextTime === "00:00" && !time;
+              onChange({
+                ...v,
+                ...(end
+                  ? { endDate: nextDate }
+                  : {
+                      date: nextDate,
+                      endDate: v.endDate < nextDate ? nextDate : v.endDate,
+                    }),
+                [key]: staysDate ? "" : nextTime,
+                timeMode: staysDate ? "date" : "timed",
+                ...(end ? { lastChoice: "" } : { firstChoice: "" }),
+              });
+            }}
           />
         </div>
         <div className="time-control">
@@ -154,21 +183,6 @@ export function EventTimeFields({
       }}
     >
       <div className="event-timing">
-        <Field
-          label={stay ? "入住日期" : flight ? "起飞日期" : "日期"}
-          type="date"
-          required
-          value={v.date}
-          onChange={(date) =>
-            onChange({
-              ...v,
-              date,
-              endDate: v.endDate < date ? date : v.endDate,
-              firstChoice: "",
-              lastChoice: "",
-            })
-          }
-        />
         {row(false)}
         <div className="time-range-toggle">
           <span id={`${id}-range`}>时间段</span>
@@ -178,22 +192,11 @@ export function EventTimeFields({
             onChange={(checked) => set("range", checked)}
           />
         </div>
-        {v.range && (
-          <div className="time-range-end">
-            <Field
-              label={stay ? "退房日期" : flight ? "落地日期" : "结束日期"}
-              type="date"
-              required
-              value={v.endDate}
-              onChange={(date) => set("endDate", date)}
-            />
-            {row(true)}
-          </div>
-        )}
+        {v.range && row(true)}
         <p className="muted time-help">
-          不选择时间时，仅记录日期，显示为时间待定。
+          时间待定时只记录日期；在面板中选定日期和时分并确认后即记录完整时间，清空输入框可回到时间待定。
         </p>
-        {v.timeMode === "timed" && (
+        {timed && (
           <>
             <RepeatedTime
               label="开始时间"

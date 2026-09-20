@@ -74,6 +74,7 @@ export function Sheet({
   onClose,
   title,
   description,
+  titleExtra,
   children,
   wide = false,
   className = "",
@@ -83,6 +84,7 @@ export function Sheet({
   onClose: () => void;
   title: string;
   description?: string;
+  titleExtra?: ReactNode;
   children: ReactNode;
   wide?: boolean;
   className?: string;
@@ -143,7 +145,10 @@ export function Sheet({
           <div className="sheet-handle" />
           <header className="sheet-header">
             <div>
-              <Dialog.Title>{discard ? "尚未保存" : title}</Dialog.Title>
+              <div className="sheet-title-line">
+                <Dialog.Title>{discard ? "尚未保存" : title}</Dialog.Title>
+                {!discard && titleExtra}
+              </div>
               {description && (
                 <Dialog.Description id={descriptionId}>
                   {description}

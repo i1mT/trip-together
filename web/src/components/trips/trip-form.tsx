@@ -11,6 +11,7 @@ import {
   type Destination,
 } from "../../../../shared/travel-options";
 import { SheetForm, SheetFooter, Sheet } from "../ui";
+import { AiGuideEntry } from "../ai-guide";
 import { Field, ZoneField, CurrencyField } from "../editors/fields";
 import { DestinationPicker } from "./destination-picker";
 import { useToast } from "../toast";
@@ -133,6 +134,11 @@ export function TripForm({
       <Sheet
         open
         title={trip ? "行程设置" : "创建行程"}
+        titleExtra={
+          !trip && (
+            <AiGuideEntry label="接入 AI" icon className="ai-guide-link" />
+          )
+        }
         onClose={() => !busy && onClose()}
       >
         <SheetForm className="editor-form" onSubmit={save}>

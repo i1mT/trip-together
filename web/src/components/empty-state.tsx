@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import type { TripEvent } from "@/lib/models";
 import { TravelSticker } from "./travel-sticker";
 export function EmptyState({
@@ -6,12 +7,14 @@ export function EmptyState({
   text,
   action,
   onAction,
+  extra,
 }: {
   kind?: TripEvent["kind"] | "luggage";
   title: string;
   text?: string;
   action?: string;
   onAction?: () => void;
+  extra?: ReactNode;
 }) {
   return (
     <div className="surface empty-state">
@@ -23,6 +26,7 @@ export function EmptyState({
           {action}
         </button>
       )}
+      {extra}
     </div>
   );
 }

@@ -96,3 +96,57 @@
     gap: 8px;
   }
 }
+
+/* 标题旁的次要入口：跟随标题排版，不挤占关闭按钮 */
+.sheet-title-line {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  min-width: 0;
+}
+.ai-guide-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 2px 0;
+}
+.ai-guide-entry {
+  display: flex;
+  width: 100%;
+  justify-content: center;
+  margin: 2px 0;
+}
+.ai-guide {
+  padding: 0 20px 18px;
+}
+.ai-guide > p {
+  font-size: 13px;
+  line-height: 1.9;
+}
+.ai-guide-prompt {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px 14px 14px 16px;
+  background: var(--surface);
+  border: 1px solid #fff;
+  border-radius: 18px;
+  box-shadow: var(--shadow);
+}
+.ai-guide-prompt p {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: 13px;
+  line-height: 1.8;
+  color: var(--ink);
+  user-select: text;
+}
+.ai-guide-prompt .icon-button {
+  flex-shrink: 0;
+  color: var(--accent);
+}

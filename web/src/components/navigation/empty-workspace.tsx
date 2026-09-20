@@ -1,5 +1,6 @@
 import { CalendarDays, FolderOpen, Wallet, ArrowRight } from "lucide-react";
 import { TravelSticker } from "../travel-sticker";
+import { AiGuideEntry } from "../ai-guide";
 export function EmptyWorkspace({
   tab,
   onManage,
@@ -55,6 +56,7 @@ export function EmptyWorkspace({
               添加行程后，这里会显示接下来的安排。你也可以先在“我的”中修改昵称、整理个人证件。
             </p>
           </div>
+          <AiGuideEntry className="text-action ai-guide-entry" />
         </>
       ) : (
         <div className="empty-workspace-message">

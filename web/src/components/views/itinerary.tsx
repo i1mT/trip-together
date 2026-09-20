@@ -24,6 +24,7 @@ import {
 } from "@/lib/time";
 import { TravelSticker } from "../travel-sticker";
 import { EmptyState } from "../empty-state";
+import { AiGuideEntry } from "../ai-guide";
 import { EventIcon, SheetFooter, Sheet, SectionTitle } from "../ui";
 import { PreparationChecklist } from "../preparation/checklist";
 import { EventEditor } from "../editors/event-editor";
@@ -147,6 +148,7 @@ export function Itinerary({
               text="可以先添加活动名称，具体时间稍后完善。"
               action="添加当天安排"
               onAction={() => setEditing(true)}
+              extra={<AiGuideEntry className="text-action ai-guide-entry" />}
             />
           )}
           <div className="timeline">

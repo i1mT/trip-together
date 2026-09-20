@@ -12,6 +12,7 @@ import {
 import type { TripData, TripDocument } from "@/lib/models";
 import { PersonalDocuments } from "../profile/personal-documents";
 import { ApiTokens } from "../profile/api-tokens";
+import { AiGuideEntry } from "../ai-guide";
 import { ProfileEditor, PasswordEditor } from "../account/profile-editor";
 import { Avatar } from "../avatar";
 import { SectionTitle, Sheet, SheetFooter } from "../ui";
@@ -176,6 +177,7 @@ export function Profile({
           退出当前身份
         </button>
       </div>
+      <AiGuideEntry className="text-action ai-guide-entry" />
       {confirmLogout && (
         <Sheet open title="退出登录" onClose={() => setConfirmLogout(false)}>
           <div className="editor-form">

@@ -34,12 +34,17 @@ test("接入 AI 入口覆盖无行程空态、创建行程、完整行程空态�
   });
   await page.getByRole("button", { name: "我知道了" }).click();
   await expect(page.getByRole("heading", { name: "接入 AI" })).toHaveCount(0);
-  // 创建行程标题旁
+  // 创建行程标题旁：接入说明替换创建弹窗，不叠两个弹窗，关闭后输入仍在
   await page.getByRole("button", { name: "创建行程", exact: true }).click();
   await expect(page.getByRole("heading", { name: "创建行程" })).toBeVisible();
+  await page.getByLabel("行程名称（选填）").fill("先填一半");
   await page.getByRole("button", { name: "接入 AI" }).click();
   await expect(page.getByRole("heading", { name: "接入 AI" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "创建行程" })).toHaveCount(0);
+  await expect(page.locator(".sheet")).toHaveCount(1);
   await page.getByRole("button", { name: "我知道了" }).click();
+  await expect(page.getByRole("heading", { name: "创建行程" })).toBeVisible();
+  await expect(page.getByLabel("行程名称（选填）")).toHaveValue("先填一半");
   await page.getByRole("button", { name: "关闭" }).click();
   // 完整行程空态与个人页
   await account.request("/trips", "POST", tripInput, 201);

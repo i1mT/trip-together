@@ -11,7 +11,7 @@ import {
   type Destination,
 } from "../../../../shared/travel-options";
 import { SheetForm, SheetFooter, Sheet } from "../ui";
-import { AiGuideEntry } from "../ai-guide";
+import { AiGuideEntry, AiGuideSheet } from "../ai-guide";
 import { Field, ZoneField, CurrencyField } from "../editors/fields";
 import { DestinationPicker } from "./destination-picker";
 import { useToast } from "../toast";
@@ -38,7 +38,8 @@ export function TripForm({
   });
   const [places, setPlaces] = useState<Destination[]>(trip?.destinations ?? []);
   const [busy, setBusy] = useState(false),
-    [error, setError] = useState("");
+    [error, setError] = useState(""),
+    [guide, setGuide] = useState(false);
   useEffect(() => {
     if (trip) return;
     let mounted = true;
@@ -114,6 +115,8 @@ export function TripForm({
       setBusy(false);
     }
   }
+  // 接入说明替换掉创建弹窗，关闭后回到仍然保留输入的创建表单。
+  if (guide) return <AiGuideSheet onClose={() => setGuide(false)} />;
   return (
     <ConfigProvider
       locale={zhCN}
@@ -136,7 +139,12 @@ export function TripForm({
         title={trip ? "行程设置" : "创建行程"}
         titleExtra={
           !trip && (
-            <AiGuideEntry label="接入 AI" icon className="ai-guide-link" />
+            <AiGuideEntry
+              label="接入 AI"
+              icon
+              className="ai-guide-link"
+              onOpen={() => setGuide(true)}
+            />
           )
         }
         onClose={() => !busy && onClose()}

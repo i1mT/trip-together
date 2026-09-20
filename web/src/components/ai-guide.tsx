@@ -6,28 +6,37 @@ const skillPath = "/skill/trip-together-skill.zip";
 export function promptText(origin: string) {
   return `下载并安装 trip-together 这个 skill（压缩包：${origin}${skillPath}），然后帮我录入行程。`;
 }
-/** 入口按钮 + 说明弹窗；文案与 skill 地址集中在这里维护。 */
+/**
+ * 入口按钮 + 说明弹窗；文案与 skill 地址集中在这里维护。
+ * `onOpen` 用于替换掉所在弹窗（例如创建行程），避免两个弹窗叠在一起。
+ */
 export function AiGuideEntry({
   label = "如何接入 AI",
   className = "text-action",
   icon = false,
+  onOpen,
 }: {
   label?: string;
   className?: string;
   icon?: boolean;
+  onOpen?: () => void;
 }) {
   const [open, setOpen] = useState(false);
   return (
     <>
-      <button type="button" className={className} onClick={() => setOpen(true)}>
+      <button
+        type="button"
+        className={className}
+        onClick={() => (onOpen ? onOpen() : setOpen(true))}
+      >
         {label}
         {icon && <HelpCircle size={16} aria-hidden />}
       </button>
-      {open && <AiGuideSheet onClose={() => setOpen(false)} />}
+      {!onOpen && open && <AiGuideSheet onClose={() => setOpen(false)} />}
     </>
   );
 }
-function AiGuideSheet({ onClose }: { onClose: () => void }) {
+export function AiGuideSheet({ onClose }: { onClose: () => void }) {
   const [copied, setCopied] = useState(false),
     [error, setError] = useState(""),
     [prompt] = useState(() =>

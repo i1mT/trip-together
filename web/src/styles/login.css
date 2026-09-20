@@ -92,12 +92,13 @@
   margin-top: 4px;
 }
 .login-secondary-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  display: flex;
   gap: 10px;
   margin-top: 4px;
 }
 .login-secondary-row .secondary-button {
+  flex: 1 1 0;
+  min-width: 0;
   min-height: 46px;
   padding: 10px;
   font-size: 13px;

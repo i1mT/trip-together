@@ -33,6 +33,37 @@ test("邮箱登录错误位于按钮上方、本地无需验证码并可重置�
   await page.getByRole("button", { name: "登录", exact: true }).click();
   await expect(page.getByRole("heading", { name: "还没有行程" })).toBeVisible();
 });
+test("次要按钮行按数量自适应宽度，不出现半行空白", async ({ page }) => {
+  async function sizes() {
+    const row = page.locator(".login-secondary-row"),
+      box = (await row.boundingBox())!,
+      buttons = await Promise.all(
+        (await row.getByRole("button").all()).map((button) =>
+          button.boundingBox(),
+        ),
+      );
+    return {
+      width: box.width,
+      buttons: buttons.map((button) => button!.width),
+    };
+  }
+  for (const width of [320, 390]) {
+    await page.setViewportSize({ width, height: 844 });
+    await page.goto("/");
+    const pair = await sizes();
+    expect(pair.buttons).toHaveLength(2);
+    expect(Math.abs(pair.buttons[0] - pair.buttons[1])).toBeLessThan(1);
+    await page.getByRole("button", { name: "注册新账号" }).click();
+    const single = await sizes();
+    expect(single.buttons).toHaveLength(1);
+    expect(single.buttons[0]).toBeGreaterThan(single.width - 1);
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= window.innerWidth,
+      ),
+    ).toBeTruthy();
+  }
+});
 test("线上认证页面展示邮箱验证码和发送倒计时", async ({
   page,
   browserName,

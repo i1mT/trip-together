@@ -21,6 +21,17 @@ function run(cmd, args, stepName) {
   }
 }
 
+// 0. 生成 Worker 类型定义（infra/env.d.ts 被 gitignore 排除，CI 环境需从 wrangler 配置重新生成）
+run("npx", [
+  "wrangler",
+  "types",
+  "--strict-vars",
+  "false",
+  "--config",
+  "infra/wrangler.jsonc",
+  "infra/env.d.ts",
+], "生成 Worker 类型定义 (wrangler types)");
+
 // 1. 静态代码类型检查
 run("npm", ["run", "typecheck"], "TypeScript 静态类型检查");
 

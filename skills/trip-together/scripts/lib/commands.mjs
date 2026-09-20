@@ -33,7 +33,7 @@ export async function currentTrip(explicit) {
   remember(base, { tripId: id });
   return id;
 }
-async function data(flags) {
+async function data({ flags }) {
   return api(`/trips/${await currentTrip(flags.trip)}/data`);
 }
 async function eventVersion(trip, id) {
@@ -41,6 +41,12 @@ async function eventVersion(trip, id) {
     event = result.events.find((item) => item.id === id);
   if (!event) throw new ApiError(`行程里没有编号为 ${id} 的安排`);
   return event.version;
+}
+async function expenseVersion(trip, id) {
+  const result = await api(`/trips/${trip}/data`),
+    expense = result.expenses.find((item) => item.id === id);
+  if (!expense) throw new ApiError(`行程里没有编号为 ${id} 的支出`);
+  return expense.version;
 }
 async function members(trip) {
   const result = await api(`/trips/${trip}/data`);
@@ -100,7 +106,7 @@ export const commands = {
   "trip join": ({ args, flags }) =>
     api("/join", { method: "POST", data: { token: args[0] ?? flags.code } }),
   data,
-  "event list": async ({ flags }) => (await data(flags)).events,
+  "event list": async ({ flags }) => (await data({ flags })).events,
   "event add": async ({ flags, data: body }) =>
     api(`/trips/${await currentTrip(flags.trip)}/events`, {
       method: "POST",
@@ -113,11 +119,14 @@ export const commands = {
     if (!value.version) value.version = await eventVersion(trip, args[0]);
     return api(`/trips/${trip}/events/${args[0]}`, { method: "PUT", data: value });
   },
-  "event rm": async ({ args, flags }) => {
+  "event rm": async ({ args, flags, data: body }) => {
     if (!args[0]) throw new ApiError("用法：tt event rm <安排编号> --yes");
     confirmDelete(flags, "安排");
-    return api(`/trips/${await currentTrip(flags.trip)}/events/${args[0]}`, {
+    const trip = await currentTrip(flags.trip),
+      version = body?.version ?? (flags.version ? Number(flags.version) : await eventVersion(trip, args[0]));
+    return api(`/trips/${trip}/events/${args[0]}`, {
       method: "DELETE",
+      data: { version },
     });
   },
   "event status": async ({ args, flags }) => {
@@ -130,7 +139,7 @@ export const commands = {
       data: { status, version: Number(flags.version) || (await eventVersion(trip, id)) },
     });
   },
-  "prep list": async ({ flags }) => (await data(flags)).preparation,
+  "prep list": async ({ flags }) => (await data({ flags })).preparation,
   "prep add": async ({ flags, data: body }) =>
     api(`/trips/${await currentTrip(flags.trip)}/preparation`, {
       method: "POST",
@@ -151,7 +160,7 @@ export const commands = {
       data: { itemId: args[0], checked: flags.off !== true },
     });
   },
-  "doc list": async ({ flags }) => (await data(flags)).documents,
+  "doc list": async ({ flags }) => (await data({ flags })).documents,
   "doc upload": async ({ args, flags }) => {
     if (!args[0]) throw new ApiError("用法：tt doc upload <文件> [--category 分类] [--private]");
     const trip = await currentTrip(flags.trip),
@@ -205,7 +214,7 @@ export const commands = {
     confirmDelete(flags, "证件");
     return api(`/personal-documents/${args[0]}`, { method: "DELETE" });
   },
-  "expense list": async ({ flags }) => (await data(flags)).expenses,
+  "expense list": async ({ flags }) => (await data({ flags })).expenses,
   "expense add": async ({ flags, data: body }) => {
     const value = payload(body),
       trip = await currentTrip(flags.trip),
@@ -218,11 +227,14 @@ export const commands = {
       );
     return api(`/trips/${trip}/expenses`, { method: "POST", data: value });
   },
-  "expense rm": async ({ args, flags }) => {
+  "expense rm": async ({ args, flags, data: body }) => {
     if (!args[0]) throw new ApiError("用法：tt expense rm <支出编号> --yes");
     confirmDelete(flags, "支出");
-    return api(`/trips/${await currentTrip(flags.trip)}/expenses/${args[0]}`, {
+    const trip = await currentTrip(flags.trip),
+      version = body?.version ?? (flags.version ? Number(flags.version) : await expenseVersion(trip, args[0]));
+    return api(`/trips/${trip}/expenses/${args[0]}`, {
       method: "DELETE",
+      data: { version },
     });
   },
   "expense receipt": async ({ args, flags }) => {

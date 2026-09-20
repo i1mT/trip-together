@@ -65,7 +65,7 @@ async function main() {
         "tt market list [关键词] | show <编号> | copy <编号>",
         "tt raw <METHOD> <路径>",
         "",
-        `默认站点 ${defaultBase}，可用 --base 或 TT_BASE 覆盖；凭据文件 ${credentialPath()}`,
+        `站点 ${defaultBase}；凭据文件 ${credentialPath()}`,
       ].join("\n") + "\n",
     );
     return;
@@ -74,7 +74,7 @@ async function main() {
     token = flags.token ? String(flags.token) : (readCredentials()[base]?.token ?? "");
   configure({ base, token });
   if (!token && !["login"].includes(rest[0]))
-    throw new ApiError(`还没有登录 ${base}，先运行：tt login --base ${base}`);
+    throw new ApiError(`还没有登录，先运行：tt login`);
   const { handler, args } = resolve(rest),
     result = await handler({ args, flags, data: readData(flags) });
   process.stdout.write(
@@ -88,6 +88,6 @@ try {
     error instanceof ApiError ? error.message : (error?.stack ?? String(error));
   process.stderr.write(`错误：${message}\n`);
   if (error instanceof ApiError && error.status === 401)
-    process.stderr.write(`令牌可能已经过期，运行 tt login --base ${context().base} 重新授权。\n`);
+    process.stderr.write(`令牌可能已经过期，运行 tt login 重新授权。\n`);
   process.exit(1);
 }

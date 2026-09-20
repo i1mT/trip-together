@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "npm run build && npm run preview",
     "build": "node scripts/build-skill.mjs && next build web && npm run check:browser",
+    "build:ci": "node scripts/ci-build.mjs",
     "build:skill": "node scripts/build-skill.mjs",
     "check:browser": "node scripts/check-browser-support.mjs",
     "preview": "wrangler dev --config infra/wrangler.jsonc --local --persist-to .local/travel-state --ip 0.0.0.0 --port 8790",
@@ -14,6 +15,7 @@
     "test:e2e": "playwright test --config tests/playwright.config.ts",
     "deploy:check": "wrangler deploy --config infra/wrangler.jsonc --dry-run",
     "deploy": "node scripts/deploy.mjs",
+    "deploy:ci": "node scripts/ci-deploy.mjs",
     "types": "wrangler types --strict-vars false --config infra/wrangler.jsonc infra/env.d.ts",
     "format": "prettier --write \"worker/**/*.ts\" \"web/src/**/*.{ts,tsx,css}\" \"scripts/**/*.mjs\" \"tests/*.ts\"",
     "test:e2e:safari": "PW_BROWSER=webkit playwright test --config tests/playwright.config.ts",

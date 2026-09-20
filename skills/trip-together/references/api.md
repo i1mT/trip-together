@@ -42,7 +42,7 @@
 | POST | `/trips/:id/events` | 新增安排，返回 `{ id }` |
 | PUT | `/trips/:id/events/:eventId` | 修改安排，需要 `version` |
 | PATCH | `/trips/:id/events/:eventId` | 只改状态：`{ "status": "completed", "version": n }` |
-| DELETE | `/trips/:id/events/:eventId` | 删除安排 |
+| DELETE | `/trips/:id/events/:eventId` | 删除安排，body 需要 `{ "version": n }`（CLI 自动获取） |
 | POST | `/trips/:id/preparation` | 新增准备事项，返回 `{ id }` |
 | DELETE | `/trips/:id/preparation/:itemId` | 删除准备事项 |
 | PUT | `/trips/:id/packing` | 勾选：`{ "itemId": "…", "checked": true }` |
@@ -66,7 +66,7 @@
 | --- | --- | --- |
 | POST | `/trips/:id/expenses` | 新增支出 |
 | PUT | `/trips/:id/expenses/:expenseId` | 修改支出，需要 `version` |
-| DELETE | `/trips/:id/expenses/:expenseId` | 删除支出 |
+| DELETE | `/trips/:id/expenses/:expenseId` | 删除支出，body 需要 `{ "version": n }`（CLI 自动获取） |
 
 ## 地点与市场
 

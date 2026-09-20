@@ -5,10 +5,10 @@ import { Client, base, tripInput } from "./support/api";
 const ip = `${crypto.randomUUID()}`;
 
 async function start() {
+  // 命令行助手不带 Origin，设备授权端点必须照常可用。
   const response = await fetch(`${base}/api/device/code`, {
     method: "POST",
     headers: {
-      Origin: base,
       "Content-Type": "application/json",
       "CF-Connecting-IP": ip,
     },
@@ -25,11 +25,7 @@ async function start() {
 async function poll(device_code: string, expected = 200) {
   const response = await fetch(`${base}/api/device/token`, {
     method: "POST",
-    headers: {
-      Origin: base,
-      "Content-Type": "application/json",
-      "CF-Connecting-IP": ip,
-    },
+    headers: { "Content-Type": "application/json", "CF-Connecting-IP": ip },
     body: JSON.stringify({ device_code }),
   });
   assert.equal(response.status, expected);

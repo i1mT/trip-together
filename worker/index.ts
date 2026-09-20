@@ -46,9 +46,13 @@ export default {
           r.headers.set("Cache-Control", "no-store");
         return r;
       }
-      // 浏览器请求始终校验来源；只有不带 Cookie 的令牌请求可以跳过，脚本不会自动携带凭据。
+      // 浏览器请求始终校验来源。只有两类请求可以跳过：带 Bearer 且不带 Cookie 的脚本请求，
+      // 以及不使用 Cookie 的设备授权端点（/api/device/code 与 /api/device/token）。
+      const credentialless =
+        path === "/api/device/code" || path === "/api/device/token";
       if (
         !["GET", "HEAD"].includes(method) &&
+        !credentialless &&
         !(bearerToken(request) && !request.headers.get("cookie"))
       )
         sameOrigin(request);

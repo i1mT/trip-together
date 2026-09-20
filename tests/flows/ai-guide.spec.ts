@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { Client, tripInput } from "../support/api";
-const prompt = "安装 trip-together 这个 skill";
+const prompt = "下载并安装 trip-together 这个 skill";
 test("接入 AI 入口覆盖无行程空态、创建行程、完整行程空态和个人页", async ({
   page,
 }) => {
@@ -27,7 +27,7 @@ test("接入 AI 入口覆盖无行程空态、创建行程、完整行程空态�
   await expect(page.getByRole("button", { name: "已经复制" })).toBeVisible();
   expect(await page.evaluate(() => window.__copied)).toContain(prompt);
   expect(await page.evaluate(() => window.__copied)).toContain(
-    "https://github.com/i1mT/trip-together",
+    "/skill/trip-together-skill.zip",
   );
   await expect(page.getByRole("button", { name: "复制这句话" })).toBeVisible({
     timeout: 5000,

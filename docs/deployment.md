@@ -83,7 +83,9 @@ npm run build
 npm run deploy
 ```
 
-部署脚本先检查配置与 R2 私有状态、执行 dry-run，然后应用 D1 schema、发布 Worker，最后再次检查 R2。首次部署成功后由使用者自行注册和创建行程；没有默认管理员和默认密码。
+部署脚本先检查配置、R2 私有状态和 `web/out` 里的 skill 压缩包，执行 dry-run，然后应用 D1 schema、发布 Worker，最后再次检查 R2。首次部署成功后由使用者自行注册和创建行程；没有默认管理员和默认密码。
+
+`npm run build` 会先用 `scripts/build-skill.mjs` 把 `skills/trip-together` 打成 `web/out/skill/trip-together-skill.zip`，它随静态资源一起发布，站点上的「接入 AI」弹窗直接指向这个地址。压缩包只含 skill 源码，不含任何用户数据；单独重新打包用 `npm run build:skill`。
 
 ## 日常维护
 

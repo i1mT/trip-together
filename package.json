@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "npm run build && npm run preview",
-    "build": "next build web && npm run check:browser",
+    "build": "node scripts/build-skill.mjs && next build web && npm run check:browser",
+    "build:skill": "node scripts/build-skill.mjs",
     "check:browser": "node scripts/check-browser-support.mjs",
     "preview": "wrangler dev --config infra/wrangler.jsonc --local --persist-to .local/travel-state --ip 0.0.0.0 --port 8790",
     "setup": "node scripts/setup.mjs",

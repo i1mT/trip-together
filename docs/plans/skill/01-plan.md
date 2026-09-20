@@ -7,15 +7,16 @@
 ```
 skills/trip-together/
   SKILL.md                 # 触发描述 + 使用说明 + 铁律
-  references/api.md        # 接口与字段参考
-  references/model.md      # 数据模型、金额、时区规则
+  references/api.md        # 接口路径、方法、权限与错误码
+  references/model.md      # 字段模型、金额、时区规则
   references/recipes.md    # 常用编排配方
   scripts/tt.mjs           # CLI 入口
-  scripts/lib/{auth,http,commands}.mjs
-  examples/trip-draft.sample.json
+  scripts/lib/{http,auth,commands}.mjs
+  examples/trip-draft.json
+web/public/skill/trip-together-skill.zip   # 构建产物，随站点发布
 ```
 
-Skill 不复制业务逻辑：所有写入都调用线上 Worker 的公开 API，与网页端走同一套校验和权限。Skill 随本仓库发布在 `skills/trip-together/`。
+Skill 不复制业务逻辑：所有写入都调用站点 Worker 的公开 API，与网页端走同一套校验和权限。Skill 源码随本仓库发布在 `skills/trip-together/`，`npm run build` 用 `scripts/build-skill.mjs` 打成压缩包放进站点静态资源，App 内的「接入 AI」弹窗指向本站压缩包地址（本地测试时即本地地址），不使用外部仓库链接。
 
 ## 2. 认证：设备授权（浏览器登录一次，Skill 自己拿到令牌）
 

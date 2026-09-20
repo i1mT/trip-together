@@ -1,3 +1,4 @@
+import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { spawnSync } from "node:child_process";
 import { resolve } from "node:path";
@@ -29,6 +30,8 @@ if (
   );
 
 assertPrivateBucket(config);
+if (!existsSync(resolve(root, "web/out/skill/trip-together-skill.zip")))
+  throw new Error("web/out 里没有 skill 压缩包，请先运行 npm run build");
 const secrets = cloudflare(
   `/accounts/${config.account_id}/workers/scripts/${config.name}/secrets`,
 );

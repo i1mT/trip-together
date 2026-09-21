@@ -29,6 +29,7 @@
 底图 MapLibre GL JS v5 + OpenFreeMap（硬约束见 AGENTS.md）。海报客户端 DOM 模板 + html-to-image，地图截图取自独立隐藏 MapLibre 实例（preserveDrawingBuffer）。路线 = 按开始时间排序的坐标连线，航班画大圆弧线，其余画直线。底部导航保持五项，路线图入口放完整行程页标题行；海报入口在路线图标题右侧与「我的行程 → 行程管理 → 分享」区域各一处。
 
 实现补充决策：
+- 路线几何区分「行程顺序的点」(`points`，允许重复到达同一地点) 与「去重地点」(`stops`，仅用于地图标记与地点数量)。往返行程回到出发地时，`points` 保留返程段，海报起终点取 `points` 首末，避免终点显示为最后一个新地点、返程段丢失。
 - 底图来源集中在 `shared/map-source.ts`（`mapTilesOrigin` / `mapStyleUrl`），前端地图与 Worker CSP 共用，方便换源自托管。
 - 地图容器 ref 用回调 ref 存 state：Radix `Dialog.Content` 经 Presence 挂载，`useRef` 在同一轮 effect 中可能尚未就绪，回调 ref 触发的地图初始化更稳。
 - 海报里的地图截图必须在 `load` 后才 `ensureRouteLayers` + `fitRouteBounds`，再等 `idle` 截图；12s 超时兜底，截图失败降级为无地图版式。

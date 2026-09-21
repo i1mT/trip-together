@@ -56,8 +56,8 @@ export function RouteMapSheet({
   const hasStops = route.stops.length > 0;
 
   const days = useMemo(
-    () => [...new Set(route.stops.map((stop) => stop.date))].sort(),
-    [route.stops],
+    () => [...new Set(route.points.map((point) => point.date))].sort(),
+    [route.points],
   );
 
   useEffect(() => {

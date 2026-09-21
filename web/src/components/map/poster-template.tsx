@@ -16,8 +16,8 @@ export const PosterTemplate = forwardRef<
   { data: TripData; image: string | null }
 >(function PosterTemplate({ data, image }, ref) {
   const route = buildRoute(data.events);
-  const first = route.stops[0],
-    last = route.stops[route.stops.length - 1];
+  const first = route.points[0],
+    last = route.points[route.points.length - 1];
   const destinations = (data.trip.destinations ?? [])
     .map((destination) => destination.name.split("·")[0].trim())
     .filter(Boolean)
@@ -52,7 +52,7 @@ export const PosterTemplate = forwardRef<
           </div>
         )}
       </div>
-      {first && last && route.stops.length > 1 && (
+      {first && last && route.points.length > 1 && (
         <div className="poster-route">
           <div>
             <small>起点</small>

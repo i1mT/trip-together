@@ -14,6 +14,8 @@ export type RouteStop = {
 export type RouteSegment = {
   from: string;
   to: string;
+  fromDate: string;
+  toDate: string;
   kind: TripEvent["kind"];
   arc: boolean;
   coordinates: [number, number][];
@@ -27,6 +29,9 @@ export type MissingEvent = {
 };
 
 export type RouteGeometry = {
+  /** 按行程顺序（可能重复到达同一地点）的站点序列。 */
+  points: RouteStop[];
+  /** 去重后的地点，用于地图标记与地点数量。 */
   stops: RouteStop[];
   segments: RouteSegment[];
   missing: MissingEvent[];
@@ -41,7 +46,6 @@ type Point = {
   date: string;
   kind: TripEvent["kind"];
   eventId: string;
-  eventTitle: string;
 };
 
 const toRad = Math.PI / 180;
@@ -114,7 +118,6 @@ function eventPoints(event: TripEvent): Point[] {
     date: localDate(event.start, event.timezone),
     kind: event.kind,
     eventId: event.id,
-    eventTitle: event.title,
   };
   if (event.departureLocation)
     points.push({
@@ -133,6 +136,13 @@ function eventPoints(event: TripEvent): Point[] {
   return points;
 }
 
+function merge(target: RouteStop, point: Point) {
+  if (!target.kinds.includes(point.kind)) target.kinds.push(point.kind);
+  if (!target.eventIds.includes(point.eventId))
+    target.eventIds.push(point.eventId);
+  if (target.name === "未命名地点" && point.name) target.name = point.name;
+}
+
 /**
  * 按开始时间把有坐标的安排连成路线；已取消的安排不参与。
  * 结果只包含坐标与元数据，不依赖任何地图库，便于单元测试。
@@ -143,13 +153,15 @@ export function buildRoute(events: TripEvent[]): RouteGeometry {
     .slice()
     .sort((a, b) => Date.parse(a.start) - Date.parse(b.start));
 
+  const points: RouteStop[] = [];
   const stops: RouteStop[] = [];
   const missing: MissingEvent[] = [];
-  const byKey = new Map<string, number>();
+  const seen = new Map<string, RouteStop>();
+  let previous: RouteStop | null = null;
 
   for (const event of ordered) {
-    const points = eventPoints(event);
-    if (!points.length) {
+    const fromEvent = eventPoints(event);
+    if (!fromEvent.length) {
       missing.push({
         eventId: event.id,
         title: event.title,
@@ -158,19 +170,16 @@ export function buildRoute(events: TripEvent[]): RouteGeometry {
       });
       continue;
     }
-    for (const point of points) {
+    for (const point of fromEvent) {
       const key = roundedKey(point.latitude, point.longitude);
-      const existing = byKey.get(key);
-      if (existing !== undefined) {
-        const stop = stops[existing];
-        if (!stop.kinds.includes(point.kind)) stop.kinds.push(point.kind);
-        if (!stop.eventIds.includes(point.eventId))
-          stop.eventIds.push(point.eventId);
-        if (stop.name === "未命名地点" && point.name) stop.name = point.name;
+      if (previous?.key === key) {
+        // 连续到达同一地点（例如到达后住宿）合并为一次停留。
+        merge(previous, point);
+        const existing = seen.get(key);
+        if (existing) merge(existing, point);
         continue;
       }
-      byKey.set(key, stops.length);
-      stops.push({
+      const visit: RouteStop = {
         key,
         name: point.name || "未命名地点",
         latitude: point.latitude,
@@ -179,20 +188,30 @@ export function buildRoute(events: TripEvent[]): RouteGeometry {
         timezone: point.timezone,
         kinds: [point.kind],
         eventIds: [point.eventId],
-      });
+      };
+      points.push(visit);
+      previous = visit;
+      const existing = seen.get(key);
+      if (existing) merge(existing, point);
+      else {
+        seen.set(key, visit);
+        stops.push(visit);
+      }
     }
   }
 
   const segments: RouteSegment[] = [];
-  for (let i = 1; i < stops.length; i += 1) {
-    const from = stops[i - 1],
-      to = stops[i];
+  for (let i = 1; i < points.length; i += 1) {
+    const from = points[i - 1],
+      to = points[i];
     const arc = to.kinds.includes("flight");
     const start: [number, number] = [from.longitude, from.latitude];
     const end: [number, number] = [to.longitude, to.latitude];
     segments.push({
       from: from.key,
       to: to.key,
+      fromDate: from.date,
+      toDate: to.date,
       kind: to.kinds[0],
       arc,
       coordinates: arc ? greatCircle(start, end) : [start, end],
@@ -200,10 +219,10 @@ export function buildRoute(events: TripEvent[]): RouteGeometry {
   }
 
   const bounds =
-    stops.length > 0
+    points.length > 0
       ? (() => {
-          const lngs = stops.map((stop) => stop.longitude);
-          const lats = stops.map((stop) => stop.latitude);
+          const lngs = points.map((stop) => stop.longitude);
+          const lats = points.map((stop) => stop.latitude);
           return [
             [Math.min(...lngs), Math.min(...lats)],
             [Math.max(...lngs), Math.max(...lats)],
@@ -211,5 +230,5 @@ export function buildRoute(events: TripEvent[]): RouteGeometry {
         })()
       : null;
 
-  return { stops, segments, missing, bounds };
+  return { points, stops, segments, missing, bounds };
 }

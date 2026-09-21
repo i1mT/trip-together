@@ -136,6 +136,62 @@ test("已取消的安排不参与路线", () => {
   assert.equal(route.missing.length, 0);
 });
 
+test("往返回到出发地时路线仍按顺序，站点不重复", () => {
+  const route = buildRoute([
+    event({
+      id: "out",
+      kind: "flight",
+      start: "2030-06-01T09:00:00+08:00",
+      timezone: "Asia/Shanghai",
+      departureLocation: shanghai,
+      location: tokyo,
+    }),
+    event({
+      id: "back",
+      kind: "flight",
+      start: "2030-06-05T09:00:00+09:00",
+      timezone: "Asia/Tokyo",
+      departureLocation: tokyo,
+      location: shanghai,
+    }),
+  ]);
+  assert.deepEqual(
+    route.points.map((point) => point.name),
+    ["上海", "东京", "上海"],
+  );
+  assert.deepEqual(
+    route.stops.map((stop) => stop.name),
+    ["上海", "东京"],
+  );
+  assert.equal(route.segments.length, 2);
+  assert.equal(route.segments[1].arc, true);
+  assert.equal(route.points.at(-1)!.name, "上海");
+  assert.deepEqual(route.stops[0].eventIds, ["out", "back"]);
+});
+
+test("连续同一个地点合并为一次停留", () => {
+  const route = buildRoute([
+    event({
+      id: "arrive",
+      kind: "flight",
+      start: "2030-06-01T09:00:00+09:00",
+      timezone: "Asia/Tokyo",
+      location: tokyo,
+    }),
+    event({
+      id: "hotel",
+      kind: "stay",
+      start: "2030-06-01T15:00:00+09:00",
+      timezone: "Asia/Tokyo",
+      location: tokyo,
+    }),
+  ]);
+  assert.equal(route.points.length, 1);
+  assert.equal(route.stops.length, 1);
+  assert.equal(route.segments.length, 0);
+  assert.deepEqual(route.stops[0].eventIds, ["arrive", "hotel"]);
+});
+
 test("大圆插值两端与端点重合", () => {
   const points = greatCircle([121.47, 31.23], [139.69, 35.68], 16);
   assert.equal(points.length, 17);

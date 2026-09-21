@@ -11,9 +11,8 @@ export function lineFeatures(route: RouteGeometry) {
     type: "Feature" as const,
     properties: {
       arc: segment.arc,
-      day: route.stops.find((stop) => stop.key === segment.to)?.date ?? "",
-      fromDay:
-        route.stops.find((stop) => stop.key === segment.from)?.date ?? "",
+      day: segment.toDate,
+      fromDay: segment.fromDate,
     },
     geometry: {
       type: "LineString" as const,
@@ -23,9 +22,9 @@ export function lineFeatures(route: RouteGeometry) {
 }
 
 export function endpointFeatures(route: RouteGeometry) {
-  const points = [route.stops[0], route.stops[route.stops.length - 1]].filter(
-    Boolean,
-  );
+  const first = route.points[0],
+    last = route.points[route.points.length - 1];
+  const points = [first, last].filter(Boolean);
   return [...new Set(points)].map((stop, index, all) => ({
     type: "Feature" as const,
     properties: {

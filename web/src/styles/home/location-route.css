@@ -71,18 +71,20 @@
 .ticket-route {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 58px minmax(0, 1fr);
-  align-items: start;
+  align-items: stretch;
   gap: 8px;
   padding: 24px 22px 22px;
 }
+/* 两栏等高,行序固定:标签/地名/代码/时间/日期;时间压到同一基线,
+   不随地名行数浮动。 */
 .route-endpoint {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
+  display: grid;
+  grid-template-rows: auto auto auto 1fr auto;
+  justify-items: start;
   min-width: 0;
 }
 .route-endpoint:last-child {
-  align-items: flex-end;
+  justify-items: end;
   text-align: right;
 }
 .route-endpoint > small {
@@ -103,11 +105,16 @@
   color: var(--muted);
 }
 .route-endpoint time {
+  grid-row: 4;
+  align-self: end;
   font-family: var(--font-serif);
   font-size: 30px;
   line-height: 1.2;
   font-variant-numeric: tabular-nums;
   margin: 17px 0 5px;
+}
+.route-endpoint > small:last-child {
+  grid-row: 5;
 }
 .ticket-route-direction {
   display: flex;

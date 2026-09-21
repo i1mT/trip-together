@@ -1,0 +1,360 @@
+/* 路线图与行程海报 */
+
+.route-sheet {
+  height: 100dvh;
+  max-height: 100dvh;
+  border-radius: 0;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.route-sheet .sheet-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0;
+}
+.route-map-body {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.route-map-canvas {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  background: #eae8ed;
+}
+.route-map-status {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 24px;
+  text-align: center;
+  background: var(--paper);
+  color: var(--muted);
+  font-size: 13px;
+}
+.route-map-failed {
+  overflow-y: auto;
+}
+.route-map-fallback {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
+  color: var(--ink);
+}
+.route-map-fallback li {
+  padding: 4px 0;
+}
+.route-map-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 24px;
+}
+.route-map-empty .surface {
+  width: 100%;
+}
+.route-map-empty-note {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.route-day-filter {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  right: 12px;
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: none;
+}
+.route-day-filter::-webkit-scrollbar {
+  display: none;
+}
+.route-day-filter button {
+  flex-shrink: 0;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: #fffffff0;
+  border: 1px solid #fff;
+  box-shadow: var(--shadow);
+  font-size: 12px;
+  color: var(--muted);
+}
+.route-day-filter button.selected {
+  background: #ded1ef;
+  color: #3f2d56;
+  font-weight: 650;
+}
+
+.route-stop-marker {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0;
+  background: none;
+}
+.route-stop-index {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #6c4c96;
+  color: #fff;
+  border: 2px solid #fff;
+  font-size: 12px;
+  font-weight: 700;
+  box-shadow: 0 2px 6px #39304433;
+}
+.route-stop-marker.is-first .route-stop-index {
+  background: #3f8f6b;
+}
+.route-stop-marker.is-last .route-stop-index {
+  background: #b8544c;
+}
+.route-stop-name {
+  display: none;
+  max-width: 110px;
+  padding: 3px 8px;
+  border-radius: 9px;
+  background: #fff;
+  color: var(--ink);
+  font-size: 11px;
+  line-height: 1.4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-shadow: var(--shadow);
+}
+.route-stop-marker.is-first .route-stop-name,
+.route-stop-marker.is-last .route-stop-name {
+  display: block;
+}
+
+.route-missing {
+  position: absolute;
+  bottom: 30px;
+  left: 12px;
+  right: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+}
+.route-missing-toggle {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 13px;
+  border-radius: 999px;
+  background: #fff;
+  border: 1px solid #fff;
+  box-shadow: var(--shadow);
+  font-size: 12px;
+  color: #8a5a2b;
+  pointer-events: auto;
+}
+.route-missing-toggle svg:last-child {
+  transition: transform 0.18s;
+}
+.route-missing-toggle svg.rotated {
+  transform: rotate(180deg);
+}
+.route-missing-list {
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  max-height: 40vh;
+  overflow-y: auto;
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: var(--shadow);
+  pointer-events: auto;
+}
+.route-missing-list button {
+  display: flex;
+  width: 100%;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: 12px;
+  text-align: left;
+  font-size: 13px;
+}
+.route-missing-list button:hover {
+  background: #f0eafb;
+}
+.route-missing-list small {
+  color: var(--muted);
+}
+
+/* 行程海报 */
+.poster-sheet-body {
+  padding: 4px 18px 18px;
+}
+.poster-preview {
+  display: flex;
+  justify-content: center;
+  overflow: hidden;
+  padding: 6px 0;
+}
+.poster-hidden-map {
+  position: fixed;
+  top: 0;
+  left: -10000px;
+  width: 320px;
+  height: 240px;
+  pointer-events: none;
+}
+.poster-hint {
+  margin-top: 12px;
+  font-size: 11px;
+  line-height: 1.7;
+  color: var(--muted);
+}
+.poster {
+  width: 360px;
+  height: 480px;
+  box-sizing: border-box;
+  padding: 22px 20px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  background:
+    radial-gradient(#84798c19 0.65px, transparent 0.65px) 0 0 / 7px 7px,
+    #f6f5f3;
+  font-family: var(--font-sans);
+  color: #292531;
+  overflow: hidden;
+}
+.poster-head {
+  position: relative;
+  padding-right: 60px;
+}
+.poster-title {
+  font-size: 24px;
+  font-weight: 800;
+  line-height: 1.25;
+  letter-spacing: -0.5px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.poster-dates {
+  margin-top: 4px;
+  font-size: 12px;
+  color: #77727f;
+  font-family: var(--font-serif);
+}
+.poster-sticker {
+  position: absolute;
+  top: -10px;
+  right: 0;
+  width: 62px;
+  transform: rotate(-8deg);
+}
+.poster-map {
+  position: relative;
+  height: 240px;
+  border-radius: 20px;
+  overflow: hidden;
+  background: #e9e4ef;
+  border: 3px solid #fff;
+  box-shadow: 0 4px 14px #3930441f;
+}
+.poster-map img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.poster-map-fallback {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  height: 100%;
+  padding: 16px;
+  font-size: 12px;
+  color: #604b79;
+}
+.poster-map-fallback i {
+  font-style: normal;
+  color: #b6aac9;
+}
+.poster-route {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.poster-route > div {
+  min-width: 0;
+}
+.poster-route small {
+  display: block;
+  font-size: 10px;
+  color: #9c8ead;
+  margin-bottom: 2px;
+}
+.poster-route strong {
+  font-size: 17px;
+  font-weight: 750;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+  max-width: 120px;
+}
+.poster-route-line {
+  flex: 1;
+  height: 2px;
+  min-width: 20px;
+  border-radius: 999px;
+  background: repeating-linear-gradient(
+    90deg,
+    #b6aac9 0 5px,
+    transparent 5px 10px
+  );
+}
+.poster-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: auto;
+}
+.poster-meta span {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #ebe4f4;
+  color: #604b79;
+  font-size: 11px;
+}
+.poster-foot {
+  font-size: 9px;
+  color: #a8a2b0;
+}
+
+@media (max-width: 360px) {
+  .poster-sheet-body {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+}

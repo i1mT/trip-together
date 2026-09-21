@@ -6,6 +6,7 @@ import { useState } from "react";
 import {
   Plus,
   ArrowUpRight,
+  Map as MapIcon,
   MapPin,
   Phone,
   Clock3,
@@ -28,6 +29,8 @@ import { AiGuideEntry } from "../ai-guide";
 import { EventIcon, SheetFooter, Sheet, SectionTitle } from "../ui";
 import { PreparationChecklist } from "../preparation/checklist";
 import { EventEditor } from "../editors/event-editor";
+import { RouteMapSheet } from "../map/route-map-sheet";
+import { TripPosterSheet } from "../map/poster-sheet";
 import { api } from "@/lib/api";
 import { DocumentRow } from "./documents";
 export function Itinerary({
@@ -45,6 +48,8 @@ export function Itinerary({
 }) {
   const { events } = data;
   const [editing, setEditing] = useState(false);
+  const [mapOpen, setMapOpen] = useState(false);
+  const [posterOpen, setPosterOpen] = useState(false);
   const tripDays: string[] = [];
   for (
     let day = data.trip.start_date;
@@ -76,6 +81,13 @@ export function Itinerary({
       <div className="page-title">
         <div className="page-heading-row">
           <h1>完整行程</h1>
+          <button
+            className="icon-button page-add-button"
+            aria-label="查看路线图"
+            onClick={() => setMapOpen(true)}
+          >
+            <MapIcon size={22} />
+          </button>
           <button
             className="icon-button page-add-button"
             aria-label="添加安排"
@@ -203,6 +215,21 @@ export function Itinerary({
           </p>
         </>
       )}
+      <RouteMapSheet
+        open={mapOpen}
+        data={data}
+        onClose={() => setMapOpen(false)}
+        onEvent={onEvent}
+        onPoster={() => {
+          setMapOpen(false);
+          setPosterOpen(true);
+        }}
+      />
+      <TripPosterSheet
+        open={posterOpen}
+        data={data}
+        onClose={() => setPosterOpen(false)}
+      />
     </section>
   );
 }

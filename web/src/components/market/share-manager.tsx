@@ -6,12 +6,15 @@ import {
   ChevronRight,
   ChevronDown,
   ChevronUp,
+  Image as ImageIcon,
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { introductionLimit, type ShareDraft } from "../../../../shared/market";
 import { Sheet, SheetFooter, SheetForm } from "../ui";
 import { SnapshotView } from "./snapshot-view";
+import { TripPosterSheet } from "../map/poster-sheet";
 import { useToast } from "../toast";
+import type { TripData } from "@/lib/models";
 export function ShareManager({ tripId }: { tripId: string }) {
   const toast = useToast();
   const [open, setOpen] = useState(false),
@@ -23,7 +26,20 @@ export function ShareManager({ tripId }: { tripId: string }) {
     [expanded, setExpanded] = useState(false);
   const [introduction, setIntroduction] = useState("");
   const [title, setTitle] = useState("");
+  const [poster, setPoster] = useState<TripData | null>(null);
+  const [posterLoading, setPosterLoading] = useState(false);
   const path = `/trips/${tripId}/share`;
+  async function openPoster() {
+    if (poster || posterLoading) return;
+    setPosterLoading(true);
+    try {
+      setPoster(await api<TripData>(`/trips/${tripId}/data`));
+    } catch (e) {
+      toast((e as Error).message, "error");
+    } finally {
+      setPosterLoading(false);
+    }
+  }
   async function load() {
     setError("");
     const loaded = await api<ShareDraft>(path);
@@ -89,6 +105,19 @@ export function ShareManager({ tripId }: { tripId: string }) {
         <span>
           <strong>分享我的行程攻略</strong>
           <small>发布到旅行攻略市场，供别人预览和复制</small>
+        </span>
+        <ChevronRight size={18} />
+      </button>
+      <button
+        type="button"
+        className="trip-setting-row"
+        disabled={posterLoading}
+        onClick={() => void openPoster()}
+      >
+        <ImageIcon size={21} />
+        <span>
+          <strong>生成行程海报</strong>
+          <small>把路线做成图片，保存后分享给朋友</small>
         </span>
         <ChevronRight size={18} />
       </button>
@@ -292,6 +321,9 @@ export function ShareManager({ tripId }: { tripId: string }) {
           </SheetFooter>
         </SheetForm>
       </Sheet>
+      {poster && (
+        <TripPosterSheet open data={poster} onClose={() => setPoster(null)} />
+      )}
     </>
   );
 }

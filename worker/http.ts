@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { mapTilesOrigin } from "../shared/map-source";
 export class HttpError extends Error {
   constructor(
     public status: number,
@@ -102,7 +103,7 @@ export function secure(response: Response) {
   );
   result.headers.set(
     "Content-Security-Policy",
-    "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' https://api.bigdatacloud.net; font-src 'self'; frame-src 'self' blob:; object-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'self'",
+    `default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: ${mapTilesOrigin}; connect-src 'self' https://api.bigdatacloud.net ${mapTilesOrigin}; font-src 'self'; worker-src 'self' blob:; frame-src 'self' blob:; object-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'self'`,
   );
   return result;
 }

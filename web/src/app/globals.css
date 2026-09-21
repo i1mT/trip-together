@@ -29,6 +29,8 @@
 
 @import "../styles/components/toast.css";
 
+@import "../styles/components/route-map.css";
+
 @theme {
   --color-primary-50: #f6f5f3;
   --color-primary-100: #efedf2;

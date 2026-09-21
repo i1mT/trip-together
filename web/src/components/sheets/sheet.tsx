@@ -79,6 +79,7 @@ export function Sheet({
   wide = false,
   className = "",
   hasChanges,
+  headerless = false,
 }: {
   open: boolean;
   onClose: () => void;
@@ -89,6 +90,7 @@ export function Sheet({
   wide?: boolean;
   className?: string;
   hasChanges?: boolean;
+  headerless?: boolean;
 }) {
   const [dirty, setDirty] = useState(false),
     [discard, setDiscard] = useState(false),
@@ -142,23 +144,27 @@ export function Sheet({
               setDirty(true);
           }}
         >
-          <div className="sheet-handle" />
-          <header className="sheet-header">
-            <div>
-              <div className="sheet-title-line">
-                <Dialog.Title>{discard ? "尚未保存" : title}</Dialog.Title>
-                {!discard && titleExtra}
+          <div className="sheet-handle" hidden={headerless} />
+          {headerless ? (
+            <Dialog.Title className="sr-only">{title}</Dialog.Title>
+          ) : (
+            <header className="sheet-header">
+              <div>
+                <div className="sheet-title-line">
+                  <Dialog.Title>{discard ? "尚未保存" : title}</Dialog.Title>
+                  {!discard && titleExtra}
+                </div>
+                {description && (
+                  <Dialog.Description id={descriptionId}>
+                    {description}
+                  </Dialog.Description>
+                )}
               </div>
-              {description && (
-                <Dialog.Description id={descriptionId}>
-                  {description}
-                </Dialog.Description>
-              )}
-            </div>
-            <Dialog.Close className="icon-button" aria-label="关闭">
-              <X size={22} />
-            </Dialog.Close>
-          </header>
+              <Dialog.Close className="icon-button" aria-label="关闭">
+                <X size={22} />
+              </Dialog.Close>
+            </header>
+          )}
           <FooterContext.Provider value={footer}>
             <FormContext.Provider value={undefined}>
               <div className="sheet-body" hidden={discard}>

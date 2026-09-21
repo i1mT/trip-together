@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Download } from "lucide-react";
+import { Download, X } from "lucide-react";
 import type { TripData } from "@/lib/models";
 import { buildRoute } from "@/lib/route-geometry";
 import { mapStyleUrl } from "../../../../shared/map-source";
@@ -90,10 +90,10 @@ export function TripPosterSheet({
           if (disposed) return;
           // 底部腰封会遮住地图下缘，留出等高的 padding 保证路线完整可见。
           fitRouteBounds(map, route, {
-            top: 40,
-            bottom: 222,
-            left: 32,
-            right: 32,
+            top: 34,
+            bottom: 176,
+            left: 30,
+            right: 30,
           });
           map.once("idle", capture);
         });
@@ -115,9 +115,7 @@ export function TripPosterSheet({
     const node = previewNode;
     // 用窗口尺寸而不是 ResizeObserver，避免改变缩放后触发自身尺寸变化导致的通知循环。
     const update = () =>
-      setScale(
-        Math.min(1, Math.max(0.5, (node.clientWidth - 4) / POSTER_WIDTH)),
-      );
+      setScale(Math.max(0.5, node.clientWidth / POSTER_WIDTH));
     update();
     window.addEventListener("resize", update);
     return () => window.removeEventListener("resize", update);
@@ -180,6 +178,7 @@ export function TripPosterSheet({
       onClose={onClose}
       title="行程海报"
       className="poster-sheet"
+      headerless
     >
       <div className="poster-sheet-body">
         {!hasStops ? (
@@ -206,17 +205,20 @@ export function TripPosterSheet({
                   <PosterTemplate ref={poster} data={data} image={image} />
                 </div>
               </div>
+              <button
+                type="button"
+                className="poster-close"
+                aria-label="关闭"
+                onClick={onClose}
+              >
+                <X size={20} />
+              </button>
             </div>
             <div
               className="poster-hidden-map"
               ref={setHidden}
               aria-hidden="true"
             />
-            <p className="poster-hint">
-              {mapState === "loading"
-                ? "正在准备地图…"
-                : "海报保存在本机，不会上传行程内容。微信不支持网页直接发朋友圈，保存或系统分享后自行发布。"}
-            </p>
           </>
         )}
       </div>

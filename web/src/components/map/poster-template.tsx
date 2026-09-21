@@ -47,7 +47,10 @@ export const PosterTemplate = forwardRef<
           <h3 className="poster-title">{data.trip.title}</h3>
           <p className="poster-dates">
             {data.trip.start_date} — {data.trip.end_date}
-            <span> · {dayCount(data.trip.start_date, data.trip.end_date)} 天</span>
+            <span>
+              {" "}
+              · {dayCount(data.trip.start_date, data.trip.end_date)} 天
+            </span>
           </p>
         </div>
         {first && last && route.points.length > 1 && (

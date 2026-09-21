@@ -59,11 +59,6 @@
   display: block;
   padding-bottom: 0;
 }
-.feature-main.has-route h1 {
-  font-size: 16px;
-  letter-spacing: 0;
-  font-weight: 650;
-}
 .feature-main.has-route p {
   font-size: 10px;
   margin-top: 4px;

@@ -57,11 +57,12 @@ export function Today({
                 {current ? (
                   <>
                     <span className="live-dot" />
-                    正在进行
+                    正在进行：
                   </>
                 ) : (
-                  "下一项安排"
+                  "下一项安排："
                 )}
+                <h1>{featured.title}</h1>
               </span>
               <LocalClock
                 now={realNow}
@@ -76,10 +77,7 @@ export function Today({
             >
               <div className={`feature-main ${route ? "has-route" : ""}`}>
                 {!route && <TravelSticker kind={featured.kind} />}
-                <div>
-                  <h1>{featured.title}</h1>
-                  <p>{featured.subtitle}</p>
-                </div>
+                {featured.subtitle && <p>{featured.subtitle}</p>}
               </div>
               <TicketRoute event={featured} />
               <div className={`feature-footer ${route ? "route-footer" : ""}`}>

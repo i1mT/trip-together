@@ -40,6 +40,17 @@
   border-radius: 999px;
   padding: 5px 10px;
   background: #ece5f4;
+  min-width: 0;
+}
+/* 标题并入状态胶囊:保留 heading 语义,长标题单行省略,不挤掉右侧时钟。 */
+.status-pill > h1 {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: inherit;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 .status-pill.live {
@@ -74,13 +85,6 @@
   grid-column: 1;
   grid-row: 1;
   min-width: 0;
-}
-.feature-main h1 {
-  font-size: 25px;
-  line-height: 1.4;
-  letter-spacing: -0.8px;
-  font-weight: 800;
-  text-wrap: balance;
 }
 .feature-main p {
   font-size: 11px;
@@ -303,9 +307,6 @@
     padding: 24px 18px 20px;
     grid-template-columns: minmax(0, 1fr) 61px;
     gap: 8px;
-  }
-  .feature-main h1 {
-    font-size: 23px;
   }
   .feature-main > .travel-sticker {
     width: 61px;

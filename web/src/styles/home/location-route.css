@@ -75,11 +75,11 @@
   gap: 8px;
   padding: 24px 22px 22px;
 }
-/* 两栏等高,行序固定:标签/地名/代码/时间/日期;时间压到同一基线,
-   不随地名行数浮动。 */
+/* 两栏等高:标签行贴顶,地名/代码/时间/日期整体压底,左右地名与时间
+   始终处于同一水平线,不随对方行数浮动。 */
 .route-endpoint {
   display: grid;
-  grid-template-rows: auto auto auto 1fr auto;
+  grid-template-rows: auto 1fr auto auto auto;
   justify-items: start;
   min-width: 0;
 }
@@ -92,6 +92,8 @@
   color: #897a97;
 }
 .route-endpoint > strong {
+  grid-row: 2;
+  align-self: end;
   font-size: 27px;
   line-height: 1.4;
   letter-spacing: -0.8px;

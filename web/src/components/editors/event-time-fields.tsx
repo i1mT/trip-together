@@ -3,6 +3,7 @@ import { useId } from "react";
 import { ConfigProvider, Select, Switch } from "antd";
 import zhCN from "antd/locale/zh_CN";
 import { zonedChoices } from "@/lib/zoned-input";
+import { localDate } from "@/lib/time";
 import { destinations, readableZone } from "../../../../shared/travel-options";
 import { DateTimeWheelField } from "./fields";
 import type { Timing } from "./event/timing";
@@ -92,7 +93,8 @@ export function EventTimeFields({
     const time = end ? v.endTime : v.startTime;
     const zoneLabel = end ? "到达地当地时间" : "当地时间";
     const key = end ? "endTime" : "startTime";
-    const display = timed && time ? `${date} ${time}` : date;
+    // 输入框始终显示完整年月日时分;未选时间的 00:00 只是显示,不代表已确认时间。
+    const display = timed && time ? `${date} ${time}` : `${date} 00:00`;
     return (
       <div className="time-controls">
         <div className="time-control">
@@ -101,7 +103,7 @@ export function EventTimeFields({
             mode="datetime"
             value={display}
             placeholder="时间待定"
-            min={`${v.date}T00:00`}
+            min={`${localDate(Date.now(), end ? v.endTimezone : v.timezone)}T00:00`}
             max={end ? undefined : "2099-12-31T23:59"}
             onClear={
               timed

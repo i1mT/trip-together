@@ -81,6 +81,7 @@
   display: grid;
   grid-template-rows: auto 1fr auto auto auto;
   justify-items: start;
+  text-align: left;
   min-width: 0;
 }
 .route-endpoint:last-child {
@@ -94,7 +95,8 @@
 .route-endpoint > strong {
   grid-row: 2;
   align-self: end;
-  font-size: 27px;
+  /* 字号由组件按地名长度设置(--route-name-size),长地名自动缩小。 */
+  font-size: var(--route-name-size, 27px);
   line-height: 1.4;
   letter-spacing: -0.8px;
   margin: 7px 0 3px;
@@ -141,7 +143,7 @@
     grid-template-columns: minmax(0, 1fr) 44px minmax(0, 1fr);
   }
   .route-endpoint > strong {
-    font-size: 24px;
+    font-size: calc(var(--route-name-size, 27px) * 0.89);
   }
   .ticket-route-direction .travel-sticker {
     width: 44px;

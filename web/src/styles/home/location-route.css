@@ -70,11 +70,10 @@
   gap: 8px;
   padding: 24px 22px 22px;
 }
-/* 两栏等高:标签行贴顶,地名/代码/时间/日期整体压底,左右地名与时间
-   始终处于同一水平线,不随对方行数浮动。 */
+/* 两栏等高:标签/地名/代码从顶部开始,时间与日期压底,左右时间仍对齐。 */
 .route-endpoint {
   display: grid;
-  grid-template-rows: auto 1fr auto auto auto;
+  grid-template-rows: auto auto auto 1fr auto;
   justify-items: start;
   text-align: left;
   min-width: 0;
@@ -89,7 +88,6 @@
 }
 .route-endpoint > strong {
   grid-row: 2;
-  align-self: end;
   /* 字号由组件按地名长度设置(--route-name-size),长地名自动缩小。 */
   font-size: var(--route-name-size, 27px);
   line-height: 1.4;

@@ -111,6 +111,16 @@ test("路线图展示站点与缺坐标提示，并生成行程海报", async ({
   await expect(mapDialog.getByText("1 项安排没有坐标")).toBeVisible();
   await mapDialog.getByRole("button", { name: /1 项安排没有坐标/ }).click();
   await expect(mapDialog.getByText("待定活动")).toBeVisible();
+
+  // 播放：逐段前进，可中途停止。
+  const canvas = mapDialog.locator(".route-map-canvas");
+  await mapDialog.getByRole("button", { name: "播放路线" }).click();
+  await expect(canvas).toHaveAttribute("data-map-playing", "true");
+  await expect(mapDialog.locator(".route-runner")).toHaveCount(1);
+  await page.waitForTimeout(1200);
+  await mapDialog.getByRole("button", { name: "停止播放" }).click();
+  await expect(canvas).toHaveAttribute("data-map-playing", "false");
+  await expect(mapDialog.locator(".route-runner")).toHaveCount(0);
   await page.screenshot({ path: `.local/route-map-${browserName}.png` });
 
   await mapDialog.getByRole("button", { name: "生成海报" }).click();

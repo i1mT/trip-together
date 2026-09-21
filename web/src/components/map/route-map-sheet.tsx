@@ -1,13 +1,18 @@
 "use client";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Map as MapLibreMap, Marker as MapLibreMarker } from "maplibre-gl";
-import { AlertCircle, ChevronDown, Share2 } from "lucide-react";
+import { AlertCircle, ChevronDown, Pause, Play, Share2 } from "lucide-react";
 import type { TripData, TripEvent } from "@/lib/models";
 import { buildRoute, type RouteStop } from "@/lib/route-geometry";
 import { mapStyleUrl } from "../../../../shared/map-source";
 import { ensureRouteLayers, fitRouteBounds, ROUTE_SOURCE } from "./route-layer";
+import { segmentSticker } from "./stickers";
 import { EmptyState } from "../empty-state";
 import { Sheet } from "../ui";
+
+const PROGRESS_SOURCE = "trip-route-progress";
+const PROGRESS_LAYER = "trip-route-progress-line";
+const SEGMENT_DURATION = 1100;
 
 type MapLibreModule = typeof import("maplibre-gl");
 
@@ -46,6 +51,13 @@ export function RouteMapSheet({
   const map = useRef<MapLibreMap | null>(null);
   const module = useRef<MapLibreModule | null>(null);
   const markers = useRef<MapLibreMarker[]>([]);
+  const runner = useRef<{
+    marker: MapLibreMarker;
+    sticker: HTMLSpanElement;
+    kind: string;
+  } | null>(null);
+  const frame = useRef(0);
+  const bar = useRef<HTMLSpanElement>(null);
   const handler = useRef(onEvent);
   handler.current = onEvent;
   const [ready, setReady] = useState(false);
@@ -53,12 +65,55 @@ export function RouteMapSheet({
   const [failed, setFailed] = useState("");
   const [selectedDay, setSelectedDay] = useState("");
   const [missingOpen, setMissingOpen] = useState(false);
+  const [playing, setPlaying] = useState(false);
+  const [played, setPlayed] = useState(false);
   const hasStops = route.stops.length > 0;
 
   const days = useMemo(
     () => [...new Set(route.points.map((point) => point.date))].sort(),
     [route.points],
   );
+
+  /** 按行程顺序把各段坐标拼成一条完整轨迹，附带累计距离与每个点所属的段类型。 */
+  const journey = useMemo(() => {
+    const coordinates: [number, number][] = [];
+    const cumulative: number[] = [];
+    const kinds: string[] = [];
+    let total = 0;
+    for (const segment of route.segments) {
+      for (const point of segment.coordinates) {
+        const previous = coordinates[coordinates.length - 1];
+        if (previous)
+          total += Math.hypot(point[0] - previous[0], point[1] - previous[1]);
+        coordinates.push(point);
+        cumulative.push(total);
+        kinds.push(segment.kind);
+      }
+    }
+    return { coordinates, cumulative, kinds, total };
+  }, [route.segments]);
+
+  const stopPlayback = useCallback((clear = true) => {
+    if (frame.current) cancelAnimationFrame(frame.current);
+    frame.current = 0;
+    const instance = map.current;
+    if (instance) {
+      instance.setPaintProperty(`${ROUTE_SOURCE}-line`, "line-opacity", 0.85);
+      instance.setPaintProperty(`${ROUTE_SOURCE}-arc`, "line-opacity", 0.9);
+      const source = instance.getSource(PROGRESS_SOURCE) as
+        { setData: (value: FeatureCollection) => void } | undefined;
+      if (source && clear)
+        source.setData({ type: "FeatureCollection", features: [] });
+    }
+    runner.current?.marker.remove();
+    runner.current = null;
+    if (bar.current) bar.current.style.width = "0%";
+    setPlaying(false);
+  }, []);
+
+  useEffect(() => {
+    if (!open) stopPlayback();
+  }, [open, stopPlayback]);
 
   useEffect(() => {
     if (!open || !hasStops || !container) return;
@@ -95,6 +150,7 @@ export function RouteMapSheet({
     })();
     return () => {
       disposed = true;
+      stopPlayback();
       markers.current.forEach((marker) => marker.remove());
       markers.current = [];
       instance?.remove();
@@ -103,7 +159,7 @@ export function RouteMapSheet({
       setReady(false);
       setCreated(false);
     };
-  }, [open, hasStops, container, route.stops]);
+  }, [open, hasStops, container, route.stops, stopPlayback]);
 
   useEffect(() => {
     const instance = map.current,
@@ -125,7 +181,7 @@ export function RouteMapSheet({
   useEffect(() => {
     const instance = map.current;
     if (!instance || !ready) return;
-    ensureRouteLayers(instance, route);
+    void ensureRouteLayers(instance, route);
     fitRouteBounds(instance, route);
   }, [ready, route]);
 
@@ -143,6 +199,106 @@ export function RouteMapSheet({
     for (const id of [`${ROUTE_SOURCE}-line`, `${ROUTE_SOURCE}-arc`])
       if (instance.getLayer(id)) instance.setFilter(id, filter);
   }, [selectedDay, ready]);
+
+  function play() {
+    const instance = map.current,
+      maplibre = module.current;
+    if (!instance || !maplibre || !journey.total || !journey.coordinates.length)
+      return;
+    stopPlayback();
+    setPlayed(false);
+
+    if (!instance.getSource(PROGRESS_SOURCE)) {
+      instance.addSource(PROGRESS_SOURCE, {
+        type: "geojson",
+        data: { type: "FeatureCollection", features: [] },
+      });
+      instance.addLayer({
+        id: PROGRESS_LAYER,
+        type: "line",
+        source: PROGRESS_SOURCE,
+        layout: { "line-cap": "round", "line-join": "round" },
+        paint: {
+          "line-color": "#4c3867",
+          "line-width": 5,
+          "line-opacity": 0.95,
+        },
+      });
+    }
+    instance.setPaintProperty(`${ROUTE_SOURCE}-line`, "line-opacity", 0.22);
+    instance.setPaintProperty(`${ROUTE_SOURCE}-arc`, "line-opacity", 0.28);
+
+    const element = document.createElement("div");
+    element.className = "route-runner";
+    element.setAttribute("aria-hidden", "true");
+    const sticker = document.createElement("span");
+    sticker.className = "travel-sticker sticker-flight";
+    element.append(sticker);
+    const marker = new maplibre.Marker({ element, anchor: "center" })
+      .setLngLat(journey.coordinates[0])
+      .addTo(instance);
+    runner.current = { marker, sticker, kind: "" };
+
+    const total = journey.total,
+      duration = Math.min(
+        45000,
+        Math.max(2600, route.segments.length * SEGMENT_DURATION),
+      );
+    const started = performance.now();
+    setPlaying(true);
+
+    const step = (now: number) => {
+      const progress = Math.min(1, (now - started) / duration),
+        target = progress * total;
+      const { cumulative, coordinates } = journey;
+      let index = cumulative.findIndex((value) => value >= target);
+      if (index < 0) index = cumulative.length - 1;
+      const from = coordinates[Math.max(0, index - 1)],
+        to = coordinates[index],
+        span = cumulative[index] - (cumulative[index - 1] ?? 0);
+      const ratio =
+        span === 0 ? 0 : (target - (cumulative[index - 1] ?? 0)) / span;
+      const position: [number, number] = [
+        from[0] + (to[0] - from[0]) * ratio,
+        from[1] + (to[1] - from[1]) * ratio,
+      ];
+      const source = instance!.getSource(PROGRESS_SOURCE) as
+        { setData: (value: FeatureCollection) => void } | undefined;
+      source?.setData({
+        type: "FeatureCollection",
+        features: [
+          {
+            type: "Feature",
+            properties: {},
+            geometry: {
+              type: "LineString",
+              coordinates: [
+                ...coordinates.slice(0, Math.max(1, index)),
+                position,
+              ],
+            },
+          },
+        ],
+      });
+      const current = runner.current;
+      if (current) {
+        current.marker.setLngLat(position);
+        const kind = segmentSticker(journey.kinds[index] ?? "drive");
+        if (kind !== current.kind) {
+          current.kind = kind;
+          current.sticker.className = `travel-sticker sticker-${kind}`;
+        }
+      }
+      if (bar.current) bar.current.style.width = `${progress * 100}%`;
+      if (progress < 1) frame.current = requestAnimationFrame(step);
+      else {
+        frame.current = 0;
+        stopPlayback(false);
+        setPlayed(true);
+      }
+    };
+    frame.current = requestAnimationFrame(step);
+  }
 
   return (
     <Sheet
@@ -182,6 +338,7 @@ export function RouteMapSheet({
               className="route-map-canvas"
               ref={setContainer}
               data-map-ready={ready ? "true" : "false"}
+              data-map-playing={playing ? "true" : "false"}
               aria-label="行程路线地图"
             />
             {!created && !failed && (
@@ -205,6 +362,7 @@ export function RouteMapSheet({
               <div className="route-day-filter" aria-label="按日期筛选路线">
                 <button
                   type="button"
+                  disabled={playing}
                   className={selectedDay === "" ? "selected" : ""}
                   aria-pressed={selectedDay === ""}
                   onClick={() => setSelectedDay("")}
@@ -215,6 +373,7 @@ export function RouteMapSheet({
                   <button
                     key={day}
                     type="button"
+                    disabled={playing}
                     className={selectedDay === day ? "selected" : ""}
                     aria-pressed={selectedDay === day}
                     onClick={() =>
@@ -263,9 +422,29 @@ export function RouteMapSheet({
                 )}
               </div>
             )}
+            <div className="route-play">
+              <span className="route-play-track" aria-hidden="true">
+                <span className="route-play-bar" ref={bar} />
+              </span>
+              <button
+                type="button"
+                className="route-play-button"
+                aria-label={
+                  playing ? "停止播放" : played ? "重新播放路线" : "播放路线"
+                }
+                onClick={() => (playing ? stopPlayback() : play())}
+              >
+                {playing ? <Pause size={20} /> : <Play size={20} />}
+              </button>
+            </div>
           </>
         )}
       </div>
     </Sheet>
   );
 }
+
+type FeatureCollection = {
+  type: "FeatureCollection";
+  features: unknown[];
+};

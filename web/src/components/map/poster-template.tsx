@@ -27,17 +27,6 @@ export const PosterTemplate = forwardRef<
   ).length;
   return (
     <div className="poster" ref={ref}>
-      <div className="poster-head">
-        <TravelSticker kind="flight" className="poster-sticker" />
-        <h3 className="poster-title">{data.trip.title}</h3>
-        <p className="poster-dates">
-          {data.trip.start_date} — {data.trip.end_date}
-          <span>
-            {" "}
-            · {dayCount(data.trip.start_date, data.trip.end_date)} 天
-          </span>
-        </p>
-      </div>
       <div className="poster-map">
         {image ? (
           <img src={image} alt="" />
@@ -51,26 +40,36 @@ export const PosterTemplate = forwardRef<
             ))}
           </div>
         )}
+        <TravelSticker kind="flight" className="poster-sticker" />
       </div>
-      {first && last && route.points.length > 1 && (
-        <div className="poster-route">
-          <div>
-            <small>起点</small>
-            <strong>{first.name}</strong>
-          </div>
-          <span className="poster-route-line" aria-hidden="true" />
-          <div>
-            <small>终点</small>
-            <strong>{last.name}</strong>
-          </div>
+      <div className="poster-band">
+        <div className="poster-band-head">
+          <h3 className="poster-title">{data.trip.title}</h3>
+          <p className="poster-dates">
+            {data.trip.start_date} — {data.trip.end_date}
+            <span> · {dayCount(data.trip.start_date, data.trip.end_date)} 天</span>
+          </p>
         </div>
-      )}
-      <div className="poster-meta">
-        {destinations.length > 0 && <span>{destinations.join(" · ")}</span>}
-        <span>{planned} 项安排</span>
-        <span>{route.stops.length} 个地点</span>
+        {first && last && route.points.length > 1 && (
+          <div className="poster-route">
+            <div>
+              <small>起点</small>
+              <strong>{first.name}</strong>
+            </div>
+            <span className="poster-route-line" aria-hidden="true" />
+            <div>
+              <small>终点</small>
+              <strong>{last.name}</strong>
+            </div>
+          </div>
+        )}
+        <div className="poster-meta">
+          {destinations.length > 0 && <span>{destinations.join(" · ")}</span>}
+          <span>{planned} 项安排</span>
+          <span>{route.stops.length} 个地点</span>
+        </div>
+        <p className="poster-foot">地图数据 © OpenStreetMap contributors</p>
       </div>
-      <p className="poster-foot">地图数据 © OpenStreetMap contributors</p>
     </div>
   );
 });

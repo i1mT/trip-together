@@ -1,10 +1,20 @@
 import type { Map as MapLibreMap } from "maplibre-gl";
 import type { RouteGeometry } from "@/lib/route-geometry";
+import {
+  ARROW_IMAGE_ID,
+  registerRouteImages,
+  segmentSticker,
+  stickerImageId,
+} from "./stickers";
 
 export const ROUTE_SOURCE = "trip-route";
 export const ROUTE_POINT_SOURCE = "trip-route-points";
+export const ROUTE_DECOR_SOURCE = "trip-route-decor";
 export const LINE_COLOR = "#6c4c96";
 export const ARC_COLOR = "#9b7bd4";
+
+const ARROW_LAYER = `${ROUTE_SOURCE}-arrows`;
+const STICKER_LAYER = `${ROUTE_DECOR_SOURCE}-stickers`;
 
 export function lineFeatures(route: RouteGeometry) {
   return route.segments.map((segment) => ({
@@ -17,6 +27,42 @@ export function lineFeatures(route: RouteGeometry) {
     geometry: {
       type: "LineString" as const,
       coordinates: segment.coordinates,
+    },
+  }));
+}
+
+function midpoint(coordinates: [number, number][]) {
+  if (coordinates.length <= 1) return coordinates[0];
+  const lengths: number[] = [];
+  let total = 0;
+  for (let i = 1; i < coordinates.length; i += 1) {
+    const dx = coordinates[i][0] - coordinates[i - 1][0],
+      dy = coordinates[i][1] - coordinates[i - 1][1];
+    const length = Math.hypot(dx, dy);
+    lengths.push(length);
+    total += length;
+  }
+  let target = total / 2;
+  for (let i = 0; i < lengths.length; i += 1) {
+    if (target <= lengths[i]) {
+      const ratio = lengths[i] === 0 ? 0 : target / lengths[i];
+      return [
+        coordinates[i][0] + (coordinates[i + 1][0] - coordinates[i][0]) * ratio,
+        coordinates[i][1] + (coordinates[i + 1][1] - coordinates[i][1]) * ratio,
+      ] as [number, number];
+    }
+    target -= lengths[i];
+  }
+  return coordinates[coordinates.length - 1];
+}
+
+function decorFeatures(route: RouteGeometry) {
+  return route.segments.map((segment) => ({
+    type: "Feature" as const,
+    properties: { imageId: stickerImageId(segmentSticker(segment.kind)) },
+    geometry: {
+      type: "Point" as const,
+      coordinates: midpoint(segment.coordinates),
     },
   }));
 }
@@ -37,8 +83,11 @@ export function endpointFeatures(route: RouteGeometry) {
   }));
 }
 
-/** 往地图实例上补充路线与起终点图层，幂等，可重复调用。 */
-export function ensureRouteLayers(map: MapLibreMap, route: RouteGeometry) {
+/** 往地图实例上补充路线、方向箭头、行程贴纸与起终点图层，幂等。 */
+export async function ensureRouteLayers(
+  map: MapLibreMap,
+  route: RouteGeometry,
+) {
   const lines = {
     type: "FeatureCollection" as const,
     features: lineFeatures(route),
@@ -74,6 +123,60 @@ export function ensureRouteLayers(map: MapLibreMap, route: RouteGeometry) {
       },
     });
   }
+
+  await registerRouteImages(
+    map,
+    route.segments.map((segment) => segmentSticker(segment.kind)),
+  );
+
+  if (!map.getLayer(ARROW_LAYER) && map.hasImage(ARROW_IMAGE_ID))
+    map.addLayer({
+      id: ARROW_LAYER,
+      type: "symbol",
+      source: ROUTE_SOURCE,
+      layout: {
+        "symbol-placement": "line",
+        "symbol-spacing": 80,
+        "icon-image": ARROW_IMAGE_ID,
+        "icon-size": 0.42,
+        "icon-allow-overlap": true,
+        "icon-ignore-placement": true,
+      },
+    });
+
+  const decor = {
+    type: "FeatureCollection" as const,
+    features: decorFeatures(route),
+  };
+  const decorSource = map.getSource(ROUTE_DECOR_SOURCE) as
+    { setData: (value: typeof decor) => void } | undefined;
+  if (decorSource) decorSource.setData(decor);
+  else map.addSource(ROUTE_DECOR_SOURCE, { type: "geojson", data: decor });
+  const hasStickerImage = route.segments.some((segment) =>
+    map.hasImage(stickerImageId(segmentSticker(segment.kind))),
+  );
+  if (!map.getLayer(STICKER_LAYER) && hasStickerImage)
+    map.addLayer({
+      id: STICKER_LAYER,
+      type: "symbol",
+      source: ROUTE_DECOR_SOURCE,
+      layout: {
+        "icon-image": ["get", "imageId"],
+        "icon-size": [
+          "interpolate",
+          ["linear"],
+          ["zoom"],
+          3,
+          0.07,
+          7,
+          0.12,
+          11,
+          0.18,
+        ],
+        "icon-padding": 4,
+        "icon-rotation-alignment": "viewport",
+      },
+    });
 
   const points = {
     type: "FeatureCollection" as const,
@@ -111,10 +214,15 @@ export function ensureRouteLayers(map: MapLibreMap, route: RouteGeometry) {
   }
 }
 
-export function fitRouteBounds(map: MapLibreMap, route: RouteGeometry) {
+export function fitRouteBounds(
+  map: MapLibreMap,
+  route: RouteGeometry,
+  padding: number | { top: number; bottom: number; left: number; right: number } = 48,
+) {
   if (!route.bounds) return;
   const [[minLng, minLat], [maxLng, maxLat]] = route.bounds;
   if (minLng === maxLng && minLat === maxLat)
     map.jumpTo({ center: [minLng, minLat], zoom: 9 });
-  else map.fitBounds(route.bounds, { padding: 48, maxZoom: 11, duration: 0 });
+  else
+    map.fitBounds(route.bounds, { padding, maxZoom: 11, duration: 0 });
 }

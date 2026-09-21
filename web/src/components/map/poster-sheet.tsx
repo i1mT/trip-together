@@ -84,10 +84,17 @@ export function TripPosterSheet({
           map.remove();
           instance = null;
         };
-        map.once("load", () => {
+        map.once("load", async () => {
           if (disposed) return;
-          ensureRouteLayers(map, route);
-          fitRouteBounds(map, route);
+          await ensureRouteLayers(map, route);
+          if (disposed) return;
+          // 底部腰封会遮住地图下缘，留出等高的 padding 保证路线完整可见。
+          fitRouteBounds(map, route, {
+            top: 40,
+            bottom: 222,
+            left: 32,
+            right: 32,
+          });
           map.once("idle", capture);
         });
         timer = window.setTimeout(capture, 12000);

@@ -4,6 +4,8 @@ import type { TripData } from "@/lib/models";
 import { buildRoute } from "@/lib/route-geometry";
 import { TravelSticker } from "../travel-sticker";
 
+const BRAND = "旅行计划";
+
 function dayCount(start: string, end: string) {
   const from = Date.parse(`${start}T12:00:00Z`),
     to = Date.parse(`${end}T12:00:00Z`);
@@ -25,21 +27,11 @@ export const PosterTemplate = forwardRef<
   const planned = data.events.filter(
     (event) => event.status !== "cancelled",
   ).length;
+  const host = typeof window === "undefined" ? "" : window.location.host;
   return (
     <div className="poster" ref={ref}>
       <div className="poster-map">
-        {image ? (
-          <img src={image} alt="" />
-        ) : (
-          <div className="poster-map-fallback">
-            {route.stops.map((stop, index) => (
-              <span key={stop.key}>
-                {index > 0 && <i>›</i>}
-                {stop.name}
-              </span>
-            ))}
-          </div>
-        )}
+        {image && <img src={image} alt="" />}
         <TravelSticker kind="flight" className="poster-sticker" />
       </div>
       <div className="poster-band">
@@ -71,7 +63,13 @@ export const PosterTemplate = forwardRef<
           <span>{planned} 项安排</span>
           <span>{route.stops.length} 个地点</span>
         </div>
-        <p className="poster-foot">地图数据 © OpenStreetMap contributors</p>
+        <p className="poster-foot">
+          <span className="poster-brand">
+            {BRAND}
+            {host ? ` · ${host}` : ""}
+          </span>
+          <span className="poster-credit">© OpenStreetMap</span>
+        </p>
       </div>
     </div>
   );

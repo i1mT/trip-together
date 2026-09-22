@@ -142,7 +142,7 @@ test("路线图展示站点与缺坐标提示，并生成行程海报", async ({
     if (path) {
       const buffer = await readFile(path);
       expect(buffer.readUInt32BE(16)).toBe(1080);
-      expect(buffer.readUInt32BE(20)).toBe(1440);
+      expect(buffer.readUInt32BE(20)).toBe(1920);
     }
   }
   await page.waitForTimeout(3200);

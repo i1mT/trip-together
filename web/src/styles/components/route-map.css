@@ -26,6 +26,10 @@
   width: 100%;
   background: #eae8ed;
 }
+/* 播放时锁定交互，避免录制过程中被手势打断视角。 */
+.route-map-canvas[data-map-playing="true"] {
+  pointer-events: none;
+}
 .route-map-status {
   position: absolute;
   inset: 0;
@@ -296,13 +300,36 @@
   top: 0;
   left: -10000px;
   width: 360px;
-  height: 480px;
+  height: 640px;
   pointer-events: none;
+}
+.poster-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background: #ece8f1;
+  color: var(--muted);
+  font-size: 12px;
+}
+.poster-loading-dot {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 3px solid #d1cadc;
+  border-top-color: #6c4c96;
+  animation: poster-spin 0.9s linear infinite;
+}
+@keyframes poster-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 .poster {
   position: relative;
   width: 360px;
-  height: 480px;
+  height: 640px;
   box-sizing: border-box;
   overflow: hidden;
   background: #e9e4ef;
@@ -419,6 +446,19 @@
   font-size: 9px;
 }
 .poster-foot {
-  font-size: 8px;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 9px;
   color: #a8a2b0;
+}
+.poster-brand {
+  color: #8a7b9c;
+  font-weight: 650;
+  letter-spacing: 0.2px;
+}
+.poster-credit {
+  flex-shrink: 0;
+  color: #b6aac9;
 }

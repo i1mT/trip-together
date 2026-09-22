@@ -32,9 +32,10 @@
 - 路线几何区分「行程顺序的点」(`points`，允许重复到达同一地点) 与「去重地点」(`stops`，仅用于地图标记与地点数量)。往返行程回到出发地时，`points` 保留返程段，海报起终点取 `points` 首末，避免终点显示为最后一个新地点、返程段丢失。
 - 方向箭头改为「每段一个、放在靠近终点处、方向由该段走向计算」：用点 symbol 图层 + `icon-rotate: ["get","bearing"]`（`icon-rotation-alignment: "map"`），不再依赖 `symbol-placement: "line"`（后者会沿线重复放置且朝向沿线的法线）。
 - 交通贴纸按段类型（flight → 飞机，其余 → 车辆）取段中点放置，`icon-size` 随缩放插值并参与碰撞取舍；贴纸图片在运行时从 `web/public/art/travel-stickers.png` 图集裁切注册（`stickers.ts`，坐标与 `base.css` 的 `.travel-sticker` 保持一致）。
-- 播放为纯前端 rAF 动画：把各段坐标拼成完整轨迹（累计距离 + 每点所属段类型），已走段用高亮 line 图层与移动的贴纸 marker 表现，播放中禁用日期筛选，结束/停止后恢复底图透明度。
-- 海报改为全屏地图 + 底部腰封：隐藏地图实例尺寸与海报一致（360×480 @3x），`fitBounds` 预留 `bottom: 176` 避免路线被腰封遮挡。
+- 播放改为「从零开始画」：开场把静态路线/箭头/贴纸/站点全部隐藏，载具（航段飞机、其余车辆）从起点拖着新线逐段画出；走完一段才用 `index` 过滤放出该段箭头与贴纸，站点按首次到达距离逐个点亮；镜头每帧 `jumpTo` 保持载具居中，缩放按当前段起终点 `cameraForBounds`（padding 64）并做逐帧插值；播放中给地图容器加 `pointer-events: none` 锁定交互，结束后恢复完整路线并回到全程取景。
 - 海报弹窗通过 `Sheet` 新增的 `headerless` 选项去掉标题栏与内边距（`Dialog.Title` 用 `sr-only` 保留可访问名称），关闭按钮改为海报左上角悬浮；腰封去掉圆角并压缩高度与字号，移除弹窗底部说明文案。
+- 海报尺寸改为 9:16（1080×1920）；腰封最后一行左侧显示产品品牌与当前站点域名（运行时取 `window.location.host`，避免硬编码域名），右侧保留极小的 `© OpenStreetMap` 以满足授权要求（用户要求去掉地图来源，这里只保留最小合规署名并已说明）。
+- 海报加载态：截图完成前渲染与海报等高的加载占位（转圈 + 文案），不再显示地点文字列表；预览缩放同时受弹窗宽度与可用高度约束，保证整张可见且弹窗不出现内部滚动，加载前后高度不变。
 - 底图来源集中在 `shared/map-source.ts`（`mapTilesOrigin` / `mapStyleUrl`），前端地图与 Worker CSP 共用，方便换源自托管。
 - 地图容器 ref 用回调 ref 存 state：Radix `Dialog.Content` 经 Presence 挂载，`useRef` 在同一轮 effect 中可能尚未就绪，回调 ref 触发的地图初始化更稳。
 - 海报里的地图截图必须在 `load` 后才 `ensureRouteLayers` + `fitRouteBounds`，再等 `idle` 截图；12s 超时兜底，截图失败降级为无地图版式。
@@ -59,3 +60,4 @@ OpenFreeMap 无 SLA 且国内访问可能偏慢：样式 URL 集中常量、保�
 - 截图：`.local/route-map-{chromium,webkit}.png`、`.local/trip-poster-{chromium,webkit}.png`。
 - 全量 e2e：15 通过 / 3 失败（均为 Geoapify 网络不可达导致，见实施偏差）。
 - 2026-09-22 更新：箭头改为每段一个并修正方向、海报改为全屏地图 + 无圆角腰封并去掉标题栏/内边距/说明文案后，`npm run typecheck`、50 项单测、`npm run build`（14 个 chunk 通过 iOS 15.5 校验）通过；`route-map.spec.ts` Chromium/WebKit 通过；全量 e2e 18 项全部通过（Geoapify 当时已恢复可达）。截图：`.local/arrows-v2.png`、`.local/poster-v2.png`、`.local/poster-v2-full.png`。
+- 2026-09-22 再次更新：播放改为从零逐段画出 + 镜头跟随，海报改为 9:16（1080×1920）并加品牌腰封与等高加载占位后，`typecheck`、50 项单测、`build`、`route-map.spec.ts`（Chromium/WebKit，含 1080×1920 尺寸校验）与全量 e2e 18 项全部通过。截图：`.local/play-start.png`、`.local/play-early.png`、`.local/poster-loading.png`、`.local/poster-fit.png`、`.local/poster-fit-full.png`。

@@ -14,8 +14,8 @@ export const ROUTE_ARROW_SOURCE = "trip-route-arrows";
 export const LINE_COLOR = "#6c4c96";
 export const ARC_COLOR = "#9b7bd4";
 
-const ARROW_LAYER = `${ROUTE_ARROW_SOURCE}-symbol`;
-const STICKER_LAYER = `${ROUTE_DECOR_SOURCE}-stickers`;
+export const ARROW_LAYER = `${ROUTE_ARROW_SOURCE}-symbol`;
+export const STICKER_LAYER = `${ROUTE_DECOR_SOURCE}-stickers`;
 
 export function lineFeatures(route: RouteGeometry) {
   return route.segments.map((segment) => ({
@@ -68,21 +68,24 @@ function bearingBetween(from: [number, number], to: [number, number]) {
 
 /** 每段只在靠近终点处放一个箭头，方向由该段的最后一段走向决定。 */
 function arrowFeatures(route: RouteGeometry) {
-  return route.segments.map((segment) => {
+  return route.segments.map((segment, index) => {
     const before = pointAt(segment.coordinates, 0.72),
       end = pointAt(segment.coordinates, 0.9);
     return {
       type: "Feature" as const,
-      properties: { bearing: bearingBetween(before, end) },
+      properties: { index, bearing: bearingBetween(before, end) },
       geometry: { type: "Point" as const, coordinates: end },
     };
   });
 }
 
 function decorFeatures(route: RouteGeometry) {
-  return route.segments.map((segment) => ({
+  return route.segments.map((segment, index) => ({
     type: "Feature" as const,
-    properties: { imageId: stickerImageId(segmentSticker(segment.kind)) },
+    properties: {
+      index,
+      imageId: stickerImageId(segmentSticker(segment.kind)),
+    },
     geometry: {
       type: "Point" as const,
       coordinates: pointAt(segment.coordinates, 0.5),

@@ -5,7 +5,14 @@ import { AlertCircle, ChevronDown, Pause, Play, Share2 } from "lucide-react";
 import type { TripData, TripEvent } from "@/lib/models";
 import { buildRoute, type RouteStop } from "@/lib/route-geometry";
 import { mapStyleUrl } from "../../../../shared/map-source";
-import { ensureRouteLayers, fitRouteBounds, ROUTE_SOURCE } from "./route-layer";
+import {
+  ARROW_LAYER,
+  ensureRouteLayers,
+  fitRouteBounds,
+  ROUTE_POINT_SOURCE,
+  ROUTE_SOURCE,
+  STICKER_LAYER,
+} from "./route-layer";
 import { segmentSticker } from "./stickers";
 import { EmptyState } from "../empty-state";
 import { Sheet } from "../ui";
@@ -74,13 +81,18 @@ export function RouteMapSheet({
     [route.points],
   );
 
-  /** 按行程顺序把各段坐标拼成一条完整轨迹，附带累计距离与每个点所属的段类型。 */
+  /**
+   * 按行程顺序把各段坐标拼成完整轨迹：累计距离、每个顶点所属的段与段类型，
+   * 以及每个去重地点首次到达时的距离（用于播放时逐个点亮站点）。
+   */
   const journey = useMemo(() => {
     const coordinates: [number, number][] = [];
     const cumulative: number[] = [];
     const kinds: string[] = [];
+    const segmentOf: number[] = [];
+    const pointDistances: number[] = [0];
     let total = 0;
-    for (const segment of route.segments) {
+    route.segments.forEach((segment, segmentIndex) => {
       for (const point of segment.coordinates) {
         const previous = coordinates[coordinates.length - 1];
         if (previous)
@@ -88,28 +100,61 @@ export function RouteMapSheet({
         coordinates.push(point);
         cumulative.push(total);
         kinds.push(segment.kind);
+        segmentOf.push(segmentIndex);
       }
-    }
-    return { coordinates, cumulative, kinds, total };
-  }, [route.segments]);
+      pointDistances.push(total);
+    });
+    const firstVisit = new Map<string, number>();
+    route.points.forEach((point, index) => {
+      if (!firstVisit.has(point.key))
+        firstVisit.set(point.key, pointDistances[index] ?? 0);
+    });
+    const stopDistances = route.stops.map(
+      (stop) => firstVisit.get(stop.key) ?? 0,
+    );
+    return {
+      coordinates,
+      cumulative,
+      kinds,
+      segmentOf,
+      stopDistances,
+      total,
+    };
+  }, [route.segments, route.points, route.stops]);
 
-  const stopPlayback = useCallback((clear = true) => {
-    if (frame.current) cancelAnimationFrame(frame.current);
-    frame.current = 0;
-    const instance = map.current;
-    if (instance) {
-      instance.setPaintProperty(`${ROUTE_SOURCE}-line`, "line-opacity", 0.85);
-      instance.setPaintProperty(`${ROUTE_SOURCE}-arc`, "line-opacity", 0.9);
-      const source = instance.getSource(PROGRESS_SOURCE) as
-        { setData: (value: FeatureCollection) => void } | undefined;
-      if (source && clear)
-        source.setData({ type: "FeatureCollection", features: [] });
-    }
-    runner.current?.marker.remove();
-    runner.current = null;
-    if (bar.current) bar.current.style.width = "0%";
-    setPlaying(false);
-  }, []);
+  /** 结束播放并把地图恢复成静态路线。 */
+  const stopPlayback = useCallback(
+    (resetCamera = true) => {
+      if (frame.current) cancelAnimationFrame(frame.current);
+      frame.current = 0;
+      const instance = map.current;
+      if (instance) {
+        instance.setPaintProperty(`${ROUTE_SOURCE}-line`, "line-opacity", 0.85);
+        instance.setPaintProperty(`${ROUTE_SOURCE}-arc`, "line-opacity", 0.9);
+        for (const id of [
+          `${ROUTE_POINT_SOURCE}-start`,
+          `${ROUTE_POINT_SOURCE}-end`,
+        ])
+          if (instance.getLayer(id))
+            instance.setPaintProperty(id, "circle-opacity", 1);
+        for (const id of [ARROW_LAYER, STICKER_LAYER])
+          if (instance.getLayer(id)) instance.setFilter(id, ["all"] as never);
+        const source = instance.getSource(PROGRESS_SOURCE) as
+          { setData: (value: FeatureCollection) => void } | undefined;
+        source?.setData({ type: "FeatureCollection", features: [] });
+      }
+      markers.current.forEach((marker) => {
+        const element = marker.getElement();
+        if (element) element.style.visibility = "";
+      });
+      runner.current?.marker.remove();
+      runner.current = null;
+      if (bar.current) bar.current.style.width = "0%";
+      setPlaying(false);
+      if (resetCamera && instance) fitRouteBounds(instance, route);
+    },
+    [route],
+  );
 
   useEffect(() => {
     if (!open) stopPlayback();
@@ -205,7 +250,7 @@ export function RouteMapSheet({
       maplibre = module.current;
     if (!instance || !maplibre || !journey.total || !journey.coordinates.length)
       return;
-    stopPlayback();
+    stopPlayback(false);
     setPlayed(false);
 
     if (!instance.getSource(PROGRESS_SOURCE)) {
@@ -219,25 +264,54 @@ export function RouteMapSheet({
         source: PROGRESS_SOURCE,
         layout: { "line-cap": "round", "line-join": "round" },
         paint: {
-          "line-color": "#4c3867",
-          "line-width": 5,
+          "line-color": "#6c4c96",
+          "line-width": 4.5,
           "line-opacity": 0.95,
         },
       });
     }
-    instance.setPaintProperty(`${ROUTE_SOURCE}-line`, "line-opacity", 0.22);
-    instance.setPaintProperty(`${ROUTE_SOURCE}-arc`, "line-opacity", 0.28);
+
+    // 开场先清空：没有路线，只有一条随播放画出来的新线。
+    instance.setPaintProperty(`${ROUTE_SOURCE}-line`, "line-opacity", 0);
+    instance.setPaintProperty(`${ROUTE_SOURCE}-arc`, "line-opacity", 0);
+    for (const id of [
+      `${ROUTE_POINT_SOURCE}-start`,
+      `${ROUTE_POINT_SOURCE}-end`,
+    ])
+      if (instance.getLayer(id))
+        instance.setPaintProperty(id, "circle-opacity", 0);
+    for (const id of [ARROW_LAYER, STICKER_LAYER])
+      if (instance.getLayer(id))
+        instance.setFilter(id, ["==", ["get", "index"], -1] as never);
+    markers.current.forEach((marker) => {
+      const element = marker.getElement();
+      if (element) element.style.visibility = "hidden";
+    });
 
     const element = document.createElement("div");
     element.className = "route-runner";
     element.setAttribute("aria-hidden", "true");
-    const sticker = document.createElement("span");
-    sticker.className = "travel-sticker sticker-flight";
-    element.append(sticker);
+    const runnerSticker = document.createElement("span");
+    runnerSticker.className = "travel-sticker sticker-flight";
+    element.append(runnerSticker);
     const marker = new maplibre.Marker({ element, anchor: "center" })
       .setLngLat(journey.coordinates[0])
       .addTo(instance);
-    runner.current = { marker, sticker, kind: "" };
+    runner.current = { marker, sticker: runnerSticker, kind: "" };
+
+    // 每段对准该段起终点（+buffer）所需的缩放，播放时保持当前载具居中。
+    const segmentZooms = route.segments.map((segment) => {
+      const lngs = segment.coordinates.map((coordinate) => coordinate[0]),
+        lats = segment.coordinates.map((coordinate) => coordinate[1]);
+      const camera = instance!.cameraForBounds(
+        [
+          [Math.min(...lngs), Math.min(...lats)],
+          [Math.max(...lngs), Math.max(...lats)],
+        ],
+        { padding: 64, maxZoom: 12 },
+      );
+      return camera?.zoom ?? 10;
+    });
 
     const total = journey.total,
       duration = Math.min(
@@ -245,12 +319,15 @@ export function RouteMapSheet({
         Math.max(2600, route.segments.length * SEGMENT_DURATION),
       );
     const started = performance.now();
+    let zoom = segmentZooms[0] ?? instance.getZoom(),
+      segment = -1,
+      revealedStops = 0;
     setPlaying(true);
 
     const step = (now: number) => {
       const progress = Math.min(1, (now - started) / duration),
         target = progress * total;
-      const { cumulative, coordinates } = journey;
+      const { cumulative, coordinates, segmentOf } = journey;
       let index = cumulative.findIndex((value) => value >= target);
       if (index < 0) index = cumulative.length - 1;
       const from = coordinates[Math.max(0, index - 1)],
@@ -262,6 +339,7 @@ export function RouteMapSheet({
         from[0] + (to[0] - from[0]) * ratio,
         from[1] + (to[1] - from[1]) * ratio,
       ];
+
       const source = instance!.getSource(PROGRESS_SOURCE) as
         { setData: (value: FeatureCollection) => void } | undefined;
       source?.setData({
@@ -280,6 +358,7 @@ export function RouteMapSheet({
           },
         ],
       });
+
       const current = runner.current;
       if (current) {
         current.marker.setLngLat(position);
@@ -289,11 +368,36 @@ export function RouteMapSheet({
           current.sticker.className = `travel-sticker sticker-${kind}`;
         }
       }
+
+      // 走完一段才落下一段的箭头与贴纸。
+      const currentSegment = segmentOf[index] ?? 0;
+      if (currentSegment !== segment) {
+        segment = currentSegment;
+        for (const id of [ARROW_LAYER, STICKER_LAYER])
+          if (instance!.getLayer(id))
+            instance!.setFilter(id, [
+              "<=",
+              ["get", "index"],
+              segment - 1,
+            ] as never);
+      }
+      while (
+        revealedStops < journey.stopDistances.length &&
+        journey.stopDistances[revealedStops] <= target
+      ) {
+        const stopElement = markers.current[revealedStops]?.getElement();
+        if (stopElement) stopElement.style.visibility = "";
+        revealedStops += 1;
+      }
+
+      zoom += ((segmentZooms[segment] ?? zoom) - zoom) * 0.12;
+      instance!.jumpTo({ center: position, zoom });
+
       if (bar.current) bar.current.style.width = `${progress * 100}%`;
       if (progress < 1) frame.current = requestAnimationFrame(step);
       else {
         frame.current = 0;
-        stopPlayback(false);
+        stopPlayback(true);
         setPlayed(true);
       }
     };

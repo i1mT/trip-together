@@ -11,7 +11,7 @@ import { EmptyState } from "../empty-state";
 import { useToast } from "../toast";
 
 const POSTER_WIDTH = 360;
-const POSTER_HEIGHT = 480;
+const POSTER_HEIGHT = 640;
 
 /** 不经过 fetch 把 data URL 还原成 Blob，避免被 connect-src 限制拦截。 */
 function dataUrlToBlob(dataUrl: string) {
@@ -90,10 +90,10 @@ export function TripPosterSheet({
           if (disposed) return;
           // 底部腰封会遮住地图下缘，留出等高的 padding 保证路线完整可见。
           fitRouteBounds(map, route, {
-            top: 34,
-            bottom: 176,
-            left: 30,
-            right: 30,
+            top: 44,
+            bottom: 178,
+            left: 34,
+            right: 34,
           });
           map.once("idle", capture);
         });
@@ -113,9 +113,25 @@ export function TripPosterSheet({
   useEffect(() => {
     if (!open || !previewNode) return;
     const node = previewNode;
+    // 同时受宽度和可用高度约束：海报整体可见、弹窗不出现内部滚动。
     // 用窗口尺寸而不是 ResizeObserver，避免改变缩放后触发自身尺寸变化导致的通知循环。
-    const update = () =>
-      setScale(Math.max(0.5, node.clientWidth / POSTER_WIDTH));
+    const update = () => {
+      const sheet = node.closest(".poster-sheet");
+      const footer = sheet?.querySelector(
+        ".sheet-footer",
+      ) as HTMLElement | null;
+      const available = Math.max(
+        240,
+        Math.min(960, window.innerHeight) - (footer?.offsetHeight ?? 72),
+      );
+      setScale(
+        Math.min(
+          node.clientWidth / POSTER_WIDTH,
+          available / POSTER_HEIGHT,
+          1.4,
+        ),
+      );
+    };
     update();
     window.addEventListener("resize", update);
     return () => window.removeEventListener("resize", update);
@@ -196,14 +212,30 @@ export function TripPosterSheet({
                   height: POSTER_HEIGHT * scale,
                 }}
               >
-                <div
-                  style={{
-                    transform: `scale(${scale})`,
-                    transformOrigin: "top left",
-                  }}
-                >
-                  <PosterTemplate ref={poster} data={data} image={image} />
-                </div>
+                {mapState === "loading" ? (
+                  // 固定尺寸占位：加载前后容器尺寸一致，弹窗不会跳高。
+                  <div
+                    className="poster-loading"
+                    style={{
+                      width: POSTER_WIDTH,
+                      height: POSTER_HEIGHT,
+                      transform: `scale(${scale})`,
+                      transformOrigin: "top left",
+                    }}
+                  >
+                    <span className="poster-loading-dot" aria-hidden="true" />
+                    <p>正在加载地图…</p>
+                  </div>
+                ) : (
+                  <div
+                    style={{
+                      transform: `scale(${scale})`,
+                      transformOrigin: "top left",
+                    }}
+                  >
+                    <PosterTemplate ref={poster} data={data} image={image} />
+                  </div>
+                )}
               </div>
               <button
                 type="button"

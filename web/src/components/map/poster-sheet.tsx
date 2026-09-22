@@ -212,30 +212,22 @@ export function TripPosterSheet({
                   height: POSTER_HEIGHT * scale,
                 }}
               >
-                {mapState === "loading" ? (
-                  // 固定尺寸占位：加载前后容器尺寸一致，弹窗不会跳高。
-                  <div
-                    className="poster-loading"
-                    style={{
-                      width: POSTER_WIDTH,
-                      height: POSTER_HEIGHT,
-                      transform: `scale(${scale})`,
-                      transformOrigin: "top left",
-                    }}
-                  >
-                    <span className="poster-loading-dot" aria-hidden="true" />
-                    <p>正在加载地图…</p>
-                  </div>
-                ) : (
-                  <div
-                    style={{
-                      transform: `scale(${scale})`,
-                      transformOrigin: "top left",
-                    }}
-                  >
-                    <PosterTemplate ref={poster} data={data} image={image} />
-                  </div>
-                )}
+                {/* 海报始终按同一尺寸渲染，加载态只是覆盖一层占位，弹窗高度不会变化。 */}
+                <div
+                  className="poster-scaler"
+                  style={{
+                    transform: `scale(${scale})`,
+                    transformOrigin: "top left",
+                  }}
+                >
+                  <PosterTemplate ref={poster} data={data} image={image} />
+                  {mapState === "loading" && (
+                    <div className="poster-loading">
+                      <span className="poster-loading-dot" aria-hidden="true" />
+                      <p>正在加载地图…</p>
+                    </div>
+                  )}
+                </div>
               </div>
               <button
                 type="button"

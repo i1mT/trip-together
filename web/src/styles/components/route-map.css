@@ -115,13 +115,13 @@
 .route-stop-index {
   display: grid;
   place-items: center;
-  width: 26px;
-  height: 26px;
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
   background: #6c4c96;
   color: #fff;
   border: 2px solid #fff;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 700;
   box-shadow: 0 2px 6px #39304433;
 }
@@ -133,12 +133,13 @@
 }
 .route-stop-name {
   display: none;
-  max-width: 110px;
-  padding: 3px 8px;
+  max-width: 132px;
+  padding: 3px 9px;
   border-radius: 9px;
   background: #fff;
   color: var(--ink);
-  font-size: 11px;
+  font-size: 13px;
+  font-weight: 600;
   line-height: 1.4;
   white-space: nowrap;
   overflow: hidden;
@@ -249,16 +250,42 @@
 .route-runner {
   display: grid;
   place-items: center;
-  width: 46px;
-  height: 46px;
-  border-radius: 50%;
-  background: #ffffffe6;
-  border: 2px solid #fff;
-  box-shadow: 0 3px 12px #39304440;
+  pointer-events: none;
 }
 .route-runner .travel-sticker {
-  width: 32px;
+  width: var(--runner-size, 48px);
   transform: rotate(-8deg);
+  filter: drop-shadow(0 3px 8px #3930444d);
+}
+/* 播放时当前一段的起终点：稍大的圆点 + 地名 */
+.route-segment-dot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  pointer-events: none;
+}
+.route-segment-dot-core {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #6c4c96;
+  border: 3px solid #fff;
+  box-shadow: 0 3px 10px #39304459;
+}
+.route-segment-dot.end .route-segment-dot-core {
+  background: #b8544c;
+}
+.route-segment-dot-name {
+  padding: 2px 8px;
+  border-radius: 9px;
+  background: #fff;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.5;
+  white-space: nowrap;
+  box-shadow: var(--shadow);
 }
 
 /* 行程海报 */
@@ -303,7 +330,12 @@
   height: 640px;
   pointer-events: none;
 }
+.poster-scaler {
+  position: relative;
+}
 .poster-loading {
+  position: absolute;
+  inset: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -448,17 +480,12 @@
 .poster-foot {
   display: flex;
   align-items: baseline;
-  justify-content: space-between;
   gap: 8px;
-  font-size: 9px;
+  font-size: 10px;
   color: #a8a2b0;
 }
 .poster-brand {
   color: #8a7b9c;
   font-weight: 650;
   letter-spacing: 0.2px;
-}
-.poster-credit {
-  flex-shrink: 0;
-  color: #b6aac9;
 }

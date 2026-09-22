@@ -68,7 +68,6 @@ export const PosterTemplate = forwardRef<
             {BRAND}
             {host ? ` · ${host}` : ""}
           </span>
-          <span className="poster-credit">© OpenStreetMap</span>
         </p>
       </div>
     </div>

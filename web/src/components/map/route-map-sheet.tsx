@@ -19,7 +19,6 @@ import { Sheet } from "../ui";
 
 const PROGRESS_SOURCE = "trip-route-progress";
 const PROGRESS_LAYER = "trip-route-progress-line";
-const SEGMENT_DURATION = 1100;
 
 type MapLibreModule = typeof import("maplibre-gl");
 
@@ -38,6 +37,22 @@ function markerElement(stop: RouteStop, index: number, total: number) {
   name.textContent = stop.name;
   element.append(badge, name);
   return element;
+}
+
+function segmentDotElement(kind: "start" | "end") {
+  const element = document.createElement("div");
+  element.className = `route-segment-dot ${kind}`;
+  const core = document.createElement("span");
+  core.className = "route-segment-dot-core";
+  const label = document.createElement("span");
+  label.className = "route-segment-dot-name";
+  element.append(core, label);
+  return { element, label };
+}
+
+/** ease-in-out：起步与到达前后都放慢，段落切换更明显。 */
+function easeInOut(value: number) {
+  return value < 0.5 ? 2 * value * value : 1 - Math.pow(-2 * value + 2, 2) / 2;
 }
 
 export function RouteMapSheet({
@@ -60,8 +75,13 @@ export function RouteMapSheet({
   const markers = useRef<MapLibreMarker[]>([]);
   const runner = useRef<{
     marker: MapLibreMarker;
+    element: HTMLDivElement;
     sticker: HTMLSpanElement;
     kind: string;
+  } | null>(null);
+  const dots = useRef<{
+    start: { marker: MapLibreMarker; label: HTMLSpanElement };
+    end: { marker: MapLibreMarker; label: HTMLSpanElement };
   } | null>(null);
   const frame = useRef(0);
   const bar = useRef<HTMLSpanElement>(null);
@@ -90,7 +110,6 @@ export function RouteMapSheet({
     const cumulative: number[] = [];
     const kinds: string[] = [];
     const segmentOf: number[] = [];
-    const pointDistances: number[] = [0];
     let total = 0;
     route.segments.forEach((segment, segmentIndex) => {
       for (const point of segment.coordinates) {
@@ -102,25 +121,9 @@ export function RouteMapSheet({
         kinds.push(segment.kind);
         segmentOf.push(segmentIndex);
       }
-      pointDistances.push(total);
     });
-    const firstVisit = new Map<string, number>();
-    route.points.forEach((point, index) => {
-      if (!firstVisit.has(point.key))
-        firstVisit.set(point.key, pointDistances[index] ?? 0);
-    });
-    const stopDistances = route.stops.map(
-      (stop) => firstVisit.get(stop.key) ?? 0,
-    );
-    return {
-      coordinates,
-      cumulative,
-      kinds,
-      segmentOf,
-      stopDistances,
-      total,
-    };
-  }, [route.segments, route.points, route.stops]);
+    return { coordinates, cumulative, kinds, segmentOf, total };
+  }, [route.segments]);
 
   /** 结束播放并把地图恢复成静态路线。 */
   const stopPlayback = useCallback(
@@ -149,6 +152,9 @@ export function RouteMapSheet({
       });
       runner.current?.marker.remove();
       runner.current = null;
+      dots.current?.start.marker.remove();
+      dots.current?.end.marker.remove();
+      dots.current = null;
       if (bar.current) bar.current.style.width = "0%";
       setPlaying(false);
       if (resetCamera && instance) fitRouteBounds(instance, route);
@@ -178,7 +184,7 @@ export function RouteMapSheet({
           style: mapStyleUrl,
           center: [route.stops[0].longitude, route.stops[0].latitude],
           zoom: 4,
-          attributionControl: { compact: true },
+          attributionControl: false,
           canvasContextAttributes: { preserveDrawingBuffer: true },
         });
         map.current = instance;
@@ -297,9 +303,37 @@ export function RouteMapSheet({
     const marker = new maplibre.Marker({ element, anchor: "center" })
       .setLngLat(journey.coordinates[0])
       .addTo(instance);
-    runner.current = { marker, sticker: runnerSticker, kind: "" };
+    runner.current = { marker, element, sticker: runnerSticker, kind: "" };
 
-    // 每段对准该段起终点（+buffer）所需的缩放，播放时保持当前载具居中。
+    // 当前一段的起终点：稍大的圆点 + 地名，段落切换时一眼可见。
+    const startDot = segmentDotElement("start"),
+      endDot = segmentDotElement("end");
+    const origin: [number, number] = route.points[0]
+      ? [route.points[0].longitude, route.points[0].latitude]
+      : journey.coordinates[0];
+    dots.current = {
+      start: {
+        marker: new maplibre.Marker({
+          element: startDot.element,
+          anchor: "center",
+        })
+          .setLngLat(origin)
+          .addTo(instance),
+        label: startDot.label,
+      },
+      end: {
+        marker: new maplibre.Marker({
+          element: endDot.element,
+          anchor: "center",
+        })
+          .setLngLat(origin)
+          .addTo(instance),
+        label: endDot.label,
+      },
+    };
+
+    // 每段对准该段起终点（+buffer）所需的缩放；再退半级，保证载具居中时
+    // 起点与终点始终都在画面里。播放时保持当前载具居中。
     const segmentZooms = route.segments.map((segment) => {
       const lngs = segment.coordinates.map((coordinate) => coordinate[0]),
         lats = segment.coordinates.map((coordinate) => coordinate[1]);
@@ -308,26 +342,65 @@ export function RouteMapSheet({
           [Math.min(...lngs), Math.min(...lats)],
           [Math.max(...lngs), Math.max(...lats)],
         ],
-        { padding: 64, maxZoom: 12 },
+        { padding: 40, maxZoom: 13 },
       );
-      return camera?.zoom ?? 10;
+      return Math.min(13, Math.max(3, (camera?.zoom ?? 10) - 0.7));
     });
 
-    const total = journey.total,
-      duration = Math.min(
-        45000,
-        Math.max(2600, route.segments.length * SEGMENT_DURATION),
+    // 每段起始距离，用于按长度分配时长与计算位置。
+    const segmentStart: number[] = [];
+    journey.segmentOf.forEach((segment, index) => {
+      if (segmentStart[segment] === undefined)
+        segmentStart[segment] = journey.cumulative[index] ?? 0;
+    });
+    const segmentLength = route.segments.map((_, index) => {
+      const next =
+        index + 1 < route.segments.length
+          ? segmentStart[index + 1]
+          : journey.total;
+      return Math.max(0, next - segmentStart[index]);
+    });
+    const longest = Math.max(...segmentLength, 0.000001);
+    let clock = 0;
+    const timings = route.segments.map((_, index) => {
+      // 长段更快：时长随长度次线性增长，并夹在合理区间内。
+      const duration = Math.min(
+        2600,
+        Math.max(
+          700,
+          700 + 1600 * Math.pow(segmentLength[index] / longest, 0.6),
+        ),
       );
+      const timing = {
+        start: clock,
+        duration,
+        from: segmentStart[index],
+        length: segmentLength[index],
+        factor: 0.7 + 0.8 * Math.sqrt(segmentLength[index] / longest),
+      };
+      clock += duration;
+      return timing;
+    });
+    const totalClock = Math.max(1, clock);
     const started = performance.now();
     let zoom = segmentZooms[0] ?? instance.getZoom(),
-      segment = -1,
-      revealedStops = 0;
+      segment = -1;
     setPlaying(true);
 
     const step = (now: number) => {
-      const progress = Math.min(1, (now - started) / duration),
-        target = progress * total;
-      const { cumulative, coordinates, segmentOf } = journey;
+      const elapsed = now - started;
+      let current = timings.findIndex(
+        (timing) => elapsed < timing.start + timing.duration,
+      );
+      if (current < 0) current = timings.length - 1;
+      const timing = timings[current],
+        local = Math.min(
+          1,
+          Math.max(0, (elapsed - timing.start) / timing.duration),
+        ),
+        target = timing.from + easeInOut(local) * timing.length;
+
+      const { cumulative, coordinates } = journey;
       let index = cumulative.findIndex((value) => value >= target);
       if (index < 0) index = cumulative.length - 1;
       const from = coordinates[Math.max(0, index - 1)],
@@ -359,20 +432,35 @@ export function RouteMapSheet({
         ],
       });
 
-      const current = runner.current;
-      if (current) {
-        current.marker.setLngLat(position);
+      const runnerNow = runner.current;
+      if (runnerNow) {
+        runnerNow.marker.setLngLat(position);
         const kind = segmentSticker(journey.kinds[index] ?? "drive");
-        if (kind !== current.kind) {
-          current.kind = kind;
-          current.sticker.className = `travel-sticker sticker-${kind}`;
+        if (kind !== runnerNow.kind) {
+          runnerNow.kind = kind;
+          runnerNow.sticker.className = `travel-sticker sticker-${kind}`;
         }
+        const size = Math.round(
+          Math.min(
+            130,
+            Math.max(34, 48 * Math.pow(zoom / 4, 0.6) * timing.factor),
+          ),
+        );
+        runnerNow.element.style.setProperty("--runner-size", `${size}px`);
       }
 
-      // 走完一段才落下一段的箭头与贴纸。
-      const currentSegment = segmentOf[index] ?? 0;
-      if (currentSegment !== segment) {
-        segment = currentSegment;
+      // 切换当前段时更新起终点标记与地名，并放出上一段的箭头与贴纸。
+      if (current !== segment) {
+        segment = current;
+        const stops = dots.current;
+        const a = route.points[current],
+          b = route.points[current + 1];
+        if (stops && a && b) {
+          stops.start.marker.setLngLat([a.longitude, a.latitude]);
+          stops.start.label.textContent = a.name;
+          stops.end.marker.setLngLat([b.longitude, b.latitude]);
+          stops.end.label.textContent = b.name;
+        }
         for (const id of [ARROW_LAYER, STICKER_LAYER])
           if (instance!.getLayer(id))
             instance!.setFilter(id, [
@@ -381,20 +469,13 @@ export function RouteMapSheet({
               segment - 1,
             ] as never);
       }
-      while (
-        revealedStops < journey.stopDistances.length &&
-        journey.stopDistances[revealedStops] <= target
-      ) {
-        const stopElement = markers.current[revealedStops]?.getElement();
-        if (stopElement) stopElement.style.visibility = "";
-        revealedStops += 1;
-      }
 
       zoom += ((segmentZooms[segment] ?? zoom) - zoom) * 0.12;
       instance!.jumpTo({ center: position, zoom });
 
-      if (bar.current) bar.current.style.width = `${progress * 100}%`;
-      if (progress < 1) frame.current = requestAnimationFrame(step);
+      if (bar.current)
+        bar.current.style.width = `${(elapsed / totalClock) * 100}%`;
+      if (elapsed < totalClock) frame.current = requestAnimationFrame(step);
       else {
         frame.current = 0;
         stopPlayback(true);

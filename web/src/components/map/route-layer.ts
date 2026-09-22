@@ -66,6 +66,18 @@ function bearingBetween(from: [number, number], to: [number, number]) {
   return ((Math.atan2(dx, dy) * 180) / Math.PI + 360) % 360;
 }
 
+/** 折线长度（公里），用于按线路长短缩放交通工具贴纸。 */
+export function lengthKm(coordinates: [number, number][]) {
+  let total = 0;
+  for (let i = 1; i < coordinates.length; i += 1) {
+    const [lng1, lat1] = coordinates[i - 1],
+      [lng2, lat2] = coordinates[i];
+    const dx = (lng2 - lng1) * Math.cos(((lat1 + lat2) / 2) * (Math.PI / 180));
+    total += Math.hypot(dx, lat2 - lat1);
+  }
+  return total * 111.32;
+}
+
 /** 每段只在靠近终点处放一个箭头，方向由该段的最后一段走向决定。 */
 function arrowFeatures(route: RouteGeometry) {
   return route.segments.map((segment, index) => {
@@ -80,17 +92,26 @@ function arrowFeatures(route: RouteGeometry) {
 }
 
 function decorFeatures(route: RouteGeometry) {
-  return route.segments.map((segment, index) => ({
-    type: "Feature" as const,
-    properties: {
-      index,
-      imageId: stickerImageId(segmentSticker(segment.kind)),
-    },
-    geometry: {
-      type: "Point" as const,
-      coordinates: pointAt(segment.coordinates, 0.5),
-    },
-  }));
+  const lengths = route.segments.map((segment) =>
+    lengthKm(segment.coordinates),
+  );
+  const longest = Math.max(...lengths, 0.001);
+  return route.segments.map((segment, index) => {
+    // 同一缩放下，线路越长贴纸越大（0.7–1.5 倍）。
+    const scale = 0.7 + 0.8 * Math.sqrt(lengths[index] / longest);
+    return {
+      type: "Feature" as const,
+      properties: {
+        index,
+        scale: Number(scale.toFixed(3)),
+        imageId: stickerImageId(segmentSticker(segment.kind)),
+      },
+      geometry: {
+        type: "Point" as const,
+        coordinates: pointAt(segment.coordinates, 0.5),
+      },
+    };
+  });
 }
 
 export function endpointFeatures(route: RouteGeometry) {
@@ -109,11 +130,45 @@ export function endpointFeatures(route: RouteGeometry) {
   }));
 }
 
+const boosted = new WeakSet<object>();
+
+/** 底图样式自带的文字偏小，这里统一放大一档（幂等）。 */
+function boostLabelSizes(map: MapLibreMap, factor = 1.3) {
+  if (boosted.has(map)) return;
+  boosted.add(map);
+  for (const layer of map.getStyle().layers ?? []) {
+    if (layer.type !== "symbol") continue;
+    const size = layer.layout?.["text-size"];
+    try {
+      if (typeof size === "number") {
+        map.setLayoutProperty(layer.id, "text-size", size * factor);
+      } else if (
+        Array.isArray(size) &&
+        typeof size[0] === "string" &&
+        size[0].startsWith("interpolate")
+      ) {
+        const scaled = [...size.slice(0, 3)];
+        for (let i = 3; i < size.length; i += 2)
+          scaled.push(
+            size[i],
+            typeof size[i + 1] === "number"
+              ? size[i + 1] * factor
+              : size[i + 1],
+          );
+        map.setLayoutProperty(layer.id, "text-size", scaled as never);
+      }
+    } catch {
+      // 覆盖不了的图层保持原样。
+    }
+  }
+}
+
 /** 往地图实例上补充路线、方向箭头、行程贴纸与起终点图层，幂等。 */
 export async function ensureRouteLayers(
   map: MapLibreMap,
   route: RouteGeometry,
 ) {
+  boostLabelSizes(map);
   const lines = {
     type: "FeatureCollection" as const,
     features: lineFeatures(route),
@@ -206,16 +261,17 @@ export async function ensureRouteLayers(
       source: ROUTE_DECOR_SOURCE,
       layout: {
         "icon-image": ["get", "imageId"],
+        // 顶层用 zoom 插值（MapLibre 要求），每档输出再按该段长度系数缩放。
         "icon-size": [
           "interpolate",
           ["linear"],
           ["zoom"],
           3,
-          0.07,
+          ["*", 0.18, ["get", "scale"]],
           7,
-          0.12,
+          ["*", 0.28, ["get", "scale"]],
           11,
-          0.18,
+          ["*", 0.4, ["get", "scale"]],
         ],
         "icon-padding": 4,
         "icon-rotation-alignment": "viewport",

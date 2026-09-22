@@ -36,6 +36,10 @@
 - 海报弹窗通过 `Sheet` 新增的 `headerless` 选项去掉标题栏与内边距（`Dialog.Title` 用 `sr-only` 保留可访问名称），关闭按钮改为海报左上角悬浮；腰封去掉圆角并压缩高度与字号，移除弹窗底部说明文案。
 - 海报尺寸改为 9:16（1080×1920）；腰封最后一行左侧显示产品品牌与当前站点域名（运行时取 `window.location.host`，避免硬编码域名），右侧保留极小的 `© OpenStreetMap` 以满足授权要求（用户要求去掉地图来源，这里只保留最小合规署名并已说明）。
 - 海报加载态：截图完成前渲染与海报等高的加载占位（转圈 + 文案），不再显示地点文字列表；预览缩放同时受弹窗宽度与可用高度约束，保证整张可见且弹窗不出现内部滚动，加载前后高度不变。
+- 贴纸大小改为「顶层 zoom 插值 × 特征 `scale`」：MapLibre 不允许 `zoom` 出现在 `["*", ...]` 内部，必须把 interpolate 放在顶层、每档输出再乘以 `["get","scale"]`（段长归一化 0.7–1.5）。底图地名文字用 `boostLabelSizes` 幂等放大 1.3 倍（只处理数值与 zoom 插值两种 `text-size`）。
+- 播放时隐藏编号站点（避免与当前段起终点地名重复），改用 18px 圆点 + 13px 地名标出当前段的起终点；载具去掉圆形底衬、只留贴纸，尺寸随缩放与段长变化；每段时长按长度次线性增长（长段更快），段内 ease-in-out，镜头居中且取景退半级以保证起终点都在画面内。
+- 按产品要求移除路线图与海报的 OpenStreetMap 署名：路线图 `attributionControl: false`，海报腰封只留品牌与站点域名。这是偏离项目原有「attribution 不可移除」的规则，存在 OSM/OpenFreeMap 授权合规风险，已在 AGENTS.md/DESIGN.md 记录，正式发布前需评估或更换底图源。
+- 海报加载态改为「始终渲染海报，加载时在同一容器上覆盖占位」，从结构上保证加载前后尺寸一致。
 - 底图来源集中在 `shared/map-source.ts`（`mapTilesOrigin` / `mapStyleUrl`），前端地图与 Worker CSP 共用，方便换源自托管。
 - 地图容器 ref 用回调 ref 存 state：Radix `Dialog.Content` 经 Presence 挂载，`useRef` 在同一轮 effect 中可能尚未就绪，回调 ref 触发的地图初始化更稳。
 - 海报里的地图截图必须在 `load` 后才 `ensureRouteLayers` + `fitRouteBounds`，再等 `idle` 截图；12s 超时兜底，截图失败降级为无地图版式。
@@ -61,3 +65,5 @@ OpenFreeMap 无 SLA 且国内访问可能偏慢：样式 URL 集中常量、保�
 - 全量 e2e：15 通过 / 3 失败（均为 Geoapify 网络不可达导致，见实施偏差）。
 - 2026-09-22 更新：箭头改为每段一个并修正方向、海报改为全屏地图 + 无圆角腰封并去掉标题栏/内边距/说明文案后，`npm run typecheck`、50 项单测、`npm run build`（14 个 chunk 通过 iOS 15.5 校验）通过；`route-map.spec.ts` Chromium/WebKit 通过；全量 e2e 18 项全部通过（Geoapify 当时已恢复可达）。截图：`.local/arrows-v2.png`、`.local/poster-v2.png`、`.local/poster-v2-full.png`。
 - 2026-09-22 再次更新：播放改为从零逐段画出 + 镜头跟随，海报改为 9:16（1080×1920）并加品牌腰封与等高加载占位后，`typecheck`、50 项单测、`build`、`route-map.spec.ts`（Chromium/WebKit，含 1080×1920 尺寸校验）与全量 e2e 18 项全部通过。截图：`.local/play-start.png`、`.local/play-early.png`、`.local/poster-loading.png`、`.local/poster-fit.png`、`.local/poster-fit-full.png`。
+- 2026-09-22 第三次更新：贴纸缩放、底图文字放大、移除署名、播放起终点圆点/载具样式/变速、海报加载态结构修复后，`typecheck`、50 项单测、`build`、`route-map.spec.ts` Chromium/WebKit 与全量 e2e 19 项全部通过。截图：`.local/v3-map.png`、`.local/v3-play-start.png`、`.local/v3-play-mid.png`、`.local/v3-poster.png`、`.local/v3-poster-full.png`。
+- 过程中发现并修复：MapLibre 添加 Marker 前必须先 `setLngLat`，否则 `addTo` 读取 `_lngLat.lng` 崩溃；`zoom` 表达式不能嵌套在 `*` 内，否则触发 style error 事件让地图误判为底图失败。

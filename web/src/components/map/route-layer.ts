@@ -85,7 +85,12 @@ function arrowFeatures(route: RouteGeometry) {
       end = pointAt(segment.coordinates, 0.9);
     return {
       type: "Feature" as const,
-      properties: { index, bearing: bearingBetween(before, end) },
+      properties: {
+        index,
+        bearing: bearingBetween(before, end),
+        day: segment.toDate,
+        fromDay: segment.fromDate,
+      },
       geometry: { type: "Point" as const, coordinates: end },
     };
   });
@@ -104,6 +109,8 @@ function decorFeatures(route: RouteGeometry) {
       properties: {
         index,
         scale: Number(scale.toFixed(3)),
+        day: segment.toDate,
+        fromDay: segment.fromDate,
         imageId: stickerImageId(segmentSticker(segment.kind)),
       },
       geometry: {

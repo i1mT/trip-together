@@ -236,9 +236,10 @@ export function RouteMapSheet({
     fitRouteBounds(instance, route);
   }, [ready, route]);
 
+  // 日期筛选：只保留当天的站点、线段、箭头与贴纸，并把地图缩放到当天范围。
   useEffect(() => {
     const instance = map.current;
-    if (!instance) return;
+    if (!instance || !ready) return;
     const filter =
       selectedDay === ""
         ? (["all"] as never)
@@ -247,9 +248,54 @@ export function RouteMapSheet({
             ["==", ["get", "day"], selectedDay],
             ["==", ["get", "fromDay"], selectedDay],
           ] as never);
-    for (const id of [`${ROUTE_SOURCE}-line`, `${ROUTE_SOURCE}-arc`])
+    for (const id of [
+      `${ROUTE_SOURCE}-line`,
+      `${ROUTE_SOURCE}-arc`,
+      ARROW_LAYER,
+      STICKER_LAYER,
+    ])
       if (instance.getLayer(id)) instance.setFilter(id, filter);
-  }, [selectedDay, ready]);
+    for (const id of [
+      `${ROUTE_POINT_SOURCE}-start`,
+      `${ROUTE_POINT_SOURCE}-end`,
+    ])
+      if (instance.getLayer(id))
+        instance.setPaintProperty(id, "circle-opacity", selectedDay ? 0 : 1);
+    route.stops.forEach((stop, index) => {
+      const element = markers.current[index]?.getElement();
+      if (element)
+        element.style.visibility =
+          selectedDay === "" || stop.dates.includes(selectedDay)
+            ? ""
+            : "hidden";
+    });
+
+    if (selectedDay === "") {
+      fitRouteBounds(instance, route);
+      return;
+    }
+    const segments = route.segments.filter(
+      (segment) =>
+        segment.fromDate === selectedDay || segment.toDate === selectedDay,
+    );
+    const coordinates = segments.length
+      ? segments.flatMap((segment) => segment.coordinates)
+      : route.points
+          .filter((point) => point.dates.includes(selectedDay))
+          .map(
+            (point) => [point.longitude, point.latitude] as [number, number],
+          );
+    if (!coordinates.length) return;
+    const lngs = coordinates.map((coordinate) => coordinate[0]),
+      lats = coordinates.map((coordinate) => coordinate[1]);
+    instance.fitBounds(
+      [
+        [Math.min(...lngs), Math.min(...lats)],
+        [Math.max(...lngs), Math.max(...lats)],
+      ],
+      { padding: 70, maxZoom: 12, duration: 650 },
+    );
+  }, [selectedDay, ready, route]);
 
   function play() {
     const instance = map.current,
@@ -258,6 +304,7 @@ export function RouteMapSheet({
       return;
     stopPlayback(false);
     setPlayed(false);
+    setSelectedDay("");
 
     if (!instance.getSource(PROGRESS_SOURCE)) {
       instance.addSource(PROGRESS_SOURCE, {
@@ -342,9 +389,9 @@ export function RouteMapSheet({
           [Math.min(...lngs), Math.min(...lats)],
           [Math.max(...lngs), Math.max(...lats)],
         ],
-        { padding: 40, maxZoom: 13 },
+        { padding: 56, maxZoom: 13 },
       );
-      return Math.min(13, Math.max(3, (camera?.zoom ?? 10) - 0.7));
+      return Math.min(13, Math.max(3, (camera?.zoom ?? 10) - 1.1));
     });
 
     // 每段起始距离，用于按长度分配时长与计算位置。
@@ -365,10 +412,10 @@ export function RouteMapSheet({
     const timings = route.segments.map((_, index) => {
       // 长段更快：时长随长度次线性增长，并夹在合理区间内。
       const duration = Math.min(
-        2600,
+        3200,
         Math.max(
-          700,
-          700 + 1600 * Math.pow(segmentLength[index] / longest, 0.6),
+          1300,
+          1200 + 2000 * Math.pow(segmentLength[index] / longest, 0.6),
         ),
       );
       const timing = {
@@ -384,7 +431,8 @@ export function RouteMapSheet({
     const totalClock = Math.max(1, clock);
     const started = performance.now();
     let zoom = segmentZooms[0] ?? instance.getZoom(),
-      segment = -1;
+      segment = -1,
+      lastFrame = started;
     setPlaying(true);
 
     const step = (now: number) => {
@@ -470,7 +518,17 @@ export function RouteMapSheet({
             ] as never);
       }
 
-      zoom += ((segmentZooms[segment] ?? zoom) - zoom) * 0.12;
+      // 缩放平滑：既按比例逼近目标，又限制每秒最大变化量，
+      // 避免「长途航班 → 短途自驾」时缩放突然跳变。
+      const elapsedFrame = Math.max(1, now - lastFrame);
+      lastFrame = now;
+      const zoomTarget = segmentZooms[segment] ?? zoom,
+        difference = zoomTarget - zoom,
+        zoomStep = Math.min(
+          Math.abs(difference),
+          Math.max(Math.abs(difference) * 0.05, 1.8 * (elapsedFrame / 1000)),
+        );
+      zoom += Math.sign(difference) * zoomStep;
       instance!.jumpTo({ center: position, zoom });
 
       if (bar.current)

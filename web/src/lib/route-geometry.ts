@@ -6,6 +6,8 @@ export type RouteStop = {
   latitude: number;
   longitude: number;
   date: string;
+  /** 到达过该地点的所有日期（同一天多段、往返再次到访都会累加）。 */
+  dates: string[];
   timezone: string;
   kinds: TripEvent["kind"][];
   eventIds: string[];
@@ -140,6 +142,7 @@ function merge(target: RouteStop, point: Point) {
   if (!target.kinds.includes(point.kind)) target.kinds.push(point.kind);
   if (!target.eventIds.includes(point.eventId))
     target.eventIds.push(point.eventId);
+  if (!target.dates.includes(point.date)) target.dates.push(point.date);
   if (target.name === "未命名地点" && point.name) target.name = point.name;
 }
 
@@ -185,6 +188,7 @@ export function buildRoute(events: TripEvent[]): RouteGeometry {
         latitude: point.latitude,
         longitude: point.longitude,
         date: point.date,
+        dates: [point.date],
         timezone: point.timezone,
         kinds: [point.kind],
         eventIds: [point.eventId],

@@ -167,6 +167,7 @@ test("往返回到出发地时路线仍按顺序，站点不重复", () => {
   assert.equal(route.segments[1].arc, true);
   assert.equal(route.points.at(-1)!.name, "上海");
   assert.deepEqual(route.stops[0].eventIds, ["out", "back"]);
+  assert.deepEqual(route.stops[0].dates, ["2030-06-01", "2030-06-05"]);
 });
 
 test("连续同一个地点合并为一次停留", () => {

@@ -322,7 +322,8 @@
 .poster-sheet .sheet-footer {
   padding: 10px 16px max(12px, env(safe-area-inset-bottom));
 }
-.poster-hidden-map {
+/* 选择器需压过 maplibre 的 .maplibregl-map（同优先级且后加载），否则会参与布局。 */
+.poster-sheet-body .poster-hidden-map {
   position: fixed;
   top: 0;
   left: -10000px;

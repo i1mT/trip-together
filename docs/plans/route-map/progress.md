@@ -1,22 +1,27 @@
 # 路线图与行程海报进度
 
 ## 目标
+
 基于行程安排在 App 内浏览路线图；生成可保存/分享的行程海报图片（发朋友圈等外部渠道）。
 
 ## 完成条件
+
 路线图按时间顺序展示有坐标的安排并支持点击查看详情；海报在客户端生成 PNG，不向服务端上传行程数据；本地构建、类型检查、既有测试与新增测试通过；320px 可用；只提交本地。
 
 ## 当前基线
+
 通用仓库 trip-together，Web 静态导出 + Worker。行程事件已有 location / departureLocation 结构化坐标（Geoapify 选点写入）。无任何地图库与图片生成依赖。市场公开快照已提供 share 链接（/?share=ID）。
 
 ## 阶段进度
-| 阶段 | 状态 |
-|---|---|
-| 01 PRD | done |
+
+| 阶段          | 状态 |
+| ------------- | ---- |
+| 01 PRD        | done |
 | 02 路线图视图 | done |
-| 03 行程海报 | done |
+| 03 行程海报   | done |
 
 ## Todo
+
 - [x] PRD 完成（01-prd.md；§15 待确认项按 PRD 默认执行）
 - [x] 路线数据构建与几何计算（含测试）
 - [x] MapLibre v5 + OpenFreeMap 地图视图与详情联动
@@ -26,9 +31,11 @@
 - [x] 文档更新并提交
 
 ## 核心决策
+
 底图 MapLibre GL JS v5 + OpenFreeMap（硬约束见 AGENTS.md）。海报客户端 DOM 模板 + html-to-image，地图截图取自独立隐藏 MapLibre 实例（preserveDrawingBuffer）。路线 = 按开始时间排序的坐标连线，航班画大圆弧线，其余画直线。底部导航保持五项，路线图入口放完整行程页标题行；海报入口在路线图标题右侧与「我的行程 → 行程管理 → 分享」区域各一处。
 
 实现补充决策：
+
 - 路线几何区分「行程顺序的点」(`points`，允许重复到达同一地点) 与「去重地点」(`stops`，仅用于地图标记与地点数量)。往返行程回到出发地时，`points` 保留返程段，海报起终点取 `points` 首末，避免终点显示为最后一个新地点、返程段丢失。
 - 方向箭头改为「每段一个、放在靠近终点处、方向由该段走向计算」：用点 symbol 图层 + `icon-rotate: ["get","bearing"]`（`icon-rotation-alignment: "map"`），不再依赖 `symbol-placement: "line"`（后者会沿线重复放置且朝向沿线的法线）。
 - 交通贴纸按段类型（flight → 飞机，其余 → 车辆）取段中点放置，`icon-size` 随缩放插值并参与碰撞取舍；贴纸图片在运行时从 `web/public/art/travel-stickers.png` 图集裁切注册（`stickers.ts`，坐标与 `base.css` 的 `.travel-sticker` 保持一致）。
@@ -49,15 +56,18 @@
 - 隐藏地图截图后会置空实例，避免组件卸载时二次 `remove()` 报错。
 
 ## 风险与处理
+
 OpenFreeMap 无 SLA 且国内访问可能偏慢：样式 URL 集中常量、保留自托管换源能力。坐标覆盖率：本地预览库 7 条安排 5 条有坐标，缺坐标安排在地图页明示并列出，不静默丢弃。CSP：`img-src` / `connect-src` 增加底图源，新增 `worker-src 'self' blob:'`（MapLibre 需要 blob worker）。
 
 ## 实施偏差
+
 - 上一会话在写 PRD 前被推理网关连续报错中断，已接手补完：`01-prd.md` 完成，功能一并实现。
 - 坐标覆盖率抽样改为本地预览库执行（生产库不可访问）：7 条安排 5 条有坐标，样本过小，仅确认「必须处理缺坐标」。
 - PRD §15 待确认项未逐条回复，按 PRD 默认值实现：海报不展示成员、两个入口都保留、淡紫票券风格。
 - 三个既有 e2e（navigation / simple-entry 目的地搜索 / travel）在本机失败，原因是 `api.geoapify.com` 在当前网络不可达（curl 超时、Worker 返回 503），与本次改动无关；其余 e2e 与全部单测通过。
 
 ## 验证记录
+
 - 2026-09-21 本地预览库 `events.data` 坐标抽样：`location` 5/7 有值、2 条为空；航班另有 `departureLocation`。
 - 依赖版本核实：`maplibre-gl` 5.24.0（产物无 class static block）、`html-to-image` 1.11.13。
 - `npm run typecheck` 通过；`npm test` 48 项通过（含新增 7 项路线几何测试）。
@@ -67,6 +77,7 @@ OpenFreeMap 无 SLA 且国内访问可能偏慢：样式 URL 集中常量、保�
 - 全量 e2e：15 通过 / 3 失败（均为 Geoapify 网络不可达导致，见实施偏差）。
 - 2026-09-22 更新：箭头改为每段一个并修正方向、海报改为全屏地图 + 无圆角腰封并去掉标题栏/内边距/说明文案后，`npm run typecheck`、50 项单测、`npm run build`（14 个 chunk 通过 iOS 15.5 校验）通过；`route-map.spec.ts` Chromium/WebKit 通过；全量 e2e 18 项全部通过（Geoapify 当时已恢复可达）。截图：`.local/arrows-v2.png`、`.local/poster-v2.png`、`.local/poster-v2-full.png`。
 - 2026-09-22 再次更新：播放改为从零逐段画出 + 镜头跟随，海报改为 9:16（1080×1920）并加品牌腰封与等高加载占位后，`typecheck`、50 项单测、`build`、`route-map.spec.ts`（Chromium/WebKit，含 1080×1920 尺寸校验）与全量 e2e 18 项全部通过。截图：`.local/play-start.png`、`.local/play-early.png`、`.local/poster-loading.png`、`.local/poster-fit.png`、`.local/poster-fit-full.png`。
+- 2026-09-22 第五次更新：站点从 DOM 标记改为地图原生图层（圆点 + 地名，无序号，地名用符号图层自动避让，点击圆点/地名打开安排）；播放中不再显示线段贴纸，只有移动载具是贴纸，结束后恢复查看状态才显示全部贴纸；贴纸长度系数改为非线性（`0.12 + 1.38 * ratio^0.6`）并把低缩放档位调小，密集城市间的车辆贴纸明显变小、航班仍保持大尺寸；贴纸改为始终绘制（`icon-allow-overlap`），不再被地名标注碰撞取舍。`typecheck`、50 项单测、`build`、`route-map.spec.ts`（站点/贴纸数量断言改为读取地图数据属性）Chromium/WebKit 与全量 e2e 18 项全部通过。截图：`.local/v5-all.png`、`.local/v5-play.png`、`.local/v5-play3.png`、`.local/v5-poster.png`。
 - 2026-09-22 第四次更新：修复海报加载态高度差（maplibre 类名覆盖 fixed 定位）、播放短段时长与缩放平滑、日期筛选联动缩放与只显示当天内容后，`typecheck`、50 项单测、`build`、`route-map.spec.ts`（新增日期筛选可见站点断言）Chromium/WebKit 与全量 e2e 18 项全部通过。截图：`.local/v4-day.png`、`.local/v4-play-1.png`、`.local/v4-play-2.png`。
 - 2026-09-22 第三次更新：贴纸缩放、底图文字放大、移除署名、播放起终点圆点/载具样式/变速、海报加载态结构修复后，`typecheck`、50 项单测、`build`、`route-map.spec.ts` Chromium/WebKit 与全量 e2e 19 项全部通过。截图：`.local/v3-map.png`、`.local/v3-play-start.png`、`.local/v3-play-mid.png`、`.local/v3-poster.png`、`.local/v3-poster-full.png`。
 - 过程中发现并修复：MapLibre 添加 Marker 前必须先 `setLngLat`，否则 `addTo` 读取 `_lngLat.lng` 崩溃；`zoom` 表达式不能嵌套在 `*` 内，否则触发 style error 事件让地图误判为底图失败。

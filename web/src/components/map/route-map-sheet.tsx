@@ -1,17 +1,26 @@
 "use client";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { Map as MapLibreMap, Marker as MapLibreMarker } from "maplibre-gl";
+import type {
+  Map as MapLibreMap,
+  MapLayerMouseEvent as MapLibreLayerMouseEvent,
+  Marker as MapLibreMarker,
+} from "maplibre-gl";
 import { AlertCircle, ChevronDown, Pause, Play, Share2 } from "lucide-react";
 import type { TripData, TripEvent } from "@/lib/models";
-import { buildRoute, type RouteStop } from "@/lib/route-geometry";
+import { buildRoute } from "@/lib/route-geometry";
 import { mapStyleUrl } from "../../../../shared/map-source";
 import {
   ARROW_LAYER,
   ensureRouteLayers,
   fitRouteBounds,
-  ROUTE_POINT_SOURCE,
+  ROUTE_DECOR_SOURCE,
   ROUTE_SOURCE,
   STICKER_LAYER,
+  STOP_DOT_LAYER,
+  STOP_LABEL_LAYER,
+  STOP_LAYERS,
+  stopFilter,
+  stickerScale,
 } from "./route-layer";
 import { segmentSticker } from "./stickers";
 import { EmptyState } from "../empty-state";
@@ -19,25 +28,9 @@ import { Sheet } from "../ui";
 
 const PROGRESS_SOURCE = "trip-route-progress";
 const PROGRESS_LAYER = "trip-route-progress-line";
+const NOTHING: never = ["==", ["get", "eventId"], "\u0000"] as never;
 
 type MapLibreModule = typeof import("maplibre-gl");
-
-function markerElement(stop: RouteStop, index: number, total: number) {
-  const element = document.createElement("button");
-  element.type = "button";
-  element.className = "route-stop-marker";
-  if (index === 0) element.classList.add("is-first");
-  if (index === total - 1) element.classList.add("is-last");
-  element.setAttribute("aria-label", `第 ${index + 1} 站：${stop.name}`);
-  const badge = document.createElement("span");
-  badge.className = "route-stop-index";
-  badge.textContent = String(index + 1);
-  const name = document.createElement("span");
-  name.className = "route-stop-name";
-  name.textContent = stop.name;
-  element.append(badge, name);
-  return element;
-}
 
 function segmentDotElement(kind: "start" | "end") {
   const element = document.createElement("div");
@@ -72,7 +65,6 @@ export function RouteMapSheet({
   const [container, setContainer] = useState<HTMLDivElement | null>(null);
   const map = useRef<MapLibreMap | null>(null);
   const module = useRef<MapLibreModule | null>(null);
-  const markers = useRef<MapLibreMarker[]>([]);
   const runner = useRef<{
     marker: MapLibreMarker;
     element: HTMLDivElement;
@@ -94,6 +86,8 @@ export function RouteMapSheet({
   const [missingOpen, setMissingOpen] = useState(false);
   const [playing, setPlaying] = useState(false);
   const [played, setPlayed] = useState(false);
+  const [visibleStops, setVisibleStops] = useState(0);
+  const [visibleStickers, setVisibleStickers] = useState(0);
   const hasStops = route.stops.length > 0;
 
   const days = useMemo(
@@ -134,22 +128,14 @@ export function RouteMapSheet({
       if (instance) {
         instance.setPaintProperty(`${ROUTE_SOURCE}-line`, "line-opacity", 0.85);
         instance.setPaintProperty(`${ROUTE_SOURCE}-arc`, "line-opacity", 0.9);
-        for (const id of [
-          `${ROUTE_POINT_SOURCE}-start`,
-          `${ROUTE_POINT_SOURCE}-end`,
-        ])
-          if (instance.getLayer(id))
-            instance.setPaintProperty(id, "circle-opacity", 1);
-        for (const id of [ARROW_LAYER, STICKER_LAYER])
+        instance.setPaintProperty(STOP_DOT_LAYER, "circle-opacity", 1);
+        instance.setPaintProperty(STOP_LABEL_LAYER, "text-opacity", 1);
+        for (const id of [...STOP_LAYERS, ARROW_LAYER, STICKER_LAYER])
           if (instance.getLayer(id)) instance.setFilter(id, ["all"] as never);
         const source = instance.getSource(PROGRESS_SOURCE) as
           { setData: (value: FeatureCollection) => void } | undefined;
         source?.setData({ type: "FeatureCollection", features: [] });
       }
-      markers.current.forEach((marker) => {
-        const element = marker.getElement();
-        if (element) element.style.visibility = "";
-      });
       runner.current?.marker.remove();
       runner.current = null;
       dots.current?.start.marker.remove();
@@ -202,8 +188,6 @@ export function RouteMapSheet({
     return () => {
       disposed = true;
       stopPlayback();
-      markers.current.forEach((marker) => marker.remove());
-      markers.current = [];
       instance?.remove();
       map.current = null;
       module.current = null;
@@ -212,22 +196,34 @@ export function RouteMapSheet({
     };
   }, [open, hasStops, container, route.stops, stopPlayback]);
 
+  // 站点改为地图原生图层：点击圆点打开对应安排，悬停显示手型。
   useEffect(() => {
-    const instance = map.current,
-      maplibre = module.current;
-    if (!instance || !created || !maplibre) return;
-    markers.current.forEach((marker) => marker.remove());
-    markers.current = route.stops.map((stop, index) => {
-      const element = markerElement(stop, index, route.stops.length);
-      element.addEventListener("click", () => {
-        const event = data.events.find((item) => item.id === stop.eventIds[0]);
-        if (event) handler.current(event);
-      });
-      return new maplibre.Marker({ element })
-        .setLngLat([stop.longitude, stop.latitude])
-        .addTo(instance);
-    });
-  }, [created, route, data.events]);
+    const instance = map.current;
+    if (!instance || !ready) return;
+    const openStop = (event: MapLibreLayerMouseEvent) => {
+      const stop = event.features?.[0]?.properties;
+      if (!stop) return;
+      const found = data.events.find((item) => item.id === stop.eventId);
+      if (found) handler.current(found);
+    };
+    const setCursor = () => {
+      instance.getCanvas().style.cursor = "pointer";
+    };
+    const clearCursor = () => {
+      instance.getCanvas().style.cursor = "";
+    };
+    instance.on("click", STOP_DOT_LAYER, openStop);
+    instance.on("click", STOP_LABEL_LAYER, openStop);
+    instance.on("mouseenter", STOP_DOT_LAYER, setCursor);
+    instance.on("mouseleave", STOP_DOT_LAYER, clearCursor);
+    return () => {
+      instance.off("click", STOP_DOT_LAYER, openStop);
+      instance.off("click", STOP_LABEL_LAYER, openStop);
+      instance.off("mouseenter", STOP_DOT_LAYER, setCursor);
+      instance.off("mouseleave", STOP_DOT_LAYER, clearCursor);
+      instance.getCanvas().style.cursor = "";
+    };
+  }, [ready, data.events]);
 
   useEffect(() => {
     const instance = map.current;
@@ -236,10 +232,48 @@ export function RouteMapSheet({
     fitRouteBounds(instance, route);
   }, [ready, route]);
 
-  // 日期筛选：只保留当天的站点、线段、箭头与贴纸，并把地图缩放到当天范围。
+  /**
+   * 统计当前实际显示的站点与贴纸数量，供测试与调试核对筛选结果。
+   * 站点按视野内绘制结果统计；贴纸按图层筛选条件统计（符号图层在播放时
+   * 不会触发 idle，用渲染结果会读到上一帧的旧值）。
+   */
+  const countRendered = useCallback(() => {
+    const instance = map.current;
+    if (!instance) return;
+    try {
+      const stops = instance.getLayer(STOP_DOT_LAYER)
+        ? instance.queryRenderedFeatures({ layers: [STOP_DOT_LAYER] })
+        : [];
+      setVisibleStops(new Set(stops.map((item) => item.properties?.name)).size);
+      const filter = instance.getFilter(STICKER_LAYER) ?? ["all"];
+      setVisibleStickers(
+        instance.getLayer(STICKER_LAYER)
+          ? instance.querySourceFeatures(ROUTE_DECOR_SOURCE, {
+              filter: filter as never,
+            }).length
+          : 0,
+      );
+    } catch {
+      setVisibleStops(0);
+      setVisibleStickers(0);
+    }
+  }, []);
+
   useEffect(() => {
     const instance = map.current;
     if (!instance || !ready) return;
+    const frame = requestAnimationFrame(countRendered);
+    instance.on("idle", countRendered);
+    return () => {
+      cancelAnimationFrame(frame);
+      instance.off("idle", countRendered);
+    };
+  }, [ready, route, selectedDay, playing, countRendered]);
+
+  // 日期筛选：只保留当天的站点、线段、箭头与贴纸，并把地图缩放到当天范围。
+  useEffect(() => {
+    const instance = map.current;
+    if (!instance || !ready || playing) return;
     const filter =
       selectedDay === ""
         ? (["all"] as never)
@@ -255,20 +289,9 @@ export function RouteMapSheet({
       STICKER_LAYER,
     ])
       if (instance.getLayer(id)) instance.setFilter(id, filter);
-    for (const id of [
-      `${ROUTE_POINT_SOURCE}-start`,
-      `${ROUTE_POINT_SOURCE}-end`,
-    ])
+    for (const id of STOP_LAYERS)
       if (instance.getLayer(id))
-        instance.setPaintProperty(id, "circle-opacity", selectedDay ? 0 : 1);
-    route.stops.forEach((stop, index) => {
-      const element = markers.current[index]?.getElement();
-      if (element)
-        element.style.visibility =
-          selectedDay === "" || stop.dates.includes(selectedDay)
-            ? ""
-            : "hidden";
-    });
+        instance.setFilter(id, stopFilter(selectedDay));
 
     if (selectedDay === "") {
       fitRouteBounds(instance, route);
@@ -295,7 +318,7 @@ export function RouteMapSheet({
       ],
       { padding: 70, maxZoom: 12, duration: 650 },
     );
-  }, [selectedDay, ready, route]);
+  }, [selectedDay, ready, route, playing]);
 
   function play() {
     const instance = map.current,
@@ -327,19 +350,11 @@ export function RouteMapSheet({
     // 开场先清空：没有路线，只有一条随播放画出来的新线。
     instance.setPaintProperty(`${ROUTE_SOURCE}-line`, "line-opacity", 0);
     instance.setPaintProperty(`${ROUTE_SOURCE}-arc`, "line-opacity", 0);
-    for (const id of [
-      `${ROUTE_POINT_SOURCE}-start`,
-      `${ROUTE_POINT_SOURCE}-end`,
-    ])
-      if (instance.getLayer(id))
-        instance.setPaintProperty(id, "circle-opacity", 0);
-    for (const id of [ARROW_LAYER, STICKER_LAYER])
-      if (instance.getLayer(id))
-        instance.setFilter(id, ["==", ["get", "index"], -1] as never);
-    markers.current.forEach((marker) => {
-      const element = marker.getElement();
-      if (element) element.style.visibility = "hidden";
-    });
+    instance.setPaintProperty(STOP_DOT_LAYER, "circle-opacity", 0);
+    instance.setPaintProperty(STOP_LABEL_LAYER, "text-opacity", 0);
+    // 播放中不放线段贴纸，只有当前移动的载具是贴纸；箭头随段落推进出现。
+    instance.setFilter(STICKER_LAYER, NOTHING);
+    instance.setFilter(ARROW_LAYER, NOTHING);
 
     const element = document.createElement("div");
     element.className = "route-runner";
@@ -423,7 +438,7 @@ export function RouteMapSheet({
         duration,
         from: segmentStart[index],
         length: segmentLength[index],
-        factor: 0.7 + 0.8 * Math.sqrt(segmentLength[index] / longest),
+        factor: stickerScale(segmentLength[index] / longest),
       };
       clock += duration;
       return timing;
@@ -491,7 +506,7 @@ export function RouteMapSheet({
         const size = Math.round(
           Math.min(
             130,
-            Math.max(34, 48 * Math.pow(zoom / 4, 0.6) * timing.factor),
+            Math.max(30, 44 * Math.pow(zoom / 4, 0.6) * timing.factor),
           ),
         );
         runnerNow.element.style.setProperty("--runner-size", `${size}px`);
@@ -509,13 +524,12 @@ export function RouteMapSheet({
           stops.end.marker.setLngLat([b.longitude, b.latitude]);
           stops.end.label.textContent = b.name;
         }
-        for (const id of [ARROW_LAYER, STICKER_LAYER])
-          if (instance!.getLayer(id))
-            instance!.setFilter(id, [
-              "<=",
-              ["get", "index"],
-              segment - 1,
-            ] as never);
+        if (instance!.getLayer(ARROW_LAYER))
+          instance!.setFilter(ARROW_LAYER, [
+            "<=",
+            ["get", "index"],
+            segment - 1,
+          ] as never);
       }
 
       // 缩放平滑：既按比例逼近目标，又限制每秒最大变化量，
@@ -582,6 +596,8 @@ export function RouteMapSheet({
               ref={setContainer}
               data-map-ready={ready ? "true" : "false"}
               data-map-playing={playing ? "true" : "false"}
+              data-visible-stops={String(visibleStops)}
+              data-visible-stickers={String(visibleStickers)}
               aria-label="行程路线地图"
             />
             {!created && !failed && (

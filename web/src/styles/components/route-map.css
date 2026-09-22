@@ -104,53 +104,6 @@
   font-weight: 650;
 }
 
-.route-stop-marker {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  padding: 0;
-  background: none;
-}
-.route-stop-index {
-  display: grid;
-  place-items: center;
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  background: #6c4c96;
-  color: #fff;
-  border: 2px solid #fff;
-  font-size: 14px;
-  font-weight: 700;
-  box-shadow: 0 2px 6px #39304433;
-}
-.route-stop-marker.is-first .route-stop-index {
-  background: #3f8f6b;
-}
-.route-stop-marker.is-last .route-stop-index {
-  background: #b8544c;
-}
-.route-stop-name {
-  display: none;
-  max-width: 132px;
-  padding: 3px 9px;
-  border-radius: 9px;
-  background: #fff;
-  color: var(--ink);
-  font-size: 13px;
-  font-weight: 600;
-  line-height: 1.4;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  box-shadow: var(--shadow);
-}
-.route-stop-marker.is-first .route-stop-name,
-.route-stop-marker.is-last .route-stop-name {
-  display: block;
-}
-
 .route-missing {
   position: absolute;
   bottom: 30px;

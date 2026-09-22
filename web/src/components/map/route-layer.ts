@@ -16,6 +16,16 @@ export const ARC_COLOR = "#9b7bd4";
 
 export const ARROW_LAYER = `${ROUTE_ARROW_SOURCE}-symbol`;
 export const STICKER_LAYER = `${ROUTE_DECOR_SOURCE}-stickers`;
+export const STOP_DOT_LAYER = `${ROUTE_POINT_SOURCE}-dot`;
+export const STOP_LABEL_LAYER = `${ROUTE_POINT_SOURCE}-label`;
+export const STOP_LAYERS = [STOP_DOT_LAYER, STOP_LABEL_LAYER];
+
+/** 只保留某天到访过的地点；空字符串表示不筛选。 */
+export function stopFilter(day: string) {
+  return day === ""
+    ? (["all"] as never)
+    : (["!=", ["index-of", day, ["get", "dates"]], -1] as never);
+}
 
 export function lineFeatures(route: RouteGeometry) {
   return route.segments.map((segment) => ({
@@ -96,14 +106,22 @@ function arrowFeatures(route: RouteGeometry) {
   });
 }
 
+/**
+ * 交通工具贴纸的缩放系数（0.12–1.5）。曲线刻意做成非线性：线路越长贴纸越大，
+ * 但短途线路要迅速变小，否则密集的城市间移动会挤满贴纸、盖住地名。
+ */
+export function stickerScale(ratio: number) {
+  const clamped = Math.min(1, Math.max(0, ratio));
+  return 0.12 + 1.38 * Math.pow(clamped, 0.6);
+}
+
 function decorFeatures(route: RouteGeometry) {
   const lengths = route.segments.map((segment) =>
     lengthKm(segment.coordinates),
   );
   const longest = Math.max(...lengths, 0.001);
   return route.segments.map((segment, index) => {
-    // 同一缩放下，线路越长贴纸越大（0.7–1.5 倍）。
-    const scale = 0.7 + 0.8 * Math.sqrt(lengths[index] / longest);
+    const scale = stickerScale(lengths[index] / longest);
     return {
       type: "Feature" as const,
       properties: {
@@ -121,14 +139,23 @@ function decorFeatures(route: RouteGeometry) {
   });
 }
 
-export function endpointFeatures(route: RouteGeometry) {
-  const first = route.points[0],
-    last = route.points[route.points.length - 1];
-  const points = [first, last].filter(Boolean);
-  return [...new Set(points)].map((stop, index, all) => ({
+/** 查看状态下的站点：每个地点一个圆点加地名，不带序号。 */
+export function stopFeatures(route: RouteGeometry) {
+  const last = route.stops.length - 1;
+  return route.stops.map((stop, index) => ({
     type: "Feature" as const,
     properties: {
-      role: all.length === 1 ? "both" : index === 0 ? "start" : "end",
+      name: stop.name,
+      dates: stop.dates,
+      eventId: stop.eventIds[0] ?? "",
+      role:
+        last === 0
+          ? "both"
+          : index === 0
+            ? "start"
+            : index === last
+              ? "end"
+              : "mid",
     },
     geometry: {
       type: "Point" as const,
@@ -274,20 +301,22 @@ export async function ensureRouteLayers(
           ["linear"],
           ["zoom"],
           3,
-          ["*", 0.18, ["get", "scale"]],
+          ["*", 0.16, ["get", "scale"]],
           7,
-          ["*", 0.28, ["get", "scale"]],
+          ["*", 0.26, ["get", "scale"]],
           11,
-          ["*", 0.4, ["get", "scale"]],
+          ["*", 0.38, ["get", "scale"]],
         ],
         "icon-padding": 4,
+        "icon-allow-overlap": true,
+        "icon-ignore-placement": true,
         "icon-rotation-alignment": "viewport",
       },
     });
 
   const points = {
     type: "FeatureCollection" as const,
-    features: endpointFeatures(route),
+    features: stopFeatures(route),
   };
   const pointSource = map.getSource(ROUTE_POINT_SOURCE) as
     { setData: (value: typeof points) => void } | undefined;
@@ -295,27 +324,63 @@ export async function ensureRouteLayers(
   else {
     map.addSource(ROUTE_POINT_SOURCE, { type: "geojson", data: points });
     map.addLayer({
-      id: `${ROUTE_POINT_SOURCE}-start`,
+      id: STOP_DOT_LAYER,
       type: "circle",
       source: ROUTE_POINT_SOURCE,
-      filter: ["in", ["get", "role"], ["literal", ["start", "both"]]],
       paint: {
-        "circle-radius": 7,
-        "circle-color": "#3f8f6b",
+        "circle-radius": [
+          "interpolate",
+          ["linear"],
+          ["zoom"],
+          3,
+          4,
+          8,
+          5.5,
+          12,
+          7,
+        ],
+        "circle-color": [
+          "match",
+          ["get", "role"],
+          "end",
+          "#b8544c",
+          "mid",
+          "#6c4c96",
+          "#3f8f6b",
+        ],
         "circle-stroke-color": "#ffffff",
-        "circle-stroke-width": 2.5,
+        "circle-stroke-width": 2,
       },
     });
     map.addLayer({
-      id: `${ROUTE_POINT_SOURCE}-end`,
-      type: "circle",
+      id: STOP_LABEL_LAYER,
+      type: "symbol",
       source: ROUTE_POINT_SOURCE,
-      filter: ["in", ["get", "role"], ["literal", ["end", "both"]]],
+      layout: {
+        "text-field": ["get", "name"],
+        "text-font": ["Noto Sans Regular"],
+        "text-size": [
+          "interpolate",
+          ["linear"],
+          ["zoom"],
+          3,
+          10,
+          8,
+          12,
+          12,
+          14,
+        ],
+        "text-anchor": "top",
+        "text-offset": [0, 1],
+        "text-max-width": 8,
+        "text-padding": 2,
+        "text-allow-overlap": false,
+        "text-optional": true,
+      },
       paint: {
-        "circle-radius": 7,
-        "circle-color": "#b8544c",
-        "circle-stroke-color": "#ffffff",
-        "circle-stroke-width": 2.5,
+        "text-color": "#3a2f4a",
+        "text-halo-color": "#ffffff",
+        "text-halo-width": 2,
       },
     });
   }

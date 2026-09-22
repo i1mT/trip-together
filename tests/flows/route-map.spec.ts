@@ -102,40 +102,33 @@ test("路线图展示站点与缺坐标提示，并生成行程海报", async ({
   await expect(
     mapDialog.getByRole("heading", { name: "行程路线" }),
   ).toBeVisible();
-  await expect(mapDialog.locator(".route-stop-marker")).toHaveCount(3);
-  await expect(mapDialog.locator(".route-map-canvas")).toHaveAttribute(
-    "data-map-ready",
-    "true",
-    { timeout: 30000 },
-  );
+  const canvas = mapDialog.locator(".route-map-canvas");
+  await expect(canvas).toHaveAttribute("data-map-ready", "true", {
+    timeout: 30000,
+  });
+  // 查看状态：每个地点一个圆点加地名，线段上有交通工具贴纸。
+  await expect(canvas).toHaveAttribute("data-visible-stops", "3");
+  await expect(canvas).not.toHaveAttribute("data-visible-stickers", "0");
   await expect(mapDialog.getByText("1 项安排没有坐标")).toBeVisible();
   await mapDialog.getByRole("button", { name: /1 项安排没有坐标/ }).click();
   await expect(mapDialog.getByText("待定活动")).toBeVisible();
 
   // 按日期只看某一天：只保留当天站点，并缩放到当天范围。
-  const visibleMarkers = () =>
-    mapDialog
-      .locator(".route-stop-marker")
-      .evaluateAll(
-        (elements) =>
-          elements.filter(
-            (element) => getComputedStyle(element).visibility !== "hidden",
-          ).length,
-      );
   await mapDialog.locator(".route-day-filter button").nth(2).click();
-  await expect.poll(visibleMarkers).toBe(1);
+  await expect(canvas).toHaveAttribute("data-visible-stops", "1");
   await mapDialog.getByRole("button", { name: "全程", exact: true }).click();
-  await expect.poll(visibleMarkers).toBe(3);
+  await expect(canvas).toHaveAttribute("data-visible-stops", "3");
 
-  // 播放：逐段前进，可中途停止。
-  const canvas = mapDialog.locator(".route-map-canvas");
+  // 播放：逐段前进，可中途停止；播放中只有移动的载具贴纸。
   await mapDialog.getByRole("button", { name: "播放路线" }).click();
   await expect(canvas).toHaveAttribute("data-map-playing", "true");
   await expect(mapDialog.locator(".route-runner")).toHaveCount(1);
+  await expect(canvas).toHaveAttribute("data-visible-stickers", "0");
   await page.waitForTimeout(1200);
   await mapDialog.getByRole("button", { name: "停止播放" }).click();
   await expect(canvas).toHaveAttribute("data-map-playing", "false");
   await expect(mapDialog.locator(".route-runner")).toHaveCount(0);
+  await expect(canvas).not.toHaveAttribute("data-visible-stickers", "0");
   await page.screenshot({ path: `.local/route-map-${browserName}.png` });
 
   await mapDialog.getByRole("button", { name: "生成海报" }).click();

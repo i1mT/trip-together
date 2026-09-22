@@ -147,6 +147,27 @@ function merge(target: RouteStop, point: Point) {
 }
 
 /**
+ * 每天在地图上应显示的地点：当天到访过，或当天有线段从这里出发 / 到这里结束。
+ * 一条线段属于它那一天（toDate），当天筛选时两端地点都必须显示，
+ * 否则会看到一条没有起点或终点圆点的断头路。
+ */
+export function stopDays(route: RouteGeometry) {
+  const days = new Map<string, Set<string>>();
+  const add = (key: string, day: string) => {
+    const set = days.get(key) ?? new Set<string>();
+    set.add(day);
+    days.set(key, set);
+  };
+  for (const stop of route.stops)
+    for (const day of stop.dates) add(stop.key, day);
+  for (const segment of route.segments)
+    for (const key of [segment.from, segment.to]) add(key, segment.toDate);
+  const result: Record<string, string[]> = {};
+  for (const [key, set] of days) result[key] = [...set];
+  return result;
+}
+
+/**
  * 按开始时间把有坐标的安排连成路线；已取消的安排不参与。
  * 结果只包含坐标与元数据，不依赖任何地图库，便于单元测试。
  */

@@ -1,6 +1,10 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { buildRoute, greatCircle } from "../../web/src/lib/route-geometry";
+import {
+  buildRoute,
+  greatCircle,
+  stopDays,
+} from "../../web/src/lib/route-geometry";
 import type { TripEvent } from "../../web/src/lib/models";
 
 type Point = { name: string; latitude: number; longitude: number };
@@ -206,4 +210,70 @@ test("无坐标安排时返回空路线与空边界", () => {
   assert.deepEqual(route.segments, []);
   assert.equal(route.bounds, null);
   assert.equal(route.missing.length, 1);
+});
+
+test("按天筛选时线段两端地点在当天都可见", () => {
+  const route = buildRoute([
+    event({
+      id: "a",
+      start: "2030-06-01T09:00:00+08:00",
+      timezone: "Asia/Shanghai",
+      location: shanghai,
+    }),
+    event({
+      id: "b",
+      start: "2030-06-02T09:00:00+09:00",
+      timezone: "Asia/Tokyo",
+      location: tokyo,
+    }),
+    event({
+      id: "c",
+      start: "2030-06-03T09:00:00+09:00",
+      timezone: "Asia/Tokyo",
+      location: shanghai,
+    }),
+  ]);
+  const days = stopDays(route);
+  const key = (name: string) =>
+    route.stops.find((stop) => stop.name === name)!.key;
+  for (const segment of route.segments)
+    for (const end of [segment.from, segment.to])
+      assert.ok(
+        days[end].includes(segment.toDate),
+        `${end} 在 ${segment.toDate} 必须显示`,
+      );
+  // 上海 06-01 到访、06-02 作为线段起点、06-03 再次到访。
+  assert.deepEqual(days[key("上海")].sort(), [
+    "2030-06-01",
+    "2030-06-02",
+    "2030-06-03",
+  ]);
+  assert.deepEqual(days[key("东京")].sort(), ["2030-06-02", "2030-06-03"]);
+});
+
+test("第二天才出发的线段不算在前一天", () => {
+  const route = buildRoute([
+    event({
+      id: "a",
+      start: "2030-11-02T09:00:00+08:00",
+      timezone: "Asia/Shanghai",
+      location: shanghai,
+    }),
+    event({
+      id: "b",
+      kind: "drive",
+      start: "2030-11-03T08:00:00+09:00",
+      timezone: "Asia/Tokyo",
+      departureLocation: shanghai,
+      location: tokyo,
+    }),
+  ]);
+  const days = stopDays(route);
+  const key = (name: string) =>
+    route.stops.find((stop) => stop.name === name)!.key;
+  assert.equal(route.segments.length, 1);
+  assert.equal(route.segments[0].toDate, "2030-11-03");
+  // 前一天只有到访的地点，线段与其终点属于出发那天。
+  assert.deepEqual(days[key("上海")], ["2030-11-02", "2030-11-03"]);
+  assert.deepEqual(days[key("东京")], ["2030-11-03"]);
 });

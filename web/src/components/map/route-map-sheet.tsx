@@ -7,7 +7,7 @@ import type {
 } from "maplibre-gl";
 import { AlertCircle, ChevronDown, Pause, Play, Share2 } from "lucide-react";
 import type { TripData, TripEvent } from "@/lib/models";
-import { buildRoute } from "@/lib/route-geometry";
+import { buildRoute, stopDays } from "@/lib/route-geometry";
 import { mapStyleUrl } from "../../../../shared/map-source";
 import {
   ARROW_LAYER,
@@ -62,6 +62,7 @@ export function RouteMapSheet({
   onPoster: () => void;
 }) {
   const route = useMemo(() => buildRoute(data.events), [data.events]);
+  const stopDayMap = useMemo(() => stopDays(route), [route]);
   const [container, setContainer] = useState<HTMLDivElement | null>(null);
   const map = useRef<MapLibreMap | null>(null);
   const module = useRef<MapLibreModule | null>(null);
@@ -277,11 +278,7 @@ export function RouteMapSheet({
     const filter =
       selectedDay === ""
         ? (["all"] as never)
-        : ([
-            "any",
-            ["==", ["get", "day"], selectedDay],
-            ["==", ["get", "fromDay"], selectedDay],
-          ] as never);
+        : (["==", ["get", "day"], selectedDay] as never);
     for (const id of [
       `${ROUTE_SOURCE}-line`,
       `${ROUTE_SOURCE}-arc`,
@@ -298,16 +295,15 @@ export function RouteMapSheet({
       return;
     }
     const segments = route.segments.filter(
-      (segment) =>
-        segment.fromDate === selectedDay || segment.toDate === selectedDay,
+      (segment) => segment.toDate === selectedDay,
     );
     const coordinates = segments.length
       ? segments.flatMap((segment) => segment.coordinates)
-      : route.points
-          .filter((point) => point.dates.includes(selectedDay))
-          .map(
-            (point) => [point.longitude, point.latitude] as [number, number],
-          );
+      : route.stops
+          .filter((stop) =>
+            (stopDayMap[stop.key] ?? stop.dates).includes(selectedDay),
+          )
+          .map((stop) => [stop.longitude, stop.latitude] as [number, number]);
     if (!coordinates.length) return;
     const lngs = coordinates.map((coordinate) => coordinate[0]),
       lats = coordinates.map((coordinate) => coordinate[1]);
@@ -318,7 +314,7 @@ export function RouteMapSheet({
       ],
       { padding: 70, maxZoom: 12, duration: 650 },
     );
-  }, [selectedDay, ready, route, playing]);
+  }, [selectedDay, ready, route, playing, stopDayMap]);
 
   function play() {
     const instance = map.current,

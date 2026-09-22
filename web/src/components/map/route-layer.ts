@@ -1,5 +1,5 @@
 import type { Map as MapLibreMap } from "maplibre-gl";
-import type { RouteGeometry } from "@/lib/route-geometry";
+import { stopDays, type RouteGeometry } from "@/lib/route-geometry";
 import {
   ARROW_IMAGE_ID,
   registerRouteImages,
@@ -20,11 +20,11 @@ export const STOP_DOT_LAYER = `${ROUTE_POINT_SOURCE}-dot`;
 export const STOP_LABEL_LAYER = `${ROUTE_POINT_SOURCE}-label`;
 export const STOP_LAYERS = [STOP_DOT_LAYER, STOP_LABEL_LAYER];
 
-/** 只保留某天到访过的地点；空字符串表示不筛选。 */
+/** 只保留某天到访过或当天有线段经过的地点；空字符串表示不筛选。 */
 export function stopFilter(day: string) {
   return day === ""
     ? (["all"] as never)
-    : (["!=", ["index-of", day, ["get", "dates"]], -1] as never);
+    : (["!=", ["index-of", day, ["get", "days"]], -1] as never);
 }
 
 export function lineFeatures(route: RouteGeometry) {
@@ -33,7 +33,6 @@ export function lineFeatures(route: RouteGeometry) {
     properties: {
       arc: segment.arc,
       day: segment.toDate,
-      fromDay: segment.fromDate,
     },
     geometry: {
       type: "LineString" as const,
@@ -99,7 +98,6 @@ function arrowFeatures(route: RouteGeometry) {
         index,
         bearing: bearingBetween(before, end),
         day: segment.toDate,
-        fromDay: segment.fromDate,
       },
       geometry: { type: "Point" as const, coordinates: end },
     };
@@ -128,7 +126,6 @@ function decorFeatures(route: RouteGeometry) {
         index,
         scale: Number(scale.toFixed(3)),
         day: segment.toDate,
-        fromDay: segment.fromDate,
         imageId: stickerImageId(segmentSticker(segment.kind)),
       },
       geometry: {
@@ -142,11 +139,12 @@ function decorFeatures(route: RouteGeometry) {
 /** 查看状态下的站点：每个地点一个圆点加地名，不带序号。 */
 export function stopFeatures(route: RouteGeometry) {
   const last = route.stops.length - 1;
+  const days = stopDays(route);
   return route.stops.map((stop, index) => ({
     type: "Feature" as const,
     properties: {
       name: stop.name,
-      dates: stop.dates,
+      days: days[stop.key] ?? stop.dates,
       eventId: stop.eventIds[0] ?? "",
       role:
         last === 0

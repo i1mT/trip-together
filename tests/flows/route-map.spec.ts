@@ -113,9 +113,9 @@ test("路线图展示站点与缺坐标提示，并生成行程海报", async ({
   await mapDialog.getByRole("button", { name: /1 项安排没有坐标/ }).click();
   await expect(mapDialog.getByText("待定活动")).toBeVisible();
 
-  // 按日期只看某一天：只保留当天站点，并缩放到当天范围。
+  // 按日期只看某一天：只保留当天线段与两端站点，并缩放到当天范围。
   await mapDialog.locator(".route-day-filter button").nth(2).click();
-  await expect(canvas).toHaveAttribute("data-visible-stops", "1");
+  await expect(canvas).toHaveAttribute("data-visible-stops", "2");
   await mapDialog.getByRole("button", { name: "全程", exact: true }).click();
   await expect(canvas).toHaveAttribute("data-visible-stops", "3");
 

@@ -423,6 +423,8 @@ export function RouteMapSheet({
       return Math.max(0, next - segmentStart[index]);
     });
     const longest = Math.max(...segmentLength, 0.000001);
+    // 当前地图中心与缩放，作为第一段「镜头就位」的起点。
+    const initialCenter = instance.getCenter();
     let clock = 0;
     const timings = route.segments.map((_, index) => {
       // 长段更快：时长随长度次线性增长，并夹在合理区间内。
@@ -433,21 +435,37 @@ export function RouteMapSheet({
           1200 + 2000 * Math.pow(segmentLength[index] / longest, 0.6),
         ),
       );
+      // 每段先让镜头缩放到位，再开始拖线前进：两件事不同时发生。
+      const zoomFrom =
+        index === 0 ? instance!.getZoom() : (segmentZooms[index - 1] ?? 4);
+      const target = segmentZooms[index] ?? zoomFrom;
+      const settle = Math.min(
+        1400,
+        Math.max(320, Math.abs(target - zoomFrom) * 150),
+      );
+      const first = route.segments[index].coordinates[0];
       const timing = {
-        start: clock,
+        zoomFrom,
+        centerFrom:
+          index === 0
+            ? ([initialCenter.lng, initialCenter.lat] as [number, number])
+            : first,
+        centerAt: first,
+        zoomStart: clock,
+        zoomDuration: settle,
+        start: clock + settle,
         duration,
         from: segmentStart[index],
         length: segmentLength[index],
         factor: stickerScale(segmentLength[index] / longest),
       };
-      clock += duration;
+      clock += settle + duration;
       return timing;
     });
     const totalClock = Math.max(1, clock);
     const started = performance.now();
-    let zoom = segmentZooms[0] ?? instance.getZoom(),
-      segment = -1,
-      lastFrame = started;
+    let zoom = instance.getZoom(),
+      segment = -1;
     setPlaying(true);
 
     const step = (now: number) => {
@@ -456,11 +474,19 @@ export function RouteMapSheet({
         (timing) => elapsed < timing.start + timing.duration,
       );
       if (current < 0) current = timings.length - 1;
-      const timing = timings[current],
-        local = Math.min(
+      const timing = timings[current];
+      // 镜头就位阶段：载具停在段起点，只把中心与缩放推到位。
+      const settleLocal = Math.min(
           1,
-          Math.max(0, (elapsed - timing.start) / timing.duration),
+          Math.max(0, (elapsed - timing.zoomStart) / timing.zoomDuration),
         ),
+        settling = elapsed < timing.start;
+      const local = settling
+          ? 0
+          : Math.min(
+              1,
+              Math.max(0, (elapsed - timing.start) / timing.duration),
+            ),
         target = timing.from + easeInOut(local) * timing.length;
 
       const { cumulative, coordinates } = journey;
@@ -532,18 +558,26 @@ export function RouteMapSheet({
           ] as never);
       }
 
-      // 缩放平滑：既按比例逼近目标，又限制每秒最大变化量，
-      // 避免「长途航班 → 短途自驾」时缩放突然跳变。
-      const elapsedFrame = Math.max(1, now - lastFrame);
-      lastFrame = now;
-      const zoomTarget = segmentZooms[segment] ?? zoom,
-        difference = zoomTarget - zoom,
-        zoomStep = Math.min(
-          Math.abs(difference),
-          Math.max(Math.abs(difference) * 0.05, 1.8 * (elapsedFrame / 1000)),
-        );
-      zoom += Math.sign(difference) * zoomStep;
-      instance!.jumpTo({ center: position, zoom });
+      // 缩放：就位阶段用 ease-in-out 从上一段的缩放推到位，前进阶段保持不变。
+      const zoomTarget = segmentZooms[segment] ?? zoom;
+      if (settling)
+        zoom =
+          timing.zoomFrom +
+          (zoomTarget - timing.zoomFrom) * easeInOut(settleLocal);
+      else zoom = zoomTarget;
+      const blend = easeInOut(settleLocal);
+      // 就位阶段把镜头从上一段的位置推到本段起点，前进阶段始终跟着载具。
+      instance!.jumpTo({
+        center: settling
+          ? [
+              timing.centerFrom[0] +
+                (timing.centerAt[0] - timing.centerFrom[0]) * blend,
+              timing.centerFrom[1] +
+                (timing.centerAt[1] - timing.centerFrom[1]) * blend,
+            ]
+          : position,
+        zoom,
+      });
 
       if (bar.current)
         bar.current.style.width = `${(elapsed / totalClock) * 100}%`;

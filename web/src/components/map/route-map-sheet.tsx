@@ -1,5 +1,5 @@
 "use client";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AlertCircle, ChevronDown, Pause, Play, Share2 } from "lucide-react";
 import type { TripData, TripEvent } from "@/lib/models";
 import { buildRoute } from "@/lib/route-geometry";
@@ -25,6 +25,12 @@ export function RouteMapSheet({
   const handler = useRef(onEvent);
   handler.current = onEvent;
   const [missingOpen, setMissingOpen] = useState(false);
+  const [revealed, setRevealed] = useState(false);
+  // 播放期间收起所有控件，录屏里只有地图与路线动画；点屏幕可临时显示控件。
+  useEffect(() => {
+    if (view.playing) setRevealed(false);
+  }, [view.playing]);
+  const immersive = view.playing && !revealed;
 
   const days = useMemo(
     () => [...new Set(route.points.map((point) => point.date))].sort(),
@@ -36,7 +42,7 @@ export function RouteMapSheet({
       open={open}
       onClose={onClose}
       title="行程路线"
-      className="route-sheet"
+      className={`route-sheet${immersive ? " is-immersive" : ""}`}
       titleExtra={
         <button
           type="button"
@@ -154,6 +160,14 @@ export function RouteMapSheet({
                   </ul>
                 )}
               </div>
+            )}
+            {immersive && (
+              <button
+                type="button"
+                className="route-immersive-catch"
+                aria-label="显示播放控件"
+                onClick={() => setRevealed(true)}
+              />
             )}
             <div className="route-play">
               <span className="route-play-track" aria-hidden="true">

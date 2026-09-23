@@ -208,7 +208,25 @@
 .route-runner .travel-sticker {
   width: var(--runner-size, 48px);
   transform: rotate(-8deg);
-  filter: drop-shadow(0 3px 8px #3930444d);
+}
+
+/* 沉浸播放：录制时只留地图与动画，点屏幕任意位置再显示控件。 */
+.route-sheet.is-immersive {
+  padding-bottom: 0;
+}
+.route-sheet.is-immersive .sheet-handle,
+.route-sheet.is-immersive .sheet-header,
+.route-sheet.is-immersive .route-day-filter,
+.route-sheet.is-immersive .route-missing,
+.route-sheet.is-immersive .route-play {
+  display: none;
+}
+.route-immersive-catch {
+  position: absolute;
+  inset: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
 }
 /* 播放时当前一段的起终点：稍大的圆点 + 地名 */
 .route-segment-dot {

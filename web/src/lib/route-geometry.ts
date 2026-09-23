@@ -11,6 +11,7 @@ export type RouteStop = {
   timezone: string;
   kinds: TripEvent["kind"][];
   eventIds: string[];
+  timestamp: number;
 };
 
 export type RouteSegment = {
@@ -21,6 +22,8 @@ export type RouteSegment = {
   kind: TripEvent["kind"];
   arc: boolean;
   coordinates: [number, number][];
+  distanceKm: number;
+  durationMinutes: number | null;
 };
 
 export type MissingEvent = {
@@ -48,6 +51,7 @@ type Point = {
   date: string;
   kind: TripEvent["kind"];
   eventId: string;
+  timestamp: number;
 };
 
 const toRad = Math.PI / 180;
@@ -115,27 +119,58 @@ export function greatCircle(
 
 function eventPoints(event: TripEvent): Point[] {
   const points: Point[] = [];
-  const base = {
-    timezone: event.timezone,
-    date: localDate(event.start, event.timezone),
-    kind: event.kind,
-    eventId: event.id,
-  };
+  const startTimestamp = Date.parse(event.start);
+  const endTimestamp = Date.parse(event.end);
+  const arrivalTimestamp =
+    Number.isFinite(endTimestamp) && endTimestamp > startTimestamp
+      ? endTimestamp
+      : startTimestamp;
   if (event.departureLocation)
     points.push({
-      ...base,
+      timezone: event.timezone,
+      date: localDate(event.start, event.timezone),
+      kind: event.kind,
+      eventId: event.id,
+      timestamp: Date.parse(event.start),
       name: event.departureLocation.name,
       latitude: event.departureLocation.latitude,
       longitude: event.departureLocation.longitude,
     });
   if (event.location)
     points.push({
-      ...base,
+      timezone: event.endTimezone ?? event.timezone,
+      date: localDate(
+        event.departureLocation
+          ? new Date(arrivalTimestamp).toISOString()
+          : event.start,
+        event.endTimezone ?? event.timezone,
+      ),
+      kind: event.kind,
+      eventId: event.id,
+      timestamp: event.departureLocation ? arrivalTimestamp : startTimestamp,
       name: event.location.name,
       latitude: event.location.latitude,
       longitude: event.location.longitude,
     });
   return points;
+}
+
+/** 按折线的大圆距离计算公里数，适合在地图上展示用户可理解的距离。 */
+export function distanceKm(coordinates: [number, number][]) {
+  let total = 0;
+  for (let i = 1; i < coordinates.length; i += 1) {
+    const [lng1, lat1] = coordinates[i - 1];
+    const [lng2, lat2] = coordinates[i];
+    const phi1 = lat1 * toRad;
+    const phi2 = lat2 * toRad;
+    const deltaPhi = (lat2 - lat1) * toRad;
+    const deltaLambda = (lng2 - lng1) * toRad;
+    const a =
+      Math.sin(deltaPhi / 2) ** 2 +
+      Math.cos(phi1) * Math.cos(phi2) * Math.sin(deltaLambda / 2) ** 2;
+    total += 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  }
+  return total;
 }
 
 function merge(target: RouteStop, point: Point) {
@@ -243,6 +278,7 @@ export function buildRoute(events: TripEvent[]): RouteGeometry {
         timezone: point.timezone,
         kinds: [point.kind],
         eventIds: [point.eventId],
+        timestamp: point.timestamp,
       };
       points.push(visit);
       previous = visit;
@@ -262,6 +298,10 @@ export function buildRoute(events: TripEvent[]): RouteGeometry {
     const arc = to.kinds.includes("flight");
     const start: [number, number] = [from.longitude, from.latitude];
     const end: [number, number] = [to.longitude, to.latitude];
+    const coordinates = arc ? greatCircle(start, end) : [start, end];
+    const durationMinutes = Math.round(
+      Math.abs(to.timestamp - from.timestamp) / 60000,
+    );
     segments.push({
       from: from.key,
       to: to.key,
@@ -269,7 +309,12 @@ export function buildRoute(events: TripEvent[]): RouteGeometry {
       toDate: to.date,
       kind: to.kinds[0],
       arc,
-      coordinates: arc ? greatCircle(start, end) : [start, end],
+      coordinates,
+      distanceKm: distanceKm(coordinates),
+      durationMinutes:
+        Number.isFinite(durationMinutes) && durationMinutes > 0
+          ? durationMinutes
+          : null,
     });
   }
 

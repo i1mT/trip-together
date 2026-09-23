@@ -3,6 +3,7 @@ import type { Journey, RouteGeometry } from "@/lib/route-geometry";
 import {
   ARROW_LAYER,
   fitRouteBounds,
+  METRIC_LAYER,
   ROUTE_SOURCE,
   STICKER_LAYER,
   STOP_DOT_LAYER,
@@ -100,7 +101,7 @@ export function startRoutePlayback(options: {
     map.setPaintProperty(`${ROUTE_SOURCE}-arc`, "line-opacity", 0.9);
     map.setPaintProperty(STOP_DOT_LAYER, "circle-opacity", 1);
     map.setPaintProperty(STOP_LABEL_LAYER, "text-opacity", 1);
-    for (const id of [...STOP_LAYERS, ARROW_LAYER, STICKER_LAYER])
+    for (const id of [...STOP_LAYERS, ARROW_LAYER, STICKER_LAYER, METRIC_LAYER])
       if (map.getLayer(id)) map.setFilter(id, ["all"] as never);
     (map.getSource(PROGRESS_SOURCE) as ProgressSource | undefined)?.setData({
       type: "FeatureCollection",
@@ -237,6 +238,7 @@ export function startRoutePlayback(options: {
   map.setPaintProperty(STOP_LABEL_LAYER, "text-opacity", 0);
   map.setFilter(STICKER_LAYER, NOTHING);
   map.setFilter(ARROW_LAYER, NOTHING);
+  map.setFilter(METRIC_LAYER, NOTHING);
 
   const step = (now: number) => {
     const elapsed = now - started;

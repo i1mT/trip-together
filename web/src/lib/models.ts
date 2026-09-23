@@ -14,6 +14,7 @@ export type Trip = {
   currency: Currency;
   home_currency: Currency;
   version: number;
+  sortOrder?: number | null;
 };
 export type PreparationItem = {
   id: string;

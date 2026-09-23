@@ -69,6 +69,8 @@ test("按开始时间排序连线，航班使用大圆弧", () => {
   assert.equal(route.segments.length, 1);
   assert.equal(route.segments[0].arc, true);
   assert.ok(route.segments[0].coordinates.length > 2);
+  assert.ok(route.segments[0].distanceKm > 0);
+  assert.ok((route.segments[0].durationMinutes ?? 0) > 0);
 });
 
 test("非航班段使用两点直线", () => {

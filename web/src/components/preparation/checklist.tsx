@@ -1,11 +1,12 @@
 "use client";
 import { useState } from "react";
-import { Check, ChevronDown, Trash2 } from "lucide-react";
+import { Check, ChevronDown, Pencil, Trash2 } from "lucide-react";
 import type { PreparationItem } from "@/lib/models";
 import { api } from "@/lib/api";
 import { SheetFooter, Sheet } from "../ui";
 import { EmptyState } from "../empty-state";
 import { PreparationEditor } from "./preparation-editor";
+import { useToast } from "../toast";
 export function PreparationChecklist({
   items,
   checked,
@@ -18,7 +19,9 @@ export function PreparationChecklist({
   const [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
     [adding, setAdding] = useState(false),
-    [removing, setRemoving] = useState<PreparationItem | null>(null);
+    [removing, setRemoving] = useState<PreparationItem | null>(null),
+    [editing, setEditing] = useState<PreparationItem | null>(null);
+  const toast = useToast();
   const completed = items.filter((i) => checked.includes(i.id)).length,
     groups = [...new Set(items.map((i) => i.group_name))];
   async function action(path: string, method: string, body?: object) {
@@ -30,6 +33,10 @@ export function PreparationChecklist({
         ...(body ? { body: JSON.stringify(body) } : {}),
       });
       await onRefresh();
+      if (method === "PUT" && path.startsWith("/preparation/"))
+        toast("准备事项已更新");
+      else if (method === "POST") toast("准备事项已添加");
+      else if (method === "DELETE") toast("准备事项已删除");
       return true;
     } catch (e) {
       setError((e as Error).message);
@@ -66,8 +73,9 @@ export function PreparationChecklist({
             .map((i) => (
               <div className="checklist-row" key={i.id}>
                 <button
-                  className="preparation-item"
+                  className="preparation-item preparation-check-button"
                   role="checkbox"
+                  aria-label={`标记${i.title}`}
                   aria-checked={checked.includes(i.id)}
                   disabled={busy}
                   onClick={() =>
@@ -82,10 +90,23 @@ export function PreparationChecklist({
                   >
                     {checked.includes(i.id) && <Check size={13} />}
                   </span>
+                </button>
+                <button
+                  className={`preparation-item-copy ${checked.includes(i.id) ? "checked" : ""}`}
+                  onClick={() => setEditing(i)}
+                  aria-label={`编辑${i.title}`}
+                >
                   <span>
                     <strong>{i.title}</strong>
                     {i.note && <small>{i.note}</small>}
                   </span>
+                </button>
+                <button
+                  className="icon-button"
+                  aria-label={`编辑${i.title}`}
+                  onClick={() => setEditing(i)}
+                >
+                  <Pencil size={15} />
                 </button>
                 <button
                   className="icon-button"
@@ -123,6 +144,20 @@ export function PreparationChecklist({
           existing={items.map((i) => i.title)}
           onClose={() => setAdding(false)}
           onAdd={(v) => action("/preparation", "POST", v)}
+        />
+      )}
+      {editing && (
+        <PreparationEditor
+          item={editing}
+          groups={groups}
+          existing={items.map((i) => i.title)}
+          error={error}
+          onClose={() => setEditing(null)}
+          onSave={async (id, value) => {
+            const saved = await action(`/preparation/${id}`, "PUT", value);
+            if (saved) setEditing(null);
+            return saved;
+          }}
         />
       )}
       {removing && (

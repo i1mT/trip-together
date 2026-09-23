@@ -68,6 +68,8 @@ OpenFreeMap 无 SLA 且国内访问可能偏慢：样式 URL 集中常量、保�
 
 ## 验证记录
 
+- 2026-09-23 产品反馈迭代：完整行程支持长按/拖拽调整同一天安排顺序，新增 `events.sort_order` 持久化与排序接口；出发前准备事项支持点击文字编辑、勾选切换完成状态，并在更新后显示全局 toast；路线图贴纸随地图缩放增大并保留线路长度压缩；每段路线在线段中部显示距离与耗时，日期筛选和逐段播放同步隐藏/恢复标签。`npm run typecheck`、52 项单测、`npm run build` 与 iOS 15.5 浏览器兼容检查通过。
+
 - 2026-09-21 本地预览库 `events.data` 坐标抽样：`location` 5/7 有值、2 条为空；航班另有 `departureLocation`。
 - 依赖版本核实：`maplibre-gl` 5.24.0（产物无 class static block）、`html-to-image` 1.11.13。
 - `npm run typecheck` 通过；`npm test` 48 项通过（含新增 7 项路线几何测试）。

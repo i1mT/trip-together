@@ -19,9 +19,9 @@ export async function tripData(env: Env, memberId: string, trip: Trip) {
     )
       .bind(trip.id)
       .all(),
-    env.DB.prepare("SELECT data,version FROM events WHERE trip_id=?")
+    env.DB.prepare("SELECT data,version,sort_order FROM events WHERE trip_id=?")
       .bind(trip.id)
-      .all<{ data: string; version: number }>(),
+      .all<{ data: string; version: number; sort_order: number | null }>(),
     env.DB.prepare(
       "SELECT id,trip_id,name,category,owner_id,mime,size FROM documents WHERE (trip_id=? AND (owner_id IS NULL OR owner_id=?)) OR (trip_id IS NULL AND owner_id=?)",
     )
@@ -62,9 +62,16 @@ export async function tripData(env: Env, memberId: string, trip: Trip) {
             visibleDocuments.has(id),
           ),
           version: e.version,
+          sortOrder: e.sort_order,
         };
       })
-      .sort((a, b) => Date.parse(a.start) - Date.parse(b.start)),
+      .sort((a, b) => {
+        if (a.sortOrder !== null && b.sortOrder !== null)
+          return a.sortOrder - b.sortOrder;
+        if (a.sortOrder !== null) return -1;
+        if (b.sortOrder !== null) return 1;
+        return Date.parse(a.start) - Date.parse(b.start);
+      }),
     documents: documents.results,
     expenses: expenses.results.map((e) => ({
       ...e,

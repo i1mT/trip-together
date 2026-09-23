@@ -5,34 +5,54 @@ import { Field } from "../editors/fields";
 export function PreparationEditor({
   groups,
   existing,
+  item,
   onAdd,
+  onSave,
   onClose,
   error,
 }: {
   groups: string[];
   existing: string[];
-  onAdd: (v: {
+  item?: {
+    id: string;
+    group_name: string;
+    title: string;
+    note: string;
+  };
+  onAdd?: (v: {
     group_name: string;
     title: string;
     note: string;
   }) => Promise<boolean>;
+  onSave?: (
+    id: string,
+    v: { group_name: string; title: string; note: string },
+  ) => Promise<boolean>;
   onClose: () => void;
   error: string;
 }) {
-  const [title, setTitle] = useState(""),
-    [group, setGroup] = useState(groups[0] ?? "出发准备"),
-    [note, setNote] = useState(""),
-    [more, setMore] = useState(true),
+  const [title, setTitle] = useState(item?.title ?? ""),
+    [group, setGroup] = useState(item?.group_name ?? groups[0] ?? "出发准备"),
+    [note, setNote] = useState(item?.note ?? ""),
+    [more, setMore] = useState(!item),
     [busy, setBusy] = useState(false),
     [notice, setNotice] = useState("");
-  async function add(name: string) {
+  const initial = {
+    title: item?.title ?? "",
+    group: item?.group_name ?? groups[0] ?? "出发准备",
+    note: item?.note ?? "",
+  };
+  async function submit(name: string) {
     setBusy(true);
     try {
-      if (await onAdd({ group_name: group || "出发准备", title: name, note })) {
+      const value = { group_name: group || "出发准备", title: name, note };
+      const saved =
+        item && onSave ? await onSave(item.id, value) : await onAdd?.(value);
+      if (saved) {
         setTitle("");
         setNote("");
-        setNotice(`已添加：${name}`);
-        if (!more) onClose();
+        setNotice(item ? "准备事项已更新" : `已添加：${name}`);
+        if (item || !more) onClose();
       }
     } finally {
       setBusy(false);
@@ -40,16 +60,20 @@ export function PreparationEditor({
   }
   return (
     <Sheet
-      hasChanges={!!title.trim() || !!note.trim()}
+      hasChanges={
+        title !== initial.title ||
+        group !== initial.group ||
+        note !== initial.note
+      }
       open
-      title="添加准备事项"
+      title={item ? "编辑准备事项" : "添加准备事项"}
       onClose={() => !busy && onClose()}
     >
       <SheetForm
         className="editor-form"
         onSubmit={(e) => {
           e.preventDefault();
-          void add(title);
+          void submit(title);
         }}
       >
         <Field
@@ -80,14 +104,16 @@ export function PreparationEditor({
             <Field label="说明" value={note} onChange={setNote} />
           </div>
         </details>
-        <label className="inline-check">
-          <input
-            type="checkbox"
-            checked={more}
-            onChange={(e) => setMore(e.target.checked)}
-          />
-          保存后继续添加
-        </label>
+        {!item && (
+          <label className="inline-check">
+            <input
+              type="checkbox"
+              checked={more}
+              onChange={(e) => setMore(e.target.checked)}
+            />
+            保存后继续添加
+          </label>
+        )}
         {error && (
           <p role="alert" className="error-message">
             {error}
@@ -95,33 +121,41 @@ export function PreparationEditor({
         )}
         {notice && <p role="status">{notice}</p>}
         <SheetFooter>
-          <button className="primary-button" disabled={busy}>
-            {busy ? "正在添加…" : "添加准备事项"}
+          <button className="primary-button" disabled={busy || !title.trim()}>
+            {busy
+              ? item
+                ? "正在保存…"
+                : "正在添加…"
+              : item
+                ? "保存修改"
+                : "添加准备事项"}
           </button>
         </SheetFooter>
-        <details className="optional-details">
-          <summary>从常用清单快速添加</summary>
-          <div className="optional-fields">
-            {[
-              "检查护照与签证",
-              "确认机票与酒店订单",
-              "携带充电器与转换插头",
-              "准备常用药品",
-              "检查行李额度",
-            ].map((name) => (
-              <button
-                type="button"
-                className="secondary-button"
-                key={name}
-                disabled={busy || existing.includes(name)}
-                onClick={() => void add(name)}
-              >
-                {existing.includes(name) ? "已添加 · " : "＋ "}
-                {name}
-              </button>
-            ))}
-          </div>
-        </details>
+        {!item && (
+          <details className="optional-details">
+            <summary>从常用清单快速添加</summary>
+            <div className="optional-fields">
+              {[
+                "检查护照与签证",
+                "确认机票与酒店订单",
+                "携带充电器与转换插头",
+                "准备常用药品",
+                "检查行李额度",
+              ].map((name) => (
+                <button
+                  type="button"
+                  className="secondary-button"
+                  key={name}
+                  disabled={busy || existing.includes(name)}
+                  onClick={() => void submit(name)}
+                >
+                  {existing.includes(name) ? "已添加 · " : "＋ "}
+                  {name}
+                </button>
+              ))}
+            </div>
+          </details>
+        )}
       </SheetForm>
     </Sheet>
   );

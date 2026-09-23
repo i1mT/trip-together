@@ -3,6 +3,7 @@ import { eventStatusLabel } from "../../../../shared/event-status";
 import { EventStatusActions } from "../events/status-actions";
 import { mapLink } from "../../../../shared/places";
 import { useState } from "react";
+import { useRef } from "react";
 import {
   Plus,
   ArrowUpRight,
@@ -13,6 +14,7 @@ import {
   CalendarDays,
   ArrowRight,
   AlertCircle,
+  GripVertical,
 } from "lucide-react";
 import type { TripData, TripDocument, TripEvent } from "@/lib/models";
 import {
@@ -33,6 +35,7 @@ import { RouteMapSheet } from "../map/route-map-sheet";
 import { TripPosterSheet } from "../map/poster-sheet";
 import { api } from "@/lib/api";
 import { DocumentRow } from "./documents";
+import { useToast } from "../toast";
 export function Itinerary({
   data,
   onRefresh,
@@ -48,6 +51,11 @@ export function Itinerary({
 }) {
   const { events } = data;
   const [editing, setEditing] = useState(false);
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [dragOverId, setDragOverId] = useState<string | null>(null);
+  const dragTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const suppressClick = useRef(false);
+  const toast = useToast();
   const [mapOpen, setMapOpen] = useState(false);
   const [posterOpen, setPosterOpen] = useState(false);
   const tripDays: string[] = [];
@@ -76,6 +84,45 @@ export function Itinerary({
   const filtered = events.filter(
     (e) => localDate(e.start, e.timezone) === selected,
   );
+  function clearDragTimer() {
+    if (dragTimer.current) clearTimeout(dragTimer.current);
+    dragTimer.current = null;
+  }
+  function beginLongPress(id: string) {
+    clearDragTimer();
+    dragTimer.current = setTimeout(() => {
+      setDraggingId(id);
+      suppressClick.current = true;
+    }, 450);
+  }
+  function finishDrag() {
+    clearDragTimer();
+    setDraggingId(null);
+    setDragOverId(null);
+  }
+  async function reorderEvents(fromId: string, toId: string) {
+    if (fromId === toId) return finishDrag();
+    const visibleIds = filtered.map((event) => event.id);
+    const moved = visibleIds.filter((id) => id !== fromId);
+    const target = moved.indexOf(toId);
+    moved.splice(target < 0 ? moved.length : target, 0, fromId);
+    const cursor = { value: 0 };
+    const ids = events.map((event) =>
+      visibleIds.includes(event.id) ? moved[cursor.value++] : event.id,
+    );
+    try {
+      await api("/events/order", {
+        method: "PATCH",
+        body: JSON.stringify({ ids }),
+      });
+      await onRefresh();
+      toast("安排顺序已更新");
+    } catch (error) {
+      toast((error as Error).message, "error");
+    } finally {
+      finishDrag();
+    }
+  }
   return (
     <section className="page-content">
       <div className="page-title">
@@ -168,8 +215,46 @@ export function Itinerary({
               <button
                 key={e.id}
                 className="timeline-event"
-                onClick={() => onEvent(e)}
+                draggable
+                data-dragging={draggingId === e.id ? "true" : "false"}
+                data-drag-over={dragOverId === e.id ? "true" : "false"}
+                onClick={() => {
+                  if (suppressClick.current) {
+                    suppressClick.current = false;
+                    return;
+                  }
+                  onEvent(e);
+                }}
+                onPointerDown={() => beginLongPress(e.id)}
+                onPointerEnter={() => {
+                  if (draggingId && draggingId !== e.id) setDragOverId(e.id);
+                }}
+                onPointerUp={() => {
+                  clearDragTimer();
+                  if (draggingId && dragOverId) {
+                    void reorderEvents(draggingId, dragOverId);
+                  } else {
+                    finishDrag();
+                  }
+                }}
+                onPointerCancel={finishDrag}
+                onDragStart={() => {
+                  setDraggingId(e.id);
+                  suppressClick.current = true;
+                }}
+                onDragOver={(event) => {
+                  event.preventDefault();
+                  if (draggingId && draggingId !== e.id) setDragOverId(e.id);
+                }}
+                onDrop={(event) => {
+                  event.preventDefault();
+                  if (draggingId) void reorderEvents(draggingId, e.id);
+                }}
+                onDragEnd={finishDrag}
               >
+                <span className="timeline-drag-handle" aria-hidden="true">
+                  <GripVertical size={15} />
+                </span>
                 <div className="timeline-time">
                   <strong>{eventTime(e)}</strong>
                   {!eventStatusLabel(e.status) && (

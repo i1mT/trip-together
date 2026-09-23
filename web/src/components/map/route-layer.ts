@@ -1,5 +1,5 @@
 import type { Map as MapLibreMap } from "maplibre-gl";
-import { stopDays, type RouteGeometry } from "@/lib/route-geometry";
+import { distanceKm, stopDays, type RouteGeometry } from "@/lib/route-geometry";
 import {
   ARROW_IMAGE_ID,
   registerRouteImages,
@@ -11,11 +11,13 @@ export const ROUTE_SOURCE = "trip-route";
 export const ROUTE_POINT_SOURCE = "trip-route-points";
 export const ROUTE_DECOR_SOURCE = "trip-route-decor";
 export const ROUTE_ARROW_SOURCE = "trip-route-arrows";
+export const ROUTE_METRIC_SOURCE = "trip-route-metrics";
 export const LINE_COLOR = "#6c4c96";
 export const ARC_COLOR = "#9b7bd4";
 
 export const ARROW_LAYER = `${ROUTE_ARROW_SOURCE}-symbol`;
 export const STICKER_LAYER = `${ROUTE_DECOR_SOURCE}-stickers`;
+export const METRIC_LAYER = `${ROUTE_METRIC_SOURCE}-labels`;
 export const STOP_DOT_LAYER = `${ROUTE_POINT_SOURCE}-dot`;
 export const STOP_LABEL_LAYER = `${ROUTE_POINT_SOURCE}-label`;
 export const STOP_LAYERS = [STOP_DOT_LAYER, STOP_LABEL_LAYER];
@@ -75,18 +77,6 @@ function bearingBetween(from: [number, number], to: [number, number]) {
   return ((Math.atan2(dx, dy) * 180) / Math.PI + 360) % 360;
 }
 
-/** 折线长度（公里），用于按线路长短缩放交通工具贴纸。 */
-export function lengthKm(coordinates: [number, number][]) {
-  let total = 0;
-  for (let i = 1; i < coordinates.length; i += 1) {
-    const [lng1, lat1] = coordinates[i - 1],
-      [lng2, lat2] = coordinates[i];
-    const dx = (lng2 - lng1) * Math.cos(((lat1 + lat2) / 2) * (Math.PI / 180));
-    total += Math.hypot(dx, lat2 - lat1);
-  }
-  return total * 111.32;
-}
-
 /** 每段只在靠近终点处放一个箭头，方向由该段的最后一段走向决定。 */
 function arrowFeatures(route: RouteGeometry) {
   return route.segments.map((segment, index) => {
@@ -114,8 +104,8 @@ export function stickerScale(ratio: number) {
 }
 
 function decorFeatures(route: RouteGeometry) {
-  const lengths = route.segments.map((segment) =>
-    lengthKm(segment.coordinates),
+  const lengths = route.segments.map(
+    (segment) => segment.distanceKm || distanceKm(segment.coordinates),
   );
   const longest = Math.max(...lengths, 0.001);
   return route.segments.map((segment, index) => {
@@ -131,6 +121,35 @@ function decorFeatures(route: RouteGeometry) {
       geometry: {
         type: "Point" as const,
         coordinates: pointAt(segment.coordinates, 0.5),
+      },
+    };
+  });
+}
+
+function formatDuration(minutes: number | null) {
+  if (!minutes || minutes < 1) return "";
+  const hours = Math.floor(minutes / 60);
+  const rest = minutes % 60;
+  if (!hours) return `${rest}分钟`;
+  return rest ? `${hours}小时 ${rest}分` : `${hours}小时`;
+}
+
+function metricFeatures(route: RouteGeometry) {
+  return route.segments.map((segment) => {
+    const distance =
+      segment.distanceKm >= 100
+        ? `${Math.round(segment.distanceKm).toLocaleString("zh-CN")} km`
+        : `${segment.distanceKm.toFixed(1)} km`;
+    const duration = formatDuration(segment.durationMinutes);
+    return {
+      type: "Feature" as const,
+      properties: {
+        day: segment.toDate,
+        label: duration ? `约 ${distance} · ${duration}` : `约 ${distance}`,
+      },
+      geometry: {
+        type: "LineString" as const,
+        coordinates: segment.coordinates,
       },
     };
   });
@@ -237,6 +256,38 @@ export async function ensureRouteLayers(
     });
   }
 
+  const metrics = {
+    type: "FeatureCollection" as const,
+    features: metricFeatures(route),
+  };
+  const metricSource = map.getSource(ROUTE_METRIC_SOURCE) as
+    { setData: (value: typeof metrics) => void } | undefined;
+  if (metricSource) metricSource.setData(metrics);
+  else {
+    map.addSource(ROUTE_METRIC_SOURCE, { type: "geojson", data: metrics });
+    map.addLayer({
+      id: METRIC_LAYER,
+      type: "symbol",
+      source: ROUTE_METRIC_SOURCE,
+      layout: {
+        "symbol-placement": "line-center",
+        "symbol-spacing": 9999,
+        "text-field": ["get", "label"],
+        "text-font": ["Noto Sans Regular"],
+        "text-size": ["interpolate", ["linear"], ["zoom"], 3, 9, 8, 11, 12, 13],
+        "text-offset": [0, -1.25],
+        "text-allow-overlap": true,
+        "text-ignore-placement": true,
+      },
+      paint: {
+        "text-color": "#4d3864",
+        "text-halo-color": "#fffdfd",
+        "text-halo-width": 2,
+        "text-opacity": 0.95,
+      },
+    });
+  }
+
   await registerRouteImages(
     map,
     route.segments.map((segment) => segmentSticker(segment.kind)),
@@ -299,11 +350,13 @@ export async function ensureRouteLayers(
           ["linear"],
           ["zoom"],
           3,
-          ["*", 0.16, ["get", "scale"]],
+          ["*", 0.18, ["get", "scale"]],
           7,
-          ["*", 0.26, ["get", "scale"]],
+          ["*", 0.34, ["get", "scale"]],
           11,
-          ["*", 0.38, ["get", "scale"]],
+          ["*", 0.5, ["get", "scale"]],
+          14,
+          ["*", 0.58, ["get", "scale"]],
         ],
         "icon-padding": 4,
         "icon-allow-overlap": true,

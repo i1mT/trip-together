@@ -47,18 +47,75 @@ export async function saveEvent(
           version ?? 0,
         )
         .run()
-    : await env.DB.prepare(
-        "INSERT INTO events (id,trip_id,data,created_by) VALUES (?,?,?,?)",
-      )
-        .bind(
-          eventId,
-          tripId,
-          JSON.stringify({ ...data, status, id: eventId }),
-          memberId,
-        )
-        .run();
+    : await insertEvent(
+        env,
+        tripId,
+        memberId,
+        eventId,
+        JSON.stringify({ ...data, status, id: eventId }),
+      );
   if (!r.meta.changes) throw new HttpError(409, "事项已经变更，请刷新后重试");
   return json({ id: eventId });
+}
+
+async function insertEvent(
+  env: Env,
+  tripId: string,
+  memberId: string,
+  eventId: string,
+  data: string,
+) {
+  const hasManualOrder = await env.DB.prepare(
+    "SELECT 1 FROM events WHERE trip_id=? AND sort_order IS NOT NULL LIMIT 1",
+  )
+    .bind(tripId)
+    .first();
+  const last = hasManualOrder
+    ? await env.DB.prepare(
+        "SELECT COALESCE(MAX(sort_order), -1) AS value FROM events WHERE trip_id=?",
+      )
+        .bind(tripId)
+        .first<{ value: number }>()
+    : null;
+  return env.DB.prepare(
+    "INSERT INTO events (id,trip_id,data,created_by,sort_order) VALUES (?,?,?,?,?)",
+  )
+    .bind(
+      eventId,
+      tripId,
+      data,
+      memberId,
+      hasManualOrder ? (last?.value ?? -1) + 1 : null,
+    )
+    .run();
+}
+
+export async function reorderEvents(
+  request: Request,
+  env: Env,
+  tripId: string,
+) {
+  const value = await body(
+    request,
+    z.object({ ids: z.array(z.string().uuid()).min(1) }),
+  );
+  const rows = await env.DB.prepare("SELECT id FROM events WHERE trip_id=?")
+    .bind(tripId)
+    .all<{ id: string }>();
+  const existing = new Set(rows.results.map((row) => row.id));
+  if (
+    value.ids.length !== existing.size ||
+    new Set(value.ids).size !== value.ids.length ||
+    value.ids.some((id) => !existing.has(id))
+  )
+    throw new HttpError(400, "安排顺序已经变化，请刷新后重试");
+  const statements = value.ids.map((id, index) =>
+    env.DB.prepare(
+      "UPDATE events SET sort_order=? WHERE id=? AND trip_id=?",
+    ).bind(index, id, tripId),
+  );
+  await env.DB.batch(statements);
+  return json({ ok: true });
 }
 export async function deleteEvent(
   request: Request,
@@ -97,6 +154,15 @@ export async function preparation(
       note: z.string().max(1000).default(""),
     }),
   );
+  if (request.method === "PUT" && id) {
+    const result = await env.DB.prepare(
+      "UPDATE preparation_items SET group_name=?,title=?,note=? WHERE trip_id=? AND id=?",
+    )
+      .bind(v.group_name, v.title, v.note, tripId, id)
+      .run();
+    if (!result.meta.changes) throw new HttpError(404, "准备事项不存在");
+    return json({ ok: true });
+  }
   const itemId = crypto.randomUUID();
   await env.DB.prepare(
     "INSERT INTO preparation_items (id,trip_id,group_name,title,note) VALUES (?,?,?,?,?)",

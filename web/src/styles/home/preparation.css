@@ -61,6 +61,35 @@
   padding: 11px 0;
   min-height: 44px;
 }
+.preparation-check-button {
+  flex: 0 0 40px;
+  width: 40px;
+  padding-right: 0;
+}
+.preparation-item-copy {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  padding: 11px 0;
+  text-align: left;
+  align-items: flex-start;
+}
+.preparation-item-copy strong {
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 21px;
+}
+.preparation-item-copy small {
+  display: block;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.7;
+  margin-top: 3px;
+}
+.preparation-item-copy.checked strong {
+  color: var(--muted);
+  text-decoration: line-through;
+}
 .preparation-item .checkbox {
   flex: 0 0 21px;
   width: 21px;

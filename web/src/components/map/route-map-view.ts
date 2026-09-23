@@ -14,6 +14,7 @@ import {
   ARROW_LAYER,
   ensureRouteLayers,
   fitRouteBounds,
+  METRIC_LAYER,
   ROUTE_DECOR_SOURCE,
   ROUTE_SOURCE,
   STICKER_LAYER,
@@ -229,6 +230,7 @@ export function useRouteMapView({
       `${ROUTE_SOURCE}-arc`,
       ARROW_LAYER,
       STICKER_LAYER,
+      METRIC_LAYER,
     ])
       if (instance.getLayer(id)) instance.setFilter(id, filter);
     for (const id of STOP_LAYERS)

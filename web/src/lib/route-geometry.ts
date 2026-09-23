@@ -146,6 +146,36 @@ function merge(target: RouteStop, point: Point) {
   if (target.name === "未命名地点" && point.name) target.name = point.name;
 }
 
+export type Journey = {
+  coordinates: [number, number][];
+  cumulative: number[];
+  kinds: string[];
+  segmentOf: number[];
+  total: number;
+};
+
+/** 按行程顺序把各段坐标拼成完整轨迹：累计距离、每个顶点所属的段与段类型。 */
+/** 播放用：把各段坐标拼成完整轨迹，附带累计距离与所属段落。 */
+export function buildJourney(route: RouteGeometry): Journey {
+  const coordinates: [number, number][] = [];
+  const cumulative: number[] = [];
+  const kinds: string[] = [];
+  const segmentOf: number[] = [];
+  let total = 0;
+  route.segments.forEach((segment, segmentIndex) => {
+    for (const point of segment.coordinates) {
+      const previous = coordinates[coordinates.length - 1];
+      if (previous)
+        total += Math.hypot(point[0] - previous[0], point[1] - previous[1]);
+      coordinates.push(point);
+      cumulative.push(total);
+      kinds.push(segment.kind);
+      segmentOf.push(segmentIndex);
+    }
+  });
+  return { coordinates, cumulative, kinds, segmentOf, total };
+}
+
 /**
  * 每天在地图上应显示的地点：当天到访过，或当天有线段从这里出发 / 到这里结束。
  * 一条线段属于它那一天（toDate），当天筛选时两端地点都必须显示，

@@ -1,5 +1,5 @@
 import type { Map as MapLibreMap, Marker as MapLibreMarker } from "maplibre-gl";
-import type { RouteGeometry } from "@/lib/route-geometry";
+import type { Journey, RouteGeometry } from "@/lib/route-geometry";
 import {
   ARROW_LAYER,
   fitRouteBounds,
@@ -23,35 +23,10 @@ const PROGRESS_SOURCE = "trip-route-progress";
 const PROGRESS_LAYER = "trip-route-progress-line";
 /** 谁都匹配不上的筛选，用来隐藏整个图层。 */
 const NOTHING: never = ["==", ["get", "eventId"], "\u0000"] as never;
-
-export type Journey = {
-  coordinates: [number, number][];
-  cumulative: number[];
-  kinds: string[];
-  segmentOf: number[];
-  total: number;
-};
-
-/** 按行程顺序把各段坐标拼成完整轨迹：累计距离、每个顶点所属的段与段类型。 */
-export function buildJourney(route: RouteGeometry): Journey {
-  const coordinates: [number, number][] = [];
-  const cumulative: number[] = [];
-  const kinds: string[] = [];
-  const segmentOf: number[] = [];
-  let total = 0;
-  route.segments.forEach((segment, segmentIndex) => {
-    for (const point of segment.coordinates) {
-      const previous = coordinates[coordinates.length - 1];
-      if (previous)
-        total += Math.hypot(point[0] - previous[0], point[1] - previous[1]);
-      coordinates.push(point);
-      cumulative.push(total);
-      kinds.push(segment.kind);
-      segmentOf.push(segmentIndex);
-    }
-  });
-  return { coordinates, cumulative, kinds, segmentOf, total };
-}
+/** 就位结束后先跑几帧再检查瓦片，确保新视口的请求已经发出。 */
+const TILE_WAIT_GRACE = 120;
+/** 单个线段最多等瓦片加载的时间，网络异常时不至于卡住。 */
+const TILE_WAIT_LIMIT = 5000;
 
 function segmentDotElement(kind: "start" | "end") {
   const element = document.createElement("div");
@@ -254,6 +229,14 @@ export function startRoutePlayback(options: {
   const started = performance.now();
   let zoom = map.getZoom(),
     segment = -1;
+  // 镜头就位后、开始拖线前等这一屏瓦片加载完，避免录到空白瓦片。
+  // 等待会冻结时间线（载具与线都不前进），最多等 TILE_WAIT_LIMIT。
+  let paused = 0,
+    waitTotal = 0,
+    waitSegment = -1,
+    handoffAt = 0,
+    lastFrame = started;
+  const tilesReady = () => map.areTilesLoaded();
   options.onStart();
 
   // 开场先清空：没有路线，只有一条随播放画出来的新线。
@@ -265,12 +248,29 @@ export function startRoutePlayback(options: {
   map.setFilter(ARROW_LAYER, NOTHING);
 
   const step = (now: number) => {
-    const elapsed = now - started;
+    const delta = Math.max(0, now - lastFrame);
+    lastFrame = now;
+    let elapsed = now - started - paused;
     let current = timings.findIndex(
       (timing) => elapsed < timing.start + timing.duration,
     );
     if (current < 0) current = timings.length - 1;
+    if (current !== waitSegment) {
+      waitSegment = current;
+      waitTotal = 0;
+    }
     const timing = timings[current];
+    // 就位刚结束的几帧里瓦片请求才发出，这里等它们全部加载完再前进。
+    if (
+      elapsed >= timing.start + TILE_WAIT_GRACE &&
+      waitTotal < TILE_WAIT_LIMIT
+    ) {
+      if (!tilesReady()) {
+        paused += delta;
+        waitTotal += delta;
+        elapsed = now - started - paused;
+      } else waitTotal = 0;
+    }
     // 镜头就位阶段：载具停在段起点，只把中心与缩放推到位。
     const settleLocal = Math.min(
         1,

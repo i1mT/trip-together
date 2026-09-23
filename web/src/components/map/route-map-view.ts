@@ -4,7 +4,11 @@ import type {
   MapLayerMouseEvent as MapLibreLayerMouseEvent,
 } from "maplibre-gl";
 import type { TripData, TripEvent } from "@/lib/models";
-import { stopDays, type RouteGeometry } from "@/lib/route-geometry";
+import {
+  buildJourney,
+  stopDays,
+  type RouteGeometry,
+} from "@/lib/route-geometry";
 import { mapStyleUrl } from "../../../../shared/map-source";
 import {
   ARROW_LAYER,
@@ -18,11 +22,7 @@ import {
   STOP_LAYERS,
   stopFilter,
 } from "./route-layer";
-import {
-  buildJourney,
-  startRoutePlayback,
-  type PlaybackHandle,
-} from "./route-playback";
+import { startRoutePlayback, type PlaybackHandle } from "./route-playback";
 
 type MapLibreModule = typeof import("maplibre-gl");
 

@@ -124,17 +124,22 @@ test("路线图展示站点与缺坐标提示，并生成行程海报", async ({
   await expect(canvas).toHaveAttribute("data-map-playing", "true");
   await expect(mapDialog.locator(".route-runner")).toHaveCount(1);
   await expect(canvas).toHaveAttribute("data-visible-stickers", "0");
+  // 每进入新的一天，底部渐显渐隐地出现「第几天 月.日」。
+  const dayCard = mapDialog.locator(".route-day-card");
+  await expect(dayCard).toHaveText("第一天 6.1");
   // 播放期间隐藏全部控件，录屏画面只留地图；点屏幕恢复控件后才能停止。
   await expect(mapDialog.locator(".sheet-header")).toBeHidden();
   await expect(mapDialog.locator(".route-day-filter")).toBeHidden();
   await expect(mapDialog.locator(".route-play")).toBeHidden();
   await page.waitForTimeout(1200);
+  await expect(dayCard).toHaveText("第三天 6.3", { timeout: 30000 });
   await mapDialog.locator(".route-immersive-catch").click();
   await expect(mapDialog.locator(".route-play")).toBeVisible();
   await mapDialog.getByRole("button", { name: "停止播放" }).click();
   await expect(canvas).toHaveAttribute("data-map-playing", "false");
   await expect(mapDialog.locator(".route-runner")).toHaveCount(0);
   await expect(mapDialog.locator(".sheet-header")).toBeVisible();
+  await expect(dayCard).toHaveCount(0);
   await expect(canvas).not.toHaveAttribute("data-visible-stickers", "0");
   await page.screenshot({ path: `.local/route-map-${browserName}.png` });
 

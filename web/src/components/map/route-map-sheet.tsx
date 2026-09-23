@@ -7,6 +7,19 @@ import { EmptyState } from "../empty-state";
 import { Sheet } from "../ui";
 import { useRouteMapView } from "./route-map-view";
 
+const numerals = ["一", "二", "三", "四", "五", "六", "七", "八", "九", "十"];
+
+/** 「第一天 10.1」：天序按行程开始日算，日期用月.日。 */
+function dayCardLabel(startDate: string, day: string) {
+  const gap = Math.round(
+    (Date.parse(`${day}T00:00:00Z`) - Date.parse(`${startDate}T00:00:00Z`)) /
+      86400000,
+  );
+  const index = Math.max(1, gap + 1);
+  const [, month, date] = day.split("-");
+  return `第${index <= 10 ? numerals[index - 1] : index}天 ${Number(month)}.${Number(date)}`;
+}
+
 export function RouteMapSheet({
   open,
   data,
@@ -159,6 +172,11 @@ export function RouteMapSheet({
                     ))}
                   </ul>
                 )}
+              </div>
+            )}
+            {view.playing && view.playingDay && (
+              <div className="route-day-card" key={view.playingDay}>
+                {dayCardLabel(data.trip.start_date, view.playingDay)}
               </div>
             )}
             {immersive && (

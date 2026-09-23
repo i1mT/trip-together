@@ -54,6 +54,7 @@ export function useRouteMapView({
   const [selectedDay, setSelectedDay] = useState("");
   const [playing, setPlaying] = useState(false);
   const [played, setPlayed] = useState(false);
+  const [playingDay, setPlayingDay] = useState("");
   const [visibleStops, setVisibleStops] = useState(0);
   const [visibleStickers, setVisibleStickers] = useState(0);
   const hasStops = route.stops.length > 0;
@@ -84,8 +85,12 @@ export function useRouteMapView({
       journey,
       bar: bar.current,
       onStart: () => setPlaying(true),
-      onStop: () => setPlaying(false),
+      onStop: () => {
+        setPlaying(false);
+        setPlayingDay("");
+      },
       onFinish: () => setPlayed(true),
+      onDay: (day) => setPlayingDay(day),
     });
   }, [journey, route, stopPlayback]);
 
@@ -265,6 +270,7 @@ export function useRouteMapView({
     setSelectedDay,
     playing,
     played,
+    playingDay,
     togglePlay,
     bar,
     visibleStops,

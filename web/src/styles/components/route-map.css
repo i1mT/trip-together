@@ -210,6 +210,42 @@
   transform: rotate(-8deg);
 }
 
+/* 播放到新的一天时在底部渐显渐隐的小卡片。 */
+.route-day-card {
+  position: absolute;
+  left: 50%;
+  bottom: 46px;
+  padding: 7px 15px;
+  border-radius: 999px;
+  background: #fffffff2;
+  border: 1px solid #fff;
+  box-shadow: var(--shadow);
+  color: #3f2d56;
+  font-size: 13px;
+  font-weight: 650;
+  letter-spacing: 0.02em;
+  pointer-events: none;
+  animation: route-day-card 2800ms ease-in-out both;
+}
+@keyframes route-day-card {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 10px);
+  }
+  16% {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+  74% {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -6px);
+  }
+}
+
 /* 沉浸播放：录制时只留地图与动画，点屏幕任意位置再显示控件。 */
 .route-sheet.is-immersive {
   padding-bottom: 0;

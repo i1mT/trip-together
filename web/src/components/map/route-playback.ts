@@ -23,10 +23,6 @@ const PROGRESS_SOURCE = "trip-route-progress";
 const PROGRESS_LAYER = "trip-route-progress-line";
 /** 谁都匹配不上的筛选，用来隐藏整个图层。 */
 const NOTHING: never = ["==", ["get", "eventId"], "\u0000"] as never;
-/** 就位结束后先跑几帧再检查瓦片，确保新视口的请求已经发出。 */
-const TILE_WAIT_GRACE = 120;
-/** 单个线段最多等瓦片加载的时间，网络异常时不至于卡住。 */
-const TILE_WAIT_LIMIT = 5000;
 
 function segmentDotElement(kind: "start" | "end") {
   const element = document.createElement("div");
@@ -79,6 +75,8 @@ export function startRoutePlayback(options: {
   onStart: () => void;
   onStop: () => void;
   onFinish: () => void;
+  /** 每进入新的一天时报告该天日期，用于显示「第几天 月.日」。 */
+  onDay: (day: string) => void;
 }): PlaybackHandle {
   const { map, maplibre, route, journey, bar } = options;
   ensureProgressLayer(map);
@@ -228,15 +226,8 @@ export function startRoutePlayback(options: {
   const totalClock = Math.max(1, clock);
   const started = performance.now();
   let zoom = map.getZoom(),
-    segment = -1;
-  // 镜头就位后、开始拖线前等这一屏瓦片加载完，避免录到空白瓦片。
-  // 等待会冻结时间线（载具与线都不前进），最多等 TILE_WAIT_LIMIT。
-  let paused = 0,
-    waitTotal = 0,
-    waitSegment = -1,
-    handoffAt = 0,
-    lastFrame = started;
-  const tilesReady = () => map.areTilesLoaded();
+    segment = -1,
+    day = "";
   options.onStart();
 
   // 开场先清空：没有路线，只有一条随播放画出来的新线。
@@ -248,29 +239,12 @@ export function startRoutePlayback(options: {
   map.setFilter(ARROW_LAYER, NOTHING);
 
   const step = (now: number) => {
-    const delta = Math.max(0, now - lastFrame);
-    lastFrame = now;
-    let elapsed = now - started - paused;
+    const elapsed = now - started;
     let current = timings.findIndex(
       (timing) => elapsed < timing.start + timing.duration,
     );
     if (current < 0) current = timings.length - 1;
-    if (current !== waitSegment) {
-      waitSegment = current;
-      waitTotal = 0;
-    }
     const timing = timings[current];
-    // 就位刚结束的几帧里瓦片请求才发出，这里等它们全部加载完再前进。
-    if (
-      elapsed >= timing.start + TILE_WAIT_GRACE &&
-      waitTotal < TILE_WAIT_LIMIT
-    ) {
-      if (!tilesReady()) {
-        paused += delta;
-        waitTotal += delta;
-        elapsed = now - started - paused;
-      } else waitTotal = 0;
-    }
     // 镜头就位阶段：载具停在段起点，只把中心与缩放推到位。
     const settleLocal = Math.min(
         1,
@@ -336,6 +310,11 @@ export function startRoutePlayback(options: {
     // 切换当前段时更新起终点标记与地名，并放出上一段的箭头。
     if (current !== segment) {
       segment = current;
+      const nextDay = route.segments[current]?.toDate ?? "";
+      if (nextDay && nextDay !== day) {
+        day = nextDay;
+        options.onDay(nextDay);
+      }
       const a = route.points[current],
         b = route.points[current + 1];
       if (dots && a && b) {

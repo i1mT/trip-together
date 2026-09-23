@@ -319,10 +319,15 @@ export function startRoutePlayback(options: {
         runner.kind = kind;
         runner.sticker.className = `travel-sticker sticker-${kind}`;
       }
+      // 播放时画面里只有这一个贴纸，整体比线段贴纸放大一档；
+      // 段长的影响保留但压平，短途段位也不会小到看不清。
       const size = Math.round(
         Math.min(
-          130,
-          Math.max(30, 44 * Math.pow(zoom / 4, 0.6) * timing.factor),
+          150,
+          Math.max(
+            44,
+            58 * Math.pow(zoom / 4, 0.6) * (0.55 + 0.45 * timing.factor),
+          ),
         ),
       );
       runner.element.style.setProperty("--runner-size", `${size}px`);

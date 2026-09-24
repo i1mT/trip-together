@@ -2,12 +2,7 @@
 import { eventStatusLabel } from "../../../../shared/event-status";
 import { EventStatusActions } from "../events/status-actions";
 import { mapLink } from "../../../../shared/places";
-import {
-  useEffect,
-  useRef,
-  useState,
-  type PointerEvent as ReactPointerEvent,
-} from "react";
+import { useState } from "react";
 import {
   Plus,
   ArrowUpRight,
@@ -18,7 +13,6 @@ import {
   CalendarDays,
   ArrowRight,
   AlertCircle,
-  GripVertical,
 } from "lucide-react";
 import type { TripData, TripDocument, TripEvent } from "@/lib/models";
 import {
@@ -29,7 +23,6 @@ import {
   eventTime,
   eventEndDate,
 } from "@/lib/time";
-import { TravelSticker } from "../travel-sticker";
 import { EmptyState } from "../empty-state";
 import { AiGuideEntry } from "../ai-guide";
 import { EventIcon, SheetFooter, Sheet, SectionTitle } from "../ui";
@@ -39,6 +32,7 @@ import { RouteMapSheet } from "../map/route-map-sheet";
 import { TripPosterSheet } from "../map/poster-sheet";
 import { api } from "@/lib/api";
 import { DocumentRow } from "./documents";
+import { TimelineList } from "./timeline-list";
 import { useToast } from "../toast";
 export function Itinerary({
   data,
@@ -55,10 +49,6 @@ export function Itinerary({
 }) {
   const { events } = data;
   const [editing, setEditing] = useState(false);
-  const [draggingId, setDraggingId] = useState<string | null>(null);
-  const [dragOverId, setDragOverId] = useState<string | null>(null);
-  const dragTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const suppressClick = useRef(false);
   const toast = useToast();
   const [mapOpen, setMapOpen] = useState(false);
   const [posterOpen, setPosterOpen] = useState(false);
@@ -88,54 +78,11 @@ export function Itinerary({
   const filtered = events.filter(
     (e) => localDate(e.start, e.timezone) === selected,
   );
-  function clearDragTimer() {
-    if (dragTimer.current) clearTimeout(dragTimer.current);
-    dragTimer.current = null;
-  }
-  function beginLongPress(
-    id: string,
-    event: ReactPointerEvent<HTMLButtonElement>,
-  ) {
-    clearDragTimer();
-    // 捕获指针，长按后手指 / 鼠标移出本项仍能收到 pointermove。
-    try {
-      event.currentTarget.setPointerCapture(event.pointerId);
-    } catch {
-      // 某些环境不支持指针捕获，忽略即可。
-    }
-    dragTimer.current = setTimeout(() => {
-      setDraggingId(id);
-      suppressClick.current = true;
-    }, 450);
-  }
-  function moveDrag(event: ReactPointerEvent<HTMLButtonElement>) {
-    if (!draggingId) return;
-    const element = document.elementFromPoint(event.clientX, event.clientY);
-    const target = element?.closest<HTMLElement>("[data-event-id]");
-    const id = target?.dataset.eventId;
-    if (id && id !== draggingId) setDragOverId(id);
-  }
-  function finishDrag() {
-    clearDragTimer();
-    setDraggingId(null);
-    setDragOverId(null);
-  }
-  // 拖拽期间阻止页面滚动；长按激活前手指滑动仍可正常滚动列表。
-  useEffect(() => {
-    if (!draggingId) return;
-    const block = (event: TouchEvent) => event.preventDefault();
-    document.addEventListener("touchmove", block, { passive: false });
-    return () => document.removeEventListener("touchmove", block);
-  }, [draggingId]);
-  async function reorderEvents(fromId: string, toId: string) {
-    if (fromId === toId) return finishDrag();
-    const visibleIds = filtered.map((event) => event.id);
-    const moved = visibleIds.filter((id) => id !== fromId);
-    const target = moved.indexOf(toId);
-    moved.splice(target < 0 ? moved.length : target, 0, fromId);
+  async function reorderEvents(orderedIds: string[]) {
+    const visibleIds = new Set(orderedIds);
     const cursor = { value: 0 };
     const ids = events.map((event) =>
-      visibleIds.includes(event.id) ? moved[cursor.value++] : event.id,
+      visibleIds.has(event.id) ? orderedIds[cursor.value++] : event.id,
     );
     try {
       await api("/events/order", {
@@ -146,8 +93,6 @@ export function Itinerary({
       toast("安排顺序已更新");
     } catch (error) {
       toast((error as Error).message, "error");
-    } finally {
-      finishDrag();
     }
   }
   return (
@@ -237,67 +182,11 @@ export function Itinerary({
               extra={<AiGuideEntry className="text-action ai-guide-entry" />}
             />
           )}
-          <div className="timeline">
-            {filtered.map((e) => (
-              <button
-                key={e.id}
-                className="timeline-event"
-                data-event-id={e.id}
-                data-dragging={draggingId === e.id ? "true" : "false"}
-                data-drag-over={dragOverId === e.id ? "true" : "false"}
-                onClick={() => {
-                  if (suppressClick.current) {
-                    suppressClick.current = false;
-                    return;
-                  }
-                  onEvent(e);
-                }}
-                onPointerDownCapture={(event) => beginLongPress(e.id, event)}
-                onPointerMoveCapture={moveDrag}
-                onPointerUpCapture={() => {
-                  clearDragTimer();
-                  if (draggingId && dragOverId) {
-                    void reorderEvents(draggingId, dragOverId);
-                  } else {
-                    finishDrag();
-                  }
-                }}
-                onPointerCancelCapture={finishDrag}
-              >
-                <span className="timeline-drag-handle" aria-hidden="true">
-                  <GripVertical size={15} />
-                </span>
-                <div className="timeline-time">
-                  <strong>{eventTime(e)}</strong>
-                  {!eventStatusLabel(e.status) && (
-                    <span>
-                      {e.certainty === "suggested" ? "建议" : "已确认"}
-                    </span>
-                  )}
-                </div>
-                <div className={`timeline-icon ${e.kind}`}>
-                  <TravelSticker kind={e.kind} />
-                </div>
-                <div className="timeline-card">
-                  <small>
-                    {zoneName(e.timezone)}
-                    {e.code ? ` · ${e.code}` : ""}
-                  </small>
-                  <h3>{e.title}</h3>
-                  {eventStatusLabel(e.status) && (
-                    <span className={`event-status-tag ${e.status}`}>
-                      {eventStatusLabel(e.status)}
-                    </span>
-                  )}
-                  <p>{e.subtitle}</p>
-                  <span className="timeline-link">
-                    查看详情与资料
-                    <ArrowUpRight size={15} />
-                  </span>
-                </div>
-              </button>
-            ))}
-          </div>
+          <TimelineList
+            events={filtered}
+            onOpen={onEvent}
+            onReorder={(ids) => void reorderEvents(ids)}
+          />
           {filtered.length > 0 && (
             <button
               className="secondary-button w-full"

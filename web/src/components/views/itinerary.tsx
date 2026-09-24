@@ -2,8 +2,12 @@
 import { eventStatusLabel } from "../../../../shared/event-status";
 import { EventStatusActions } from "../events/status-actions";
 import { mapLink } from "../../../../shared/places";
-import { useState } from "react";
-import { useRef } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type PointerEvent as ReactPointerEvent,
+} from "react";
 import {
   Plus,
   ArrowUpRight,
@@ -88,18 +92,41 @@ export function Itinerary({
     if (dragTimer.current) clearTimeout(dragTimer.current);
     dragTimer.current = null;
   }
-  function beginLongPress(id: string) {
+  function beginLongPress(
+    id: string,
+    event: ReactPointerEvent<HTMLButtonElement>,
+  ) {
     clearDragTimer();
+    // 捕获指针，长按后手指 / 鼠标移出本项仍能收到 pointermove。
+    try {
+      event.currentTarget.setPointerCapture(event.pointerId);
+    } catch {
+      // 某些环境不支持指针捕获，忽略即可。
+    }
     dragTimer.current = setTimeout(() => {
       setDraggingId(id);
       suppressClick.current = true;
     }, 450);
+  }
+  function moveDrag(event: ReactPointerEvent<HTMLButtonElement>) {
+    if (!draggingId) return;
+    const element = document.elementFromPoint(event.clientX, event.clientY);
+    const target = element?.closest<HTMLElement>("[data-event-id]");
+    const id = target?.dataset.eventId;
+    if (id && id !== draggingId) setDragOverId(id);
   }
   function finishDrag() {
     clearDragTimer();
     setDraggingId(null);
     setDragOverId(null);
   }
+  // 拖拽期间阻止页面滚动；长按激活前手指滑动仍可正常滚动列表。
+  useEffect(() => {
+    if (!draggingId) return;
+    const block = (event: TouchEvent) => event.preventDefault();
+    document.addEventListener("touchmove", block, { passive: false });
+    return () => document.removeEventListener("touchmove", block);
+  }, [draggingId]);
   async function reorderEvents(fromId: string, toId: string) {
     if (fromId === toId) return finishDrag();
     const visibleIds = filtered.map((event) => event.id);
@@ -215,7 +242,7 @@ export function Itinerary({
               <button
                 key={e.id}
                 className="timeline-event"
-                draggable
+                data-event-id={e.id}
                 data-dragging={draggingId === e.id ? "true" : "false"}
                 data-drag-over={dragOverId === e.id ? "true" : "false"}
                 onClick={() => {
@@ -225,11 +252,9 @@ export function Itinerary({
                   }
                   onEvent(e);
                 }}
-                onPointerDown={() => beginLongPress(e.id)}
-                onPointerEnter={() => {
-                  if (draggingId && draggingId !== e.id) setDragOverId(e.id);
-                }}
-                onPointerUp={() => {
+                onPointerDownCapture={(event) => beginLongPress(e.id, event)}
+                onPointerMoveCapture={moveDrag}
+                onPointerUpCapture={() => {
                   clearDragTimer();
                   if (draggingId && dragOverId) {
                     void reorderEvents(draggingId, dragOverId);
@@ -237,20 +262,7 @@ export function Itinerary({
                     finishDrag();
                   }
                 }}
-                onPointerCancel={finishDrag}
-                onDragStart={() => {
-                  setDraggingId(e.id);
-                  suppressClick.current = true;
-                }}
-                onDragOver={(event) => {
-                  event.preventDefault();
-                  if (draggingId && draggingId !== e.id) setDragOverId(e.id);
-                }}
-                onDrop={(event) => {
-                  event.preventDefault();
-                  if (draggingId) void reorderEvents(draggingId, e.id);
-                }}
-                onDragEnd={finishDrag}
+                onPointerCancelCapture={finishDrag}
               >
                 <span className="timeline-drag-handle" aria-hidden="true">
                   <GripVertical size={15} />

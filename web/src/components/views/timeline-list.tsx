@@ -158,6 +158,8 @@ export function TimelineList({
     >
       {events.map((event) => {
         const dragging = dragId === event.id;
+        // 有具体时间的安排按时间排序，不允许拖动；只有时间待定的可手动排序。
+        const draggable = event.timeMode !== "timed";
         const y = dragging ? dragY : (offsets[event.id] ?? 0);
         return (
           <button
@@ -168,6 +170,7 @@ export function TimelineList({
             }}
             className="timeline-event"
             data-event-id={event.id}
+            data-draggable={draggable ? "true" : "false"}
             data-dragging={dragging ? "true" : "false"}
             style={{ transform: `translateY(${y}px)` }}
             onClick={() => {
@@ -177,7 +180,9 @@ export function TimelineList({
               }
               onOpen(event);
             }}
-            onPointerDownCapture={(event) => startPress(event.currentTarget.dataset.eventId ?? "", event)}
+            onPointerDownCapture={(pointerEvent) => {
+              if (draggable) startPress(event.id, pointerEvent);
+            }}
             onPointerMoveCapture={move}
             onPointerUpCapture={finish}
             onPointerCancelCapture={finish}

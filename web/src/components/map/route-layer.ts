@@ -12,12 +12,16 @@ export const ROUTE_POINT_SOURCE = "trip-route-points";
 export const ROUTE_DECOR_SOURCE = "trip-route-decor";
 export const ROUTE_ARROW_SOURCE = "trip-route-arrows";
 export const ROUTE_METRIC_SOURCE = "trip-route-metrics";
+export const ROUTE_METRIC_LANE_SOURCE = "trip-route-metrics-lane1";
 export const LINE_COLOR = "#6c4c96";
 export const ARC_COLOR = "#9b7bd4";
 
 export const ARROW_LAYER = `${ROUTE_ARROW_SOURCE}-symbol`;
 export const STICKER_LAYER = `${ROUTE_DECOR_SOURCE}-stickers`;
 export const METRIC_LAYER = `${ROUTE_METRIC_SOURCE}-labels`;
+export const METRIC_LANE_LAYER = `${ROUTE_METRIC_LANE_SOURCE}-labels`;
+/** 路程文字分上下两层，去/回等中点重合的段分别落在两侧，避免文字叠在一起。 */
+export const METRIC_LAYERS = [METRIC_LAYER, METRIC_LANE_LAYER];
 export const STOP_DOT_LAYER = `${ROUTE_POINT_SOURCE}-dot`;
 export const STOP_LABEL_LAYER = `${ROUTE_POINT_SOURCE}-label`;
 export const STOP_LAYERS = [STOP_DOT_LAYER, STOP_LABEL_LAYER];
@@ -141,25 +145,57 @@ function formatDuration(minutes: number | null) {
 }
 
 function metricFeatures(route: RouteGeometry) {
-  return route.segments.map((segment) => {
+  const lanes = new Map<string, number>();
+  return route.segments.map((segment, index) => {
     const distance =
       segment.distanceKm >= 100
         ? `${Math.round(segment.distanceKm).toLocaleString("zh-CN")} km`
         : `${segment.distanceKm.toFixed(1)} km`;
     const duration = formatDuration(segment.durationMinutes);
+    const center = pointAt(segment.coordinates, 0.5);
+    // 中点相同的段（如去程与回程）依次分到不同层，让文字上下错开。
+    const key = `${center[0].toFixed(5)},${center[1].toFixed(5)}`;
+    const lane = Math.min(lanes.get(key) ?? 0, 1);
+    lanes.set(key, (lanes.get(key) ?? 0) + 1);
     return {
       type: "Feature" as const,
       properties: {
         day: segment.toDate,
+        index,
+        lane,
+        distanceKm: segment.distanceKm,
         label: duration ? `约 ${distance} · ${duration}` : `约 ${distance}`,
       },
       geometry: {
         type: "Point" as const,
-        coordinates: pointAt(segment.coordinates, 0.5),
+        coordinates: center,
       },
     };
   });
 }
+
+/**
+ * 路程文字在当前缩放下的最小显示长度（屏幕像素）。线段太短时文字会挤在一起，
+ * 只有缩放后段长超过该阈值才显示。MapLibre 的 zoom 只能作为顶层 step / interpolate
+ * 的输入，因此按缩放档位换算出最小公里数，再由各段的 distanceKm 决定是否显示。
+ */
+const METRIC_MIN_PIXELS = 110;
+const METRIC_PIXELS_PER_KM = 512 / 40075;
+const metricMinKm = (zoom: number) =>
+  METRIC_MIN_PIXELS / (METRIC_PIXELS_PER_KM * 2 ** zoom);
+const metricOpacity = [
+  "step",
+  ["zoom"],
+  ...([3, 4, 5, 6, 7, 8, 10, 12] as const).flatMap((zoom, index) => {
+    const output = [
+      "case",
+      [">=", ["get", "distanceKm"], metricMinKm(zoom)],
+      0.95,
+      0,
+    ];
+    return index === 0 ? [output] : [zoom, output];
+  }),
+] as never;
 
 /** 查看状态下的站点：每个地点一个圆点加地名，不带序号。 */
 export function stopFeatures(route: RouteGeometry) {
@@ -262,28 +298,46 @@ export async function ensureRouteLayers(
     });
   }
 
-  const metrics = {
-    type: "FeatureCollection" as const,
-    features: metricFeatures(route),
-  };
-  const metricSource = map.getSource(ROUTE_METRIC_SOURCE) as
-    { setData: (value: typeof metrics) => void } | undefined;
-  if (metricSource) metricSource.setData(metrics);
-  else {
-    map.addSource(ROUTE_METRIC_SOURCE, { type: "geojson", data: metrics });
-    map.addLayer({
+  const metrics = metricFeatures(route);
+  const metricLayers = [
+    {
       id: METRIC_LAYER,
-      type: "symbol",
       source: ROUTE_METRIC_SOURCE,
+      lane: 0,
+      anchor: "bottom" as const,
+      offset: [0, -5.8] as [number, number],
+    },
+    {
+      id: METRIC_LANE_LAYER,
+      source: ROUTE_METRIC_LANE_SOURCE,
+      lane: 1,
+      anchor: "top" as const,
+      offset: [0, 5.8] as [number, number],
+    },
+  ];
+  for (const spec of metricLayers) {
+    const data = {
+      type: "FeatureCollection" as const,
+      features: metrics.filter((feature) => feature.properties.lane === spec.lane),
+    };
+    const source = map.getSource(spec.source) as
+      { setData: (value: typeof data) => void } | undefined;
+    if (source) source.setData(data);
+    else map.addSource(spec.source, { type: "geojson", data });
+    if (map.getLayer(spec.id)) continue;
+    map.addLayer({
+      id: spec.id,
+      type: "symbol",
+      source: spec.source,
       layout: {
         "text-field": ["get", "label"],
         "text-font": ["Noto Sans Regular"],
         "text-size": ["interpolate", ["linear"], ["zoom"], 3, 9, 8, 11, 12, 13],
-        // 距离/时间与同在中点的交通工具贴纸会重叠：把文字沿屏幕上方让到贴纸顶边
-        // 之外（正立文字与正立贴纸方向一致）。MapLibre 的 text-offset 只接受常量，
+        // 距离/时间与同在中点的交通工具贴纸会重叠：把文字沿屏幕上下让到贴纸之外
+        // （正立文字与正立贴纸方向一致）。MapLibre 的 text-offset 只接受常量，
         // 这里按全览时最大贴纸（最长段）的高度取固定偏移。
-        "text-anchor": "bottom",
-        "text-offset": [0, -5.8],
+        "text-anchor": spec.anchor,
+        "text-offset": spec.offset,
         "text-allow-overlap": true,
         "text-ignore-placement": true,
       },
@@ -291,7 +345,7 @@ export async function ensureRouteLayers(
         "text-color": "#4d3864",
         "text-halo-color": "#fffdfd",
         "text-halo-width": 2,
-        "text-opacity": 0.95,
+        "text-opacity": metricOpacity,
       },
     });
   }

@@ -103,13 +103,19 @@ export function stickerScale(ratio: number) {
   return 0.12 + 1.38 * Math.pow(clamped, 0.6);
 }
 
-function decorFeatures(route: RouteGeometry) {
+/** 每段贴纸的缩放系数，按该段占最长段的比例计算。 */
+function segmentScales(route: RouteGeometry) {
   const lengths = route.segments.map(
     (segment) => segment.distanceKm || distanceKm(segment.coordinates),
   );
   const longest = Math.max(...lengths, 0.001);
+  return lengths.map((length) => stickerScale(length / longest));
+}
+
+function decorFeatures(route: RouteGeometry) {
+  const scales = segmentScales(route);
   return route.segments.map((segment, index) => {
-    const scale = stickerScale(lengths[index] / longest);
+    const scale = scales[index];
     return {
       type: "Feature" as const,
       properties: {
@@ -148,8 +154,8 @@ function metricFeatures(route: RouteGeometry) {
         label: duration ? `约 ${distance} · ${duration}` : `约 ${distance}`,
       },
       geometry: {
-        type: "LineString" as const,
-        coordinates: segment.coordinates,
+        type: "Point" as const,
+        coordinates: pointAt(segment.coordinates, 0.5),
       },
     };
   });
@@ -270,12 +276,14 @@ export async function ensureRouteLayers(
       type: "symbol",
       source: ROUTE_METRIC_SOURCE,
       layout: {
-        "symbol-placement": "line-center",
-        "symbol-spacing": 9999,
         "text-field": ["get", "label"],
         "text-font": ["Noto Sans Regular"],
         "text-size": ["interpolate", ["linear"], ["zoom"], 3, 9, 8, 11, 12, 13],
-        "text-offset": [0, -1.25],
+        // 距离/时间与同在中点的交通工具贴纸会重叠：把文字沿屏幕上方让到贴纸顶边
+        // 之外（正立文字与正立贴纸方向一致）。MapLibre 的 text-offset 只接受常量，
+        // 这里按全览时最大贴纸（最长段）的高度取固定偏移。
+        "text-anchor": "bottom",
+        "text-offset": [0, -5.8],
         "text-allow-overlap": true,
         "text-ignore-placement": true,
       },

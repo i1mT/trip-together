@@ -203,6 +203,11 @@ export function ExpenseDetail({
                 url: `/api/files/${file.id}`,
               }))}
             />
+          ) : locked ? (
+            <p className="empty-receipt-note">
+              <ReceiptText size={18} strokeWidth={1.3} />
+              这笔账已锁定，没有付款资料。
+            </p>
           ) : (
             <button
               className="empty-receipt-action"

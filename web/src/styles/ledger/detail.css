@@ -167,6 +167,17 @@
   font-size: 9px;
   margin-top: 4px;
 }
+.empty-receipt-note {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  border: 1px dashed var(--line);
+  border-radius: 15px;
+  padding: 15px;
+  color: var(--muted);
+  font-size: 11px;
+}
 .expense-original-note {
   margin-top: 18px;
   color: var(--muted);

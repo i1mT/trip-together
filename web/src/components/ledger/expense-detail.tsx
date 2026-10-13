@@ -368,14 +368,16 @@ export function ExpenseDetail({
                 录入实际人民币
               </button>
             )}
-            <button
-              className="primary-button"
-              aria-label="编辑这笔支出"
-              onClick={() => onEdit(expense)}
-            >
-              <Pencil size={17} />
-              修改支出
-            </button>
+            {!locked && (
+              <button
+                className="primary-button"
+                aria-label="编辑这笔支出"
+                onClick={() => onEdit(expense)}
+              >
+                <Pencil size={17} />
+                修改支出
+              </button>
+            )}
           </div>
         )}
       </SheetFooter>

@@ -37,6 +37,7 @@ type Existing = {
   settle_status: string;
   settlement_locked: number;
   entry_type: string;
+  note: string;
   fx_rate_ppm: number | null;
   amount_cny_estimated: number | null;
   amount_cny_settled: number | null;
@@ -107,7 +108,7 @@ export async function saveExpense(
     throw new HttpError(400, "分摊成员无效");
   const id = expenseId ?? input.id ?? crypto.randomUUID();
   const existing = await env.DB.prepare(
-    "SELECT payer_id,payer_member_id,created_by,version,amount,currency,participants,settle_status,settlement_locked,entry_type,fx_rate_ppm,amount_cny_estimated,amount_cny_settled,title,date FROM expenses WHERE id=? AND trip_id=?",
+    "SELECT payer_id,payer_member_id,created_by,version,amount,currency,participants,settle_status,settlement_locked,entry_type,fx_rate_ppm,amount_cny_estimated,amount_cny_settled,title,date,note FROM expenses WHERE id=? AND trip_id=?",
   )
     .bind(id, tripId)
     .first<Existing>();
@@ -120,10 +121,15 @@ export async function saveExpense(
       throw new HttpError(409, "这笔支出已经更新，请刷新后重试");
     if (existing.settlement_locked) {
       const stored = JSON.parse(existing.participants) as string[];
+      // A locked (settled) expense is immutable in every editable field.
+      // Corrections go through 冲销重记, not an in-place edit.
       const unchanged =
         input.amount === existing.amount &&
         input.currency === existing.currency &&
         payer.id === existing.payer_member_id &&
+        input.title === existing.title &&
+        input.date === existing.date &&
+        input.note === existing.note &&
         sameMembers(
           participants.map((member) => member.id),
           stored,
@@ -131,7 +137,7 @@ export async function saveExpense(
       if (!unchanged)
         throw new HttpError(
           409,
-          "已结算金额已锁定，不能修改。如需更正，请冲销后重记",
+          "已结算的交易已锁定，金额、名称、日期、备注和分摊都不能修改。如需更正，请冲销后重记",
         );
     }
   } else if (existing) {

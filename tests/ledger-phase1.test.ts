@@ -149,6 +149,28 @@ test("外币账锁定后不能改金额，冲销保留原账", async () => {
     { ...expense, amount: 5100, version: 2 },
     409,
   );
+  const companion = (
+    await owner.request(`/trips/${id}/members`, "POST", { name: "阿哲" })
+  ).member.id;
+  for (const change of [
+    { title: "改过的标题" },
+    { date: "2030-06-02" },
+    { note: "改过的备注" },
+    { participants: [companion] },
+  ]) {
+    await owner.request(
+      `/trips/${id}/expenses/${expense.id}`,
+      "PUT",
+      { ...expense, ...change, version: 2 },
+      409,
+    );
+  }
+  const untouched = (await owner.request(`/trips/${id}/data`)).expenses.find(
+    (item: { id: string }) => item.id === expense.id,
+  );
+  assert.equal(untouched.title, "晚餐");
+  assert.equal(untouched.date, "2030-06-01");
+  assert.equal(untouched.note, "");
   await owner.request(
     `/trips/${id}/expenses/${expense.id}`,
     "DELETE",

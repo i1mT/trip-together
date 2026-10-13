@@ -15,6 +15,7 @@ import { ApiTokens } from "../profile/api-tokens";
 import { AiGuideEntry } from "../ai-guide";
 import { ProfileEditor, PasswordEditor } from "../account/profile-editor";
 import { Avatar } from "../avatar";
+import { CompanionAdmin } from "../members/companion-admin";
 import { SectionTitle, Sheet, SheetFooter } from "../ui";
 export function Profile({
   data,
@@ -84,23 +85,7 @@ export function Profile({
         />
       )}
       {tokensOpen && <ApiTokens onClose={() => setTokensOpen(false)} />}
-      {data.trip && data.members.length > 2 && (
-        <>
-          <SectionTitle>
-            同行成员{" "}
-            <span className="section-count">{data.members.length}</span>
-          </SectionTitle>
-          <div className="member-gallery">
-            {data.members.map((member) => (
-              <div className="member-tile" key={member.id}>
-                <Avatar member={member} />
-                <span>{member.name}</span>
-                {member.id === data.me.id && <small>我</small>}
-              </div>
-            ))}
-          </div>
-        </>
-      )}
+      <CompanionAdmin data={data} onRefresh={onRefresh} />
       <div className="section-heading">
         <h2>证件与文件</h2>
         <span className="personal-private">

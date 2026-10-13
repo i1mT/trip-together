@@ -8,19 +8,35 @@ export function Avatar({
   className = "",
 }: {
   member:
-    | Pick<Member, "id" | "name" | "has_avatar" | "default_avatar" | "version">
+    | Pick<
+        Member,
+        | "id"
+        | "name"
+        | "has_avatar"
+        | "default_avatar"
+        | "version"
+        | "user_id"
+        | "status"
+      >
     | undefined;
   className?: string;
 }) {
   const [failed, setFailed] = useState(false);
   useEffect(() => setFailed(false), [member?.id, member?.version]);
+  const imageId = member?.user_id
+    ? member.user_id
+    : member?.user_id === null
+      ? ""
+      : member?.id;
   return (
-    <span className={`avatar ${className}`}>
-      {member && member.has_avatar && !failed ? (
+    <span
+      className={`avatar${member?.status === "placeholder" ? " placeholder" : ""} ${className}`}
+    >
+      {member && imageId && member.has_avatar && !failed ? (
         // Private Worker images require the same-origin session cookie.
         // eslint-disable-next-line @next/next/no-img-element
         <img
-          src={`/api/avatars/${encodeURIComponent(member.id)}?v=${member.version ?? 0}`}
+          src={`/api/avatars/${encodeURIComponent(imageId)}?v=${member.version ?? 0}`}
           alt={`${member.name}的头像`}
           width={96}
           height={96}

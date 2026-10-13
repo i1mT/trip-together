@@ -3,6 +3,7 @@ import { body, HttpError, json } from "../http";
 import { sha } from "../accounts/password";
 import { rateLimit } from "../security/rate-limit";
 import { requireOwner, type Trip } from "./access";
+import { ensureLedgerMembers } from "../finance/ledger-members";
 const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ";
 export function invitationCode() {
   let code = "";
@@ -95,5 +96,6 @@ export async function join(request: Request, env: Env, memberId: string) {
     .bind(invitation.trip_id, memberId)
     .first();
   if (!joined) throw new HttpError(409, "邀请已经撤销");
+  await ensureLedgerMembers(env, invitation.trip_id);
   return json({ id: invitation.trip_id });
 }

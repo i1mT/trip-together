@@ -26,6 +26,7 @@ import {
   migrateAccount,
 } from "./auth";
 import { bootstrap, createTrip, join } from "./trips/manage";
+import { previewClaim, claimMember } from "./finance/ledger-members";
 import { tripRouter } from "./trips/router";
 import { updateProfile, changePassword } from "./accounts/profile";
 import { personalDocument } from "./storage/personal-documents";
@@ -117,6 +118,10 @@ export default {
         r = await createTrip(request, env, memberId);
       else if (path === "/api/join" && method === "POST")
         r = await join(request, env, memberId);
+      else if (path === "/api/join/preview" && method === "POST")
+        r = await previewClaim(request, env, memberId);
+      else if (path === "/api/claim" && method === "POST")
+        r = await claimMember(request, env, memberId);
       else if (path === "/api/device/approve" && method === "POST")
         r = await deviceApprove(request, env, memberId);
       else if (path === "/api/device/deny" && method === "POST")

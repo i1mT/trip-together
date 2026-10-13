@@ -10,7 +10,14 @@ import {
   Info,
 } from "lucide-react";
 import type { Currency, Expense, TripData, TripDocument } from "@/lib/models";
-import { money, summarize, currencyLabel } from "@/lib/money";
+import {
+  isMe,
+  money,
+  settlementOf,
+  settlementSummary,
+  summarize,
+  currencyLabel,
+} from "@/lib/money";
 import { ExpenseDetail } from "../ledger/expense-detail";
 import { ExpenseEditor } from "../expense-editor";
 import { EmptyState } from "../empty-state";
@@ -35,14 +42,30 @@ export function Ledger({
   const records = data.expenses.filter(
     (e) => e.currency === currency && (payer === "all" || e.payer_id === payer),
   );
-  const mine = totals.rows.find((m) => m.id === data.me.id)!;
+  const mine = totals.rows.find((m) => isMe(m, data.me.id)) ?? totals.rows[0];
+  const settlement = useMemo(
+    () => settlementSummary(data.expenses),
+    [data.expenses],
+  );
   function exportCsv() {
     const cell = (value: unknown) =>
       `"${String(value)
         .replace(/^[=+@-]/, "'$&")
         .replaceAll('"', '""')}"`;
     const rows = [
-      ["日期", "支出", "付款人", "金额", "币种", "分类", "分摊成员", "备注"],
+      [
+        "日期",
+        "支出",
+        "付款人",
+        "金额",
+        "币种",
+        "分类",
+        "分摊成员",
+        "备注",
+        "结算状态",
+        "估算人民币",
+        "实际人民币",
+      ],
       ...data.expenses.map((e) => [
         e.date,
         e.title,
@@ -54,6 +77,13 @@ export function Ledger({
           .map((id) => data.members.find((m) => m.id === id)?.name)
           .join("、"),
         e.note,
+        e.settle_status === "settled" ? "已结算" : "待结算",
+        e.amount_cny_estimated != null
+          ? (e.amount_cny_estimated / 100).toFixed(2)
+          : "",
+        e.amount_cny_settled != null
+          ? (e.amount_cny_settled / 100).toFixed(2)
+          : "",
       ]),
     ];
     const url = URL.createObjectURL(
@@ -124,6 +154,15 @@ export function Ledger({
             <strong>{money(Math.abs(mine.balance), currency)}</strong>
           </div>
         </div>
+        <div className="cny-settlement">
+          <span>已结算 {money(settlement.settled, "CNY")}</span>
+          <span>待结算 约 {money(settlement.estimated, "CNY")}</span>
+          <strong>
+            合计{settlement.approximate ? " 约" : ""}{" "}
+            {money(settlement.total, "CNY")}
+            {settlement.approximate ? "（含待对账）" : ""}
+          </strong>
+        </div>
       </div>
       <button
         className="primary-button w-full add-expense"
@@ -182,7 +221,7 @@ export function Ledger({
                     </small>
                   </div>
                   <span className="expense-amount">
-                    {money(e.amount, e.currency)}
+                    <ExpenseAmount expense={e} />
                     <ChevronRight size={14} />
                   </span>
                 </button>
@@ -218,7 +257,7 @@ export function Ledger({
                 <Avatar member={m} className="expense-avatar" />
                 <strong>
                   {m.name}
-                  {m.id === data.me.id && <small> 我</small>}
+                  {isMe(m, data.me.id) && <small> 我</small>}
                 </strong>
                 <span className={m.balance >= 0 ? "positive" : "muted"}>
                   {m.balance >= 0 ? "待收回" : "待承担"}{" "}
@@ -242,7 +281,7 @@ export function Ledger({
       )}
       <p className="ledger-hint">
         <Info size={15} />
-        不同币种分别计算；分摊按整数分分配，余额未扣除线下转账。
+        原币仍按币种分别计算。外币先按参考汇率估算人民币，录入实际扣款后锁定；已锁定的金额不能改，更正请冲销重记。
       </p>
       {editor !== undefined && (
         <ExpenseEditor
@@ -267,5 +306,52 @@ export function Ledger({
         />
       )}
     </section>
+  );
+}
+
+function ExpenseAmount({
+  expense,
+}: {
+  expense: import("@/lib/models").Expense;
+}) {
+  const settlement = settlementOf(expense);
+  const sameCny =
+    expense.currency === "CNY" &&
+    !settlement.approximate &&
+    Math.abs(settlement.cents) === expense.amount &&
+    !expense.settlement_locked &&
+    expense.entry_type !== "reversal";
+  if (sameCny)
+    return (
+      <span>
+        {money(
+          expense.entry_type === "reversal" ? -expense.amount : expense.amount,
+          "CNY",
+        )}
+      </span>
+    );
+  return (
+    <span className="expense-amount-stack">
+      <span className={settlement.approximate ? "amount-estimated" : undefined}>
+        {settlement.approximate ? "约 " : ""}
+        {money(settlement.cents, "CNY")}{" "}
+        {expense.entry_type === "reversal" ? (
+          <span className="settle-chip">冲销</span>
+        ) : settlement.locked ? (
+          <span className="settle-chip settled">已结算</span>
+        ) : settlement.approximate ? (
+          <span className="settle-chip">待结算</span>
+        ) : null}
+      </span>
+      <small>
+        {money(
+          expense.entry_type === "reversal" ? -expense.amount : expense.amount,
+          expense.currency,
+        )}
+        {settlement.locked && expense.amount_cny_estimated != null
+          ? ` · 原估算 约 ${money(expense.amount_cny_estimated, "CNY")}`
+          : ""}
+      </small>
+    </span>
   );
 }

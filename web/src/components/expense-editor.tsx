@@ -245,6 +245,7 @@ export function ExpenseEditor({
               onChange={setPayerId}
               disabled={busy || locked}
               onAdd={locked ? undefined : () => setAdding("payer")}
+              stopEscapePropagation
             />
           </div>
           <DateTimeWheelField
@@ -385,6 +386,7 @@ export function ExpenseEditor({
           setParticipants((current) => [...current, member.id]);
           toast(`已添加${member.name}（未注册），账可以随时认领`);
         }}
+        stopEscapePropagation
       />
     </Sheet>
   );

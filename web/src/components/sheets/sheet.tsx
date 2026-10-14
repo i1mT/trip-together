@@ -18,6 +18,7 @@ import {
 import { createPortal } from "react-dom";
 const FooterContext = createContext<HTMLElement | null>(null);
 const FormContext = createContext<string | undefined>(undefined);
+let activeEscapeIsolatedSheets = 0;
 /** Native form ownership preserves Enter, validation and submit outside the scroll area. */
 export function SheetForm({ children, id, ...props }: ComponentProps<"form">) {
   const generatedId = useId();
@@ -80,6 +81,9 @@ export function Sheet({
   className = "",
   hasChanges,
   headerless = false,
+  stopEscapePropagation = false,
+  modal = true,
+  ignoreOutsideSelector,
 }: {
   open: boolean;
   onClose: () => void;
@@ -91,6 +95,9 @@ export function Sheet({
   className?: string;
   hasChanges?: boolean;
   headerless?: boolean;
+  stopEscapePropagation?: boolean;
+  modal?: boolean;
+  ignoreOutsideSelector?: string;
 }) {
   const [dirty, setDirty] = useState(false),
     [discard, setDiscard] = useState(false),
@@ -98,6 +105,13 @@ export function Sheet({
   const changed = hasChanges ?? dirty,
     content = useRef<HTMLDivElement>(null),
     descriptionId = useId();
+  useEffect(() => {
+    if (!open || !stopEscapePropagation) return;
+    activeEscapeIsolatedSheets += 1;
+    return () => {
+      activeEscapeIsolatedSheets -= 1;
+    };
+  }, [open, stopEscapePropagation]);
   useEffect(() => {
     if (!changed) return;
     const guard = (e: BeforeUnloadEvent) => e.preventDefault();
@@ -111,11 +125,61 @@ export function Sheet({
     else onClose();
   }
   return (
-    <Dialog.Root open={open} onOpenChange={(value) => !value && close()}>
+    <Dialog.Root
+      open={open}
+      modal={modal}
+      onOpenChange={(value) => {
+        if (!value) {
+          const nestedDialogOpen =
+            document.querySelectorAll('[role="dialog"][data-state="open"]')
+              .length > 1;
+          if (
+            !stopEscapePropagation &&
+            (activeEscapeIsolatedSheets > 0 || nestedDialogOpen)
+          )
+            return;
+          close();
+        }
+      }}
+    >
       <Dialog.Portal>
         <Dialog.Overlay className="sheet-overlay" />
         <Dialog.Content
+          onPointerDownOutside={(event) => {
+            if (
+              ignoreOutsideSelector &&
+              (event.target as HTMLElement)?.closest(ignoreOutsideSelector)
+            )
+              event.preventDefault();
+          }}
+          onFocusOutside={(event) => {
+            if (
+              ignoreOutsideSelector &&
+              (event.target as HTMLElement)?.closest(ignoreOutsideSelector)
+            )
+              event.preventDefault();
+          }}
+          onInteractOutside={(event) => {
+            if (
+              ignoreOutsideSelector &&
+              (event.target as HTMLElement)?.closest(ignoreOutsideSelector)
+            )
+              event.preventDefault();
+          }}
           onEscapeKeyDown={(event) => {
+            // Nested confirmation sheets must not close their parent on Escape.
+            if (stopEscapePropagation) {
+              event.preventDefault();
+              event.stopPropagation();
+              onClose();
+              return;
+            }
+            // Radix dispatches Escape to each open dialog. The parent must
+            // leave the topmost nested dialog in charge of closing itself.
+            if (!stopEscapePropagation && activeEscapeIsolatedSheets > 0) {
+              event.preventDefault();
+              return;
+            }
             // Let an open combobox handle Escape before dismissing its sheet.
             if (
               (event.target as HTMLElement)?.closest(

@@ -12,6 +12,7 @@ export function MemberSelect({
   all = false,
   disabled = false,
   onAdd,
+  stopEscapePropagation = false,
 }: {
   members: Member[];
   value: string;
@@ -20,6 +21,7 @@ export function MemberSelect({
   all?: boolean;
   disabled?: boolean;
   onAdd?: () => void;
+  stopEscapePropagation?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const member = members.find((m) => m.id === value);
@@ -51,6 +53,7 @@ export function MemberSelect({
           onClose={() => setOpen(false)}
           title={`选择${label}`}
           className="member-select-sheet"
+          stopEscapePropagation={stopEscapePropagation}
         >
           <div
             className="member-select-list"

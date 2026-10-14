@@ -11,12 +11,14 @@ export function AddCompanion({
   onClose,
   onCreated,
   onPick,
+  stopEscapePropagation = false,
 }: {
   open: boolean;
   members: Member[];
   onClose: () => void;
   onCreated: (member: Member) => void;
   onPick?: (member: Member) => void;
+  stopEscapePropagation?: boolean;
 }) {
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
@@ -54,6 +56,7 @@ export function AddCompanion({
       open={open}
       title="同伴怎么称呼？"
       onClose={() => !busy && onClose()}
+      stopEscapePropagation={stopEscapePropagation}
     >
       <SheetForm className="editor-form" onSubmit={submit}>
         <label>

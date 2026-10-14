@@ -71,7 +71,10 @@ test("成员与账本的危险操作使用确认弹窗", async ({ page }) => {
   await expect(page.getByText("不可撤销")).toBeVisible();
   await expect(page.getByText("操作审计记录")).toBeVisible();
   await expect(page.locator(".companion-merge")).toHaveCount(0);
-  await page.getByRole("button", { name: "取消", exact: true }).last().click();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("heading", { name: "合并占位同伴" })).toHaveCount(
+    0,
+  );
 
   await page.getByRole("button", { name: "账本", exact: true }).click();
   await page.getByRole("button", { name: "美元", exact: true }).click();
@@ -83,12 +86,26 @@ test("成员与账本的危险操作使用确认弹窗", async ({ page }) => {
     page.getByRole("heading", { name: "录入实际人民币" }),
   ).toBeVisible();
   await expect(page.getByText("这笔账会被锁定")).toBeVisible();
-  await page.getByRole("button", { name: "取消", exact: true }).last().click();
+  await page.keyboard.press("Escape");
+  await expect(
+    page.getByRole("heading", { name: "录入实际人民币" }),
+  ).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "支出详情" })).toBeVisible();
+  await page.getByRole("button", { name: "关闭", exact: true }).click();
+
+  await page.getByText("待结算晚餐", { exact: true }).click();
+  await page.getByRole("button", { name: "删除", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "删除支出" })).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("heading", { name: "删除支出" })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "支出详情" })).toBeVisible();
   await page.getByRole("button", { name: "关闭", exact: true }).click();
 
   await page.getByText("已结算晚餐", { exact: true }).click();
   await page.getByRole("button", { name: "冲销重记", exact: true }).click();
   await expect(page.getByRole("heading", { name: "冲销重记" })).toBeVisible();
   await expect(page.getByText("审计链路")).toBeVisible();
-  await page.getByRole("button", { name: "取消", exact: true }).last().click();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("heading", { name: "冲销重记" })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "支出详情" })).toBeVisible();
 });

@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useLayoutEffect, useState } from "react";
 import {
   CalendarDays,
   Check,
@@ -13,7 +13,7 @@ import type { Expense, TripData } from "@/lib/models";
 import { currencyLabel, money, settlementOf, splitAmount } from "@/lib/money";
 import { api } from "@/lib/api";
 import { Avatar } from "../avatar";
-import { SheetFooter, Sheet, SheetForm } from "../ui";
+import { ConfirmationModal, SheetFooter, Sheet } from "../ui";
 import { FileTiles } from "../files/file-tiles";
 export function ExpenseDetail({
   expense,
@@ -65,8 +65,7 @@ export function ExpenseDetail({
       setBusy(false);
     }
   }
-  async function settle(event: React.FormEvent) {
-    event.preventDefault();
+  async function settle() {
     if (!/^\d+(\.\d{1,2})?$/.test(actual) || Number(actual) <= 0) {
       setError("请填写大于 0 的实际人民币，最多两位小数");
       return;
@@ -109,11 +108,46 @@ export function ExpenseDetail({
     expense.amount_cny_estimated != null && actual
       ? Math.round(Number(actual) * 100) - expense.amount_cny_estimated
       : null;
+  useLayoutEffect(() => {
+    function closeTopmostConfirmation(event: KeyboardEvent) {
+      if (event.key !== "Escape") return;
+      if (settling) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        setSettling(false);
+      } else if (confirmReverse) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        setConfirmReverse(false);
+      } else if (confirmDelete) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        setConfirmDelete(false);
+      }
+    }
+    document.addEventListener("keydown", closeTopmostConfirmation, true);
+    return () =>
+      document.removeEventListener("keydown", closeTopmostConfirmation, true);
+  }, [settling, confirmReverse, confirmDelete]);
   return (
     <Sheet
       open
       title="支出详情"
-      onClose={() => !busy && onClose()}
+      onClose={() => {
+        if (settling) {
+          setSettling(false);
+          return;
+        }
+        if (confirmReverse) {
+          setConfirmReverse(false);
+          return;
+        }
+        if (confirmDelete) {
+          setConfirmDelete(false);
+          return;
+        }
+        if (!busy) onClose();
+      }}
       className="expense-detail-sheet"
     >
       <div className="expense-detail-content">
@@ -227,14 +261,37 @@ export function ExpenseDetail({
         )}
       </div>
       {settling && (
-        <Sheet
+        <ConfirmationModal
           open
           title="录入实际人民币"
           description="录入信用卡实际扣款后，这笔账会被锁定。"
-          onClose={() => !busy && setSettling(false)}
-          className="expense-confirm-sheet"
+          onClose={() => setSettling(false)}
+          footer={
+            <>
+              {error && (
+                <p role="alert" className="error-message">
+                  {error}
+                </p>
+              )}
+              <button
+                className="primary-button w-full"
+                disabled={busy}
+                onClick={() => void settle()}
+              >
+                确认并锁定
+              </button>
+              <button
+                type="button"
+                className="text-action"
+                disabled={busy}
+                onClick={() => setSettling(false)}
+              >
+                取消
+              </button>
+            </>
+          }
         >
-          <SheetForm className="settle-form" onSubmit={settle}>
+          <div className="settle-form">
             <p className="muted">
               {expense.title} · {money(expense.amount, expense.currency)}
               {expense.amount_cny_estimated != null && (
@@ -263,34 +320,38 @@ export function ExpenseDetail({
                 （手续费/汇率差），将按这笔账的分摊比例计入每个人。
               </p>
             )}
-            <SheetFooter>
+          </div>
+        </ConfirmationModal>
+      )}
+      {confirmReverse && (
+        <ConfirmationModal
+          open
+          title="冲销重记"
+          description="生成一条反向记录，原账保留不变。"
+          onClose={() => setConfirmReverse(false)}
+          footer={
+            <>
               {error && (
                 <p role="alert" className="error-message">
                   {error}
                 </p>
               )}
-              <button className="primary-button w-full" disabled={busy}>
-                确认并锁定
+              <button
+                className="danger-button w-full"
+                disabled={busy}
+                onClick={() => void reverse()}
+              >
+                确认冲销
               </button>
               <button
-                type="button"
                 className="text-action"
                 disabled={busy}
-                onClick={() => setSettling(false)}
+                onClick={() => setConfirmReverse(false)}
               >
                 取消
               </button>
-            </SheetFooter>
-          </SheetForm>
-        </Sheet>
-      )}
-      {confirmReverse && (
-        <Sheet
-          open
-          title="冲销重记"
-          description="生成一条反向记录，原账保留不变。"
-          onClose={() => !busy && setConfirmReverse(false)}
-          className="expense-confirm-sheet"
+            </>
+          }
         >
           <div className="companion-confirm-content">
             <p>
@@ -300,36 +361,37 @@ export function ExpenseDetail({
               原账和冲销记录都会保留在审计链路中。
             </p>
           </div>
-          <SheetFooter>
-            {error && (
-              <p role="alert" className="error-message">
-                {error}
-              </p>
-            )}
-            <button
-              className="danger-button w-full"
-              disabled={busy}
-              onClick={() => void reverse()}
-            >
-              确认冲销
-            </button>
-            <button
-              className="text-action"
-              disabled={busy}
-              onClick={() => setConfirmReverse(false)}
-            >
-              取消
-            </button>
-          </SheetFooter>
-        </Sheet>
+        </ConfirmationModal>
       )}
       {confirmDelete && (
-        <Sheet
+        <ConfirmationModal
           open
           title="删除支出"
           description="从账本和分摊统计中移除这笔未锁定的支出。"
-          onClose={() => !busy && setConfirmDelete(false)}
-          className="expense-confirm-sheet"
+          onClose={() => setConfirmDelete(false)}
+          footer={
+            <>
+              {error && (
+                <p role="alert" className="error-message">
+                  {error}
+                </p>
+              )}
+              <button
+                className="danger-button w-full"
+                disabled={busy}
+                onClick={() => void remove()}
+              >
+                {busy ? "正在删除…" : "确认删除"}
+              </button>
+              <button
+                className="text-action"
+                disabled={busy}
+                onClick={() => setConfirmDelete(false)}
+              >
+                取消
+              </button>
+            </>
+          }
         >
           <div className="companion-confirm-content">
             <p>删除后，这笔支出及其分摊记录不会再出现在行程账本中。</p>
@@ -337,28 +399,7 @@ export function ExpenseDetail({
               删除操作不可撤销。已结算的账不能删除，只能冲销重记。
             </p>
           </div>
-          <SheetFooter>
-            {error && (
-              <p role="alert" className="error-message">
-                {error}
-              </p>
-            )}
-            <button
-              className="danger-button w-full"
-              disabled={busy}
-              onClick={() => void remove()}
-            >
-              {busy ? "正在删除…" : "确认删除"}
-            </button>
-            <button
-              className="text-action"
-              disabled={busy}
-              onClick={() => setConfirmDelete(false)}
-            >
-              取消
-            </button>
-          </SheetFooter>
-        </Sheet>
+        </ConfirmationModal>
       )}
       <SheetFooter className="expense-detail-actions">
         <div className="expense-action-buttons">

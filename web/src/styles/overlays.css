@@ -7,6 +7,20 @@
   z-index: 50;
   animation: fade-in 0.15s;
 }
+.confirmation-modal-root {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+}
+.confirmation-modal-root > .sheet-overlay {
+  z-index: 0;
+  pointer-events: auto;
+}
+.confirmation-modal-root > .confirmation-modal {
+  z-index: 1;
+  pointer-events: auto;
+}
 .sheet {
   position: fixed;
   z-index: 51;

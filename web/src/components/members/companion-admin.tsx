@@ -110,6 +110,7 @@ export function CompanionAdmin({
                 value={targetId}
                 onChange={setTargetId}
                 disabled={busy}
+                stopEscapePropagation
               />
             </div>
             <p className="confirm-consequence">

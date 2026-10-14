@@ -4,6 +4,7 @@ import { rateLimit } from "../auth";
 import { dateSchema } from "../../shared/validation";
 import { readPublic } from "./public";
 import { shiftSnapshot } from "./snapshot";
+import { ensureLedgerMembers } from "../finance/ledger-members";
 export async function copyItinerary(
   request: Request,
   env: Env,
@@ -94,5 +95,6 @@ export async function copyItinerary(
       throw new HttpError(409, "分享已经变更，请刷新后复制");
     throw error;
   }
+  await ensureLedgerMembers(env, id);
   return json({ id });
 }

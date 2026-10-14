@@ -29,11 +29,14 @@ export type Bootstrap = {
 };
 export type Member = {
   id: string;
+  user_id?: string | null;
   name: string;
   english_name: string;
   has_avatar?: number;
   default_avatar?: string;
   version?: number;
+  status?: "placeholder" | "claimed";
+  expense_count?: number;
 };
 export type Profile = Member & {
   email: string;
@@ -97,6 +100,13 @@ export type Expense = {
   note: string;
   source: string;
   version: number;
+  amount_cny_estimated?: number | null;
+  amount_cny_settled?: number | null;
+  fx_rate_ppm?: number | null;
+  settle_status?: "estimated" | "settled";
+  settlement_locked?: number;
+  entry_type?: "normal" | "reversal";
+  reversal_of?: string | null;
 };
 export type TripData = {
   trip: Trip;

@@ -318,3 +318,131 @@
   border-radius: 50%;
   padding: 1px;
 }
+
+.cny-settlement {
+  display: grid;
+  gap: 4px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--line);
+  color: var(--muted);
+  font-size: 12px;
+}
+.cny-settlement strong {
+  color: var(--ink);
+  font-weight: 600;
+}
+.expense-amount-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+.expense-amount-stack small {
+  font-size: 10px;
+  color: var(--muted);
+}
+.amount-estimated {
+  color: var(--muted);
+}
+.settle-chip {
+  display: inline-block;
+  margin-left: 4px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 0 5px;
+  font-size: 10px;
+  line-height: 1.6;
+  color: var(--muted);
+  vertical-align: 1px;
+}
+.settle-chip.settled {
+  background: var(--accent);
+  color: #fff;
+  border-color: transparent;
+}
+.avatar.placeholder {
+  background: #efeaf2;
+  color: var(--muted);
+  border: 1.5px dashed #c9c3d0;
+  box-shadow: none;
+}
+.unregistered-badge {
+  margin-left: 6px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 0 4px;
+  font-size: 10px;
+  color: var(--muted);
+  font-weight: 500;
+}
+.add-companion-row {
+  width: 100%;
+  margin-top: 8px;
+  padding: 10px 8px;
+  border: 0;
+  border-top: 1px dashed var(--line);
+  background: transparent;
+  color: var(--accent);
+  text-align: left;
+  cursor: pointer;
+}
+.companion-list .companion-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+}
+.companion-row strong {
+  font-size: 14px;
+  font-weight: 600;
+}
+.companion-row strong small {
+  color: var(--accent);
+  font-weight: 500;
+}
+.companion-actions {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
+}
+.companion-actions button,
+.companion-merge button,
+.claim-card button {
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  cursor: pointer;
+}
+.companion-note,
+.companion-merge,
+.claim-list,
+.settle-form,
+.estimate-entry {
+  margin: 8px 0 16px;
+}
+.companion-merge,
+.settle-form,
+.claim-list {
+  display: grid;
+  gap: 10px;
+}
+.claim-card {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+.claim-card p,
+.claim-confirm p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+.claim-confirm {
+  display: grid;
+  gap: 6px;
+  justify-items: end;
+}

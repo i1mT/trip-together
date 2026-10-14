@@ -4,6 +4,7 @@ import { tripSchema } from "../../shared/validation";
 import { profile } from "../accounts/profile";
 import { rateLimit } from "../auth";
 import { requireOwner, type Trip } from "./access";
+import { ensureLedgerMembers } from "../finance/ledger-members";
 export async function bootstrap(env: Env, id: string) {
   const [me, trips, documents] = await Promise.all([
     profile(env, id),
@@ -50,6 +51,7 @@ export async function createTrip(request: Request, env: Env, memberId: string) {
       "INSERT INTO trip_members (trip_id,member_id) VALUES (?,?)",
     ).bind(id, memberId),
   ]);
+  await ensureLedgerMembers(env, id);
   return json({ id }, 201);
 }
 export async function updateTrip(

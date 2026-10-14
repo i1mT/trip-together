@@ -10,7 +10,18 @@ import {
   setEventStatus,
 } from "./content";
 import { tripData, packing } from "../data";
-import { saveExpense, deleteExpense } from "../finance/expenses";
+import {
+  saveExpense,
+  deleteExpense,
+  settleExpense,
+  reverseExpense,
+} from "../finance/expenses";
+import {
+  addPlaceholder,
+  deletePlaceholder,
+  unclaimMember,
+  mergePlaceholder,
+} from "../finance/ledger-members";
 import { uploadReceipt, deleteDraftReceipt } from "../finance/receipts";
 import { tripDocument } from "../storage/trip-documents";
 export async function tripRouter(
@@ -19,7 +30,7 @@ export async function tripRouter(
   memberId: string,
   parts: string[],
 ) {
-  const [tripId, resource, id] = parts,
+  const [tripId, resource, id, action] = parts,
     method = request.method;
   const trip = await requireTrip(env, memberId, tripId);
   if (!resource) {
@@ -50,10 +61,24 @@ export async function tripRouter(
   if (resource === "packing" && method === "PUT")
     return packing(request, env, memberId, tripId);
   if (resource === "expenses") {
-    if ((method === "POST" && !id) || (method === "PUT" && id))
+    if (method === "POST" && id && action === "settle")
+      return settleExpense(request, env, memberId, tripId, id);
+    if (method === "POST" && id && action === "reverse")
+      return reverseExpense(request, env, memberId, tripId, id);
+    if ((method === "POST" && !id) || (method === "PUT" && id && !action))
       return saveExpense(request, env, memberId, tripId, id);
-    if (method === "DELETE" && id)
+    if (method === "DELETE" && id && !action)
       return deleteExpense(request, env, memberId, tripId, id);
+  }
+  if (resource === "members") {
+    if (method === "POST" && !id)
+      return addPlaceholder(request, env, tripId, memberId);
+    if (method === "DELETE" && id && !action)
+      return deletePlaceholder(env, trip, memberId, id);
+    if (method === "POST" && id && action === "unclaim")
+      return unclaimMember(request, env, trip, memberId, id);
+    if (method === "POST" && id && action === "merge")
+      return mergePlaceholder(request, env, trip, memberId, id);
   }
   if (resource === "receipts" && id) {
     if (method === "PUT")

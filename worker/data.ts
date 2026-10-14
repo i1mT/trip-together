@@ -2,7 +2,9 @@ import { z } from "zod";
 import { body, HttpError, json } from "./http";
 import { profile } from "./accounts/profile";
 import type { Trip } from "./trips/access";
+import { ensureLedgerMembers } from "./finance/ledger-members";
 export async function tripData(env: Env, memberId: string, trip: Trip) {
+  await ensureLedgerMembers(env, trip.id);
   const [
     me,
     members,
@@ -15,10 +17,23 @@ export async function tripData(env: Env, memberId: string, trip: Trip) {
   ] = await Promise.all([
     profile(env, memberId),
     env.DB.prepare(
-      "SELECT u.id,u.name,u.english_name,u.default_avatar,(u.avatar_key IS NOT NULL) AS has_avatar,u.version FROM members u JOIN trip_members m ON m.member_id=u.id WHERE m.trip_id=? ORDER BY m.joined_at,u.id",
+      `SELECT lm.id, lm.user_id, lm.status,
+        CASE WHEN lm.user_id IS NULL THEN lm.display_name ELSE COALESCE(u.name, lm.display_name) END AS name,
+        COALESCE(u.english_name, '') AS english_name,
+        COALESCE(u.default_avatar, '') AS default_avatar,
+        (u.avatar_key IS NOT NULL) AS has_avatar,
+        COALESCE(u.version, 1) AS version
+       FROM ledger_members lm
+       LEFT JOIN members u ON u.id = lm.user_id
+       WHERE lm.trip_id=?`,
     )
       .bind(trip.id)
-      .all(),
+      .all<{
+        id: string;
+        user_id: string | null;
+        status: string;
+        name: string;
+      }>(),
     env.DB.prepare("SELECT data,version,sort_order FROM events WHERE trip_id=?")
       .bind(trip.id)
       .all<{ data: string; version: number; sort_order: number | null }>(),
@@ -31,7 +46,11 @@ export async function tripData(env: Env, memberId: string, trip: Trip) {
       "SELECT e.* FROM expenses e WHERE e.trip_id=? ORDER BY e.date DESC,e.created_at DESC,e.id DESC",
     )
       .bind(trip.id)
-      .all<{ participants: string }>(),
+      .all<{
+        participants: string;
+        payer_id: string;
+        payer_member_id: string | null;
+      }>(),
     env.DB.prepare(
       "SELECT item_id FROM packing WHERE trip_id=? AND member_id=? AND checked=1",
     )
@@ -49,10 +68,30 @@ export async function tripData(env: Env, memberId: string, trip: Trip) {
       .all(),
   ]);
   const visibleDocuments = new Set(documents.results.map((d) => d.id));
+  const memberRows = members.results;
+  const expenseRows = expenses.results.map((expense) => ({
+    payer: expense.payer_member_id as string | null,
+    participants: JSON.parse(expense.participants) as string[],
+  }));
+  const listedMembers = memberRows
+    .map((member) => ({
+      ...member,
+      expense_count: expenseRows.filter(
+        (expense) =>
+          expense.payer === member.id ||
+          expense.participants.includes(member.id),
+      ).length,
+    }))
+    .sort((a, b) => {
+      if (a.status !== b.status) return a.status === "claimed" ? -1 : 1;
+      return (
+        b.expense_count - a.expense_count || a.name.localeCompare(b.name, "zh")
+      );
+    });
   return json({
     trip: { ...trip, destinations: JSON.parse(trip.destinations ?? "[]") },
     me,
-    members: members.results,
+    members: listedMembers,
     events: events.results
       .map((e) => {
         const event = JSON.parse(e.data);
@@ -73,10 +112,22 @@ export async function tripData(env: Env, memberId: string, trip: Trip) {
         return Date.parse(a.start) - Date.parse(b.start);
       }),
     documents: documents.results,
-    expenses: expenses.results.map((e) => ({
-      ...e,
-      participants: JSON.parse(e.participants),
-    })),
+    expenses: expenses.results.map((e) => {
+      const participants = JSON.parse(e.participants) as string[];
+      const payer =
+        memberRows.find((member) => member.id === e.payer_member_id) ??
+        memberRows.find((member) => member.user_id === e.payer_id);
+      return {
+        ...e,
+        payer_id: payer?.id ?? e.payer_member_id ?? e.payer_id,
+        participants: participants.map(
+          (id) =>
+            memberRows.find((member) => member.id === id)?.id ??
+            memberRows.find((member) => member.user_id === id)?.id ??
+            id,
+        ),
+      };
+    }),
     packing: packing.results.map((p) => p.item_id),
     receipts: receipts.results,
     preparation: preparation.results,

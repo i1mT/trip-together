@@ -11,7 +11,7 @@ import {
   LoaderCircle,
 } from "lucide-react";
 import type { Expense, TripData } from "@/lib/models";
-import { currencyLabel, money, splitAmount } from "@/lib/money";
+import { currencyLabel, money, settlementOf, splitAmount } from "@/lib/money";
 import { api } from "@/lib/api";
 import { Avatar } from "../avatar";
 import { SheetFooter, Sheet } from "../ui";
@@ -30,12 +30,18 @@ export function ExpenseDetail({
   onRefresh: () => Promise<void>;
 }) {
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [confirmReverse, setConfirmReverse] = useState(false);
+  const [settling, setSettling] = useState(false);
+  const [actual, setActual] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [deleted, setDeleted] = useState(false);
+  const locked = Boolean(expense.settlement_locked);
+  const settlement = settlementOf(expense);
   const payer = data.members.find((member) => member.id === expense.payer_id);
   const recorder = data.members.find(
-    (member) => member.id === expense.created_by,
+    (member) =>
+      member.user_id === expense.created_by || member.id === expense.created_by,
   );
   const shares = splitAmount(expense.amount, expense.participants);
   const participants = data.members.filter((member) =>
@@ -64,6 +70,50 @@ export function ExpenseDetail({
       setBusy(false);
     }
   }
+  async function settle(event: React.FormEvent) {
+    event.preventDefault();
+    if (!/^\d+(\.\d{1,2})?$/.test(actual) || Number(actual) <= 0) {
+      setError("请填写大于 0 的实际人民币，最多两位小数");
+      return;
+    }
+    setBusy(true);
+    setError("");
+    try {
+      await api(`/expenses/${expense.id}/settle`, {
+        method: "POST",
+        body: JSON.stringify({
+          amountCny: Math.round(Number(actual) * 100),
+          version: expense.version,
+        }),
+      });
+      await onRefresh();
+      onClose();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "结算失败");
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function reverse() {
+    setBusy(true);
+    setError("");
+    try {
+      await api(`/expenses/${expense.id}/reverse`, {
+        method: "POST",
+        body: JSON.stringify({ version: expense.version }),
+      });
+      await onRefresh();
+      onClose();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "冲销失败");
+    } finally {
+      setBusy(false);
+    }
+  }
+  const delta =
+    expense.amount_cny_estimated != null && actual
+      ? Math.round(Number(actual) * 100) - expense.amount_cny_estimated
+      : null;
   return (
     <Sheet
       open
@@ -85,6 +135,25 @@ export function ExpenseDetail({
             {money(expense.amount, expense.currency)}
             <small>{currencyLabel(expense.currency)}</small>
           </div>
+          <p
+            className={settlement.approximate ? "amount-estimated" : undefined}
+          >
+            {settlement.approximate ? "约 " : ""}
+            {money(settlement.cents, "CNY")}
+            {expense.entry_type === "reversal"
+              ? " · 冲销"
+              : locked
+                ? " · 已结算"
+                : settlement.approximate
+                  ? " · 待结算"
+                  : ""}
+            {locked && expense.amount_cny_estimated != null && (
+              <small>
+                {" "}
+                原估算 约 {money(expense.amount_cny_estimated, "CNY")}
+              </small>
+            )}
+          </p>
           <div className="paid-receipt-meta">
             <span>
               <CalendarDays size={14} />
@@ -134,6 +203,11 @@ export function ExpenseDetail({
                 url: `/api/files/${file.id}`,
               }))}
             />
+          ) : locked ? (
+            <p className="empty-receipt-note">
+              <ReceiptText size={18} strokeWidth={1.3} />
+              这笔账已锁定，没有付款资料。
+            </p>
           ) : (
             <button
               className="empty-receipt-action"
@@ -157,6 +231,49 @@ export function ExpenseDetail({
           </details>
         )}
       </div>
+      {settling && (
+        <form className="settle-form" onSubmit={settle}>
+          <h3>信用卡实际扣款（人民币）</h3>
+          <p className="muted">
+            {expense.title} · {money(expense.amount, expense.currency)}
+            {expense.amount_cny_estimated != null && (
+              <>
+                {" "}
+                · 记账估算{" "}
+                <s>约 {money(expense.amount_cny_estimated, "CNY")}</s>
+              </>
+            )}
+          </p>
+          <label>
+            实际人民币
+            <input
+              required
+              aria-label="实际人民币"
+              inputMode="decimal"
+              value={actual}
+              placeholder="0.00"
+              onChange={(event) => setActual(event.target.value)}
+            />
+          </label>
+          {delta != null && Number.isFinite(delta) && (
+            <p className="muted">
+              差额 {delta >= 0 ? "+" : ""}
+              {money(delta, "CNY")}
+              （手续费/汇率差），将按这笔账的分摊比例计入每个人。
+            </p>
+          )}
+          <button className="primary-button w-full" disabled={busy}>
+            确认并锁定
+          </button>
+          <button
+            type="button"
+            className="text-action"
+            onClick={() => setSettling(false)}
+          >
+            取消
+          </button>
+        </form>
+      )}
       <SheetFooter className="expense-detail-actions">
         {error && (
           <p role="alert" className="error-message">
@@ -203,23 +320,69 @@ export function ExpenseDetail({
               </button>
             </div>
           </div>
+        ) : confirmReverse ? (
+          <div
+            className="expense-delete-confirm"
+            role="group"
+            aria-label="冲销确认"
+          >
+            <p>
+              生成一条反向记录，原账保留且金额不变。
+              <small>之后可以重新记一笔正确的账。</small>
+            </p>
+            <div>
+              <button
+                className="secondary-button"
+                disabled={busy}
+                onClick={() => setConfirmReverse(false)}
+              >
+                取消
+              </button>
+              <button
+                className="confirm-expense-delete"
+                disabled={busy}
+                onClick={() => void reverse()}
+              >
+                确认冲销
+              </button>
+            </div>
+          </div>
         ) : (
           <div className="expense-action-buttons">
-            <button
-              className="danger-button"
-              onClick={() => setConfirmDelete(true)}
-            >
-              <Trash2 size={17} />
-              删除
-            </button>
-            <button
-              className="primary-button"
-              aria-label="编辑这笔支出"
-              onClick={() => onEdit(expense)}
-            >
-              <Pencil size={17} />
-              修改支出
-            </button>
+            {locked ? (
+              <button
+                className="danger-button"
+                onClick={() => setConfirmReverse(true)}
+              >
+                冲销重记
+              </button>
+            ) : (
+              <button
+                className="danger-button"
+                onClick={() => setConfirmDelete(true)}
+              >
+                <Trash2 size={17} />
+                删除
+              </button>
+            )}
+            {!locked && settlement.approximate && (
+              <button
+                className="secondary-button"
+                onClick={() => setSettling(true)}
+              >
+                录入实际人民币
+              </button>
+            )}
+            {!locked && (
+              <button
+                className="primary-button"
+                aria-label="编辑这笔支出"
+                onClick={() => onEdit(expense)}
+              >
+                <Pencil size={17} />
+                修改支出
+              </button>
+            )}
           </div>
         )}
       </SheetFooter>

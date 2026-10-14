@@ -1,12 +1,22 @@
 "use client";
 import { MemberSelect } from "./members/member-select";
+import { AddCompanion } from "./members/add-companion";
 import { Avatar } from "./avatar";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { LoaderCircle, Check, Trash2, ArrowRightLeft } from "lucide-react";
-import type { Expense, TripData, Currency } from "@/lib/models";
+import type { Currency, Expense, Member, TripData } from "@/lib/models";
 import { ReceiptPicker, useReceipts } from "./ledger/receipt-picker";
 import { localDate, selectEvents } from "@/lib/time";
-import { currencyLabel, money, splitAmount } from "@/lib/money";
+import {
+  currencyLabel,
+  estimateCny,
+  formatRate,
+  money,
+  referencePpm,
+  referenceRateDate,
+  selfMemberId,
+  splitAmount,
+} from "@/lib/money";
 import { api } from "@/lib/api";
 import { SheetForm, SheetFooter, Sheet } from "./ui";
 import { DateTimeWheelField } from "./editors/fields";
@@ -23,6 +33,7 @@ export function ExpenseEditor({
   onSaved: () => Promise<void>;
 }) {
   const toast = useToast();
+  const locked = Boolean(expense?.settlement_locked);
   const [title, setTitle] = useState(expense?.title ?? "");
   const [amount, setAmount] = useState(
     expense ? (expense.amount / 100).toFixed(2) : "",
@@ -30,7 +41,22 @@ export function ExpenseEditor({
   const [currency, setCurrency] = useState<Currency>(
     expense?.currency ?? data.trip.currency,
   );
-  const [payerId, setPayerId] = useState(expense?.payer_id ?? data.me.id);
+  const [extraMembers, setExtraMembers] = useState<Member[]>([]);
+  const [adding, setAdding] = useState<"payer" | "share" | null>(null);
+  const members = useMemo(() => {
+    const known = new Set(data.members.map((member) => member.id));
+    return [
+      ...data.members,
+      ...extraMembers.filter((member) => !known.has(member.id)),
+    ];
+  }, [data.members, extraMembers]);
+  const selfId = selfMemberId(members, data.me.id);
+  const [payerId, setPayerId] = useState(expense?.payer_id ?? selfId);
+  const [estimate, setEstimate] = useState(
+    expense?.amount_cny_estimated != null
+      ? (expense.amount_cny_estimated / 100).toFixed(2)
+      : "",
+  );
   const receipts = useReceipts(
     data.receipts.filter((r) => r.expense_id === expense?.id),
   );
@@ -46,7 +72,7 @@ export function ExpenseEditor({
       ),
   );
   const [participants, setParticipants] = useState(
-    expense?.participants ?? data.members.map((m) => m.id),
+    expense?.participants ?? members.map((member) => member.id),
   );
   const [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
@@ -70,12 +96,22 @@ export function ExpenseEditor({
     setBusy(true);
     try {
       const receiptIds = await receipts.upload();
+      const cents = Math.round(Number(amount) * 100);
+      const estimated =
+        currency === "CNY"
+          ? undefined
+          : Math.round(
+              Number(
+                estimate ||
+                  (estimateCny(cents, referencePpm(currency)) / 100).toFixed(2),
+              ) * 100,
+            );
       await api(`/expenses${expense ? `/${expense.id}` : ""}`, {
         method: expense ? "PUT" : "POST",
         body: JSON.stringify({
           id,
           title,
-          amount: Math.round(Number(amount) * 100),
+          amount: cents,
           currency,
           payerId,
           receiptIds,
@@ -83,6 +119,7 @@ export function ExpenseEditor({
           participants,
           note: expense?.note ?? "",
           version: expense?.version,
+          amountCnyEstimated: estimated,
         }),
       });
       await onSaved();
@@ -128,6 +165,7 @@ export function ExpenseEditor({
               aria-label="金额"
               inputMode="decimal"
               value={amount}
+              disabled={locked}
               onChange={(e) => setAmount(e.target.value)}
               placeholder="0.00"
             />
@@ -135,15 +173,18 @@ export function ExpenseEditor({
           <button
             type="button"
             className="expense-currency-choice"
-            disabled={busy || data.trip.currency === data.trip.home_currency}
+            disabled={
+              locked || busy || data.trip.currency === data.trip.home_currency
+            }
             aria-label={`当前币种：${currencyLabel(currency)}${data.trip.currency !== data.trip.home_currency ? `，切换为${currencyLabel(currency === data.trip.currency ? data.trip.home_currency : data.trip.currency)}` : ""}`}
-            onClick={() =>
+            onClick={() => {
               setCurrency(
                 currency === data.trip.currency
                   ? data.trip.home_currency
                   : data.trip.currency,
-              )
-            }
+              );
+              setEstimate("");
+            }}
           >
             {currencyLabel(currency)}
             {data.trip.currency !== data.trip.home_currency && (
@@ -151,6 +192,39 @@ export function ExpenseEditor({
             )}
           </button>
         </div>
+        {currency !== "CNY" && (
+          <div className="estimate-entry">
+            <label>
+              估算人民币
+              <input
+                aria-label="估算人民币"
+                inputMode="decimal"
+                disabled={locked}
+                value={
+                  estimate ||
+                  (
+                    estimateCny(
+                      Math.round(Number(amount || 0) * 100),
+                      referencePpm(currency),
+                    ) / 100
+                  ).toFixed(2)
+                }
+                onChange={(event) => setEstimate(event.target.value)}
+              />
+            </label>
+            <p className="muted">
+              参考汇率 1 {currencyLabel(currency)} ≈ ¥
+              {formatRate(referencePpm(currency))}（{referenceRateDate}{" "}
+              参考价，可改）。账单出来后再录入实际人民币。
+            </p>
+          </div>
+        )}
+        {currency === "CNY" && (
+          <p className="muted">人民币支出按实际金额计入结算，之后仍可修改。</p>
+        )}
+        {locked && (
+          <p className="muted">这笔账的金额已锁定。如需更正，请冲销后重记。</p>
+        )}
         <label>
           支出名称
           <input
@@ -166,10 +240,11 @@ export function ExpenseEditor({
             <span>付款人</span>
             <MemberSelect
               label="付款人"
-              members={data.members}
+              members={members}
               value={payerId}
               onChange={setPayerId}
-              disabled={busy}
+              disabled={busy || locked}
+              onAdd={locked ? undefined : () => setAdding("payer")}
             />
           </div>
           <DateTimeWheelField
@@ -187,26 +262,27 @@ export function ExpenseEditor({
             <button
               type="button"
               className="text-action"
-              onClick={() => setParticipants(data.members.map((m) => m.id))}
+              onClick={() => setParticipants(members.map((m) => m.id))}
             >
               全部成员
             </button>
             <button
               type="button"
               className="text-action"
-              onClick={() => setParticipants([data.me.id])}
+              onClick={() => setParticipants([selfId])}
             >
               仅自己
             </button>
           </div>
           <div className="participant-grid">
-            {data.members.map((m) => (
+            {members.map((m) => (
               <button
                 type="button"
                 className={`participant ${participants.includes(m.id) ? "checked" : ""}`}
                 key={m.id}
                 aria-label={m.name}
                 aria-pressed={participants.includes(m.id)}
+                disabled={locked}
                 onClick={() =>
                   setParticipants((p) =>
                     p.includes(m.id)
@@ -237,6 +313,15 @@ export function ExpenseEditor({
               ? `共 ${participants.length} 人分摊，按实际金额平均分配。`
               : "请选择至少一位分摊成员。"}
           </p>
+          {!locked && (
+            <button
+              type="button"
+              className="add-companion-row"
+              onClick={() => setAdding("share")}
+            >
+              ＋ 添加同伴（只填昵称，无需注册）
+            </button>
+          )}
         </fieldset>
         <ReceiptPicker receipts={receipts} disabled={busy} onError={setError} />
         <SheetFooter>
@@ -261,6 +346,7 @@ export function ExpenseEditor({
             )}
           </button>
           {expense &&
+            !locked &&
             (confirmDelete ? (
               <div className="delete-confirm">
                 <p>确定删除这笔支出吗？删除后无法撤销。</p>
@@ -283,6 +369,23 @@ export function ExpenseEditor({
             ))}
         </SheetFooter>
       </SheetForm>
+      <AddCompanion
+        open={adding !== null}
+        members={members}
+        onClose={() => setAdding(null)}
+        onPick={(member) => {
+          if (adding === "payer") setPayerId(member.id);
+          setParticipants((current) =>
+            current.includes(member.id) ? current : [...current, member.id],
+          );
+        }}
+        onCreated={(member) => {
+          setExtraMembers((current) => [...current, member]);
+          if (adding === "payer") setPayerId(member.id);
+          setParticipants((current) => [...current, member.id]);
+          toast(`已添加${member.name}（未注册），账可以随时认领`);
+        }}
+      />
     </Sheet>
   );
 }

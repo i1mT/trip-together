@@ -4,7 +4,7 @@ export function setActiveTrip(id: string) {
 }
 export function apiUrl(path: string) {
   const scoped =
-    /^\/(trip$|expenses|receipts|documents|packing|events|preparation|invites)/.test(
+    /^\/(trip$|expenses|receipts|documents|packing|events|preparation|invites|members)/.test(
       path,
     );
   if (scoped) {

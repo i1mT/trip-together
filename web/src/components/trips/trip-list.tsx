@@ -15,6 +15,7 @@ import { TripManagement } from "./management";
 import { TripForm } from "./trip-form";
 import { zoneName } from "@/lib/time";
 import { SheetForm, SheetFooter, Sheet } from "../ui";
+import { money } from "@/lib/money";
 export function TripList({
   data,
   selected,
@@ -38,18 +39,48 @@ export function TripList({
     [joining, setJoining] = useState(false),
     [token, setToken] = useState(""),
     [busy, setBusy] = useState(false),
-    [error, setError] = useState("");
+    [error, setError] = useState(""),
+    [preview, setPreview] = useState<ClaimPreview | null>(null),
+    [confirmId, setConfirmId] = useState("");
   useEffect(() => {
     if (autoCreate) setCreating(true);
   }, [autoCreate]);
+  async function finishJoin() {
+    const r = await api<{ id: string }>("/join", {
+      method: "POST",
+      body: JSON.stringify({ token: token.trim() }),
+    });
+    await onRefresh();
+    onSelect(r.id);
+  }
   async function join(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
     setError("");
     try {
-      const r = await api<{ id: string }>("/join", {
+      const next = await api<ClaimPreview>("/join/preview", {
         method: "POST",
         body: JSON.stringify({ token: token.trim() }),
+      });
+      if (next.placeholders.length) {
+        setPreview(next);
+        setConfirmId("");
+        return;
+      }
+      await finishJoin();
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function claim(memberId: string) {
+    setBusy(true);
+    setError("");
+    try {
+      const r = await api<{ id: string }>("/claim", {
+        method: "POST",
+        body: JSON.stringify({ token: token.trim(), memberId }),
       });
       await onRefresh();
       onSelect(r.id);
@@ -188,46 +219,132 @@ export function TripList({
         />
       )}
       {joining && (
-        <Sheet open title="加入行程" onClose={() => !busy && setJoining(false)}>
-          <SheetForm className="editor-form trip-join-form" onSubmit={join}>
-            <div className="trip-form-intro">
-              <Ticket size={24} />
-              <p>
-                向行程创建者索取邀请口令，加入后即可查看安排、资料和共同账本。
+        <Sheet
+          open
+          title={preview ? "你是以下哪位？" : "加入行程"}
+          onClose={() => !busy && (setJoining(false), setPreview(null))}
+        >
+          {preview ? (
+            <div className="claim-list">
+              <p className="muted">
+                「{preview.title}
+                」里有这些未注册的同伴。认领后，历史账目归到你名下，不用改每一笔。
               </p>
-            </div>
-            <label>
-              邀请口令
-              <input
-                maxLength={6}
-                autoCapitalize="characters"
-                spellCheck={false}
-                aria-label="邀请口令"
-                required
-                value={token}
-                autoComplete="off"
-                placeholder="输入 6 位字母口令"
-                onChange={(e) => {
-                  setToken(e.target.value.replace(/\s/g, "").toUpperCase());
-                  setError("");
-                }}
-              />
-            </label>
-            <div className="trip-join-submit">
+              {preview.placeholders.map((person) => (
+                <div className="claim-card" key={person.id}>
+                  <div>
+                    <strong>{person.name}</strong>
+                    <p>
+                      参与 {person.expenseCount} 笔账 · 累计分摊{" "}
+                      {person.approximate ? "约 " : ""}
+                      {money(person.shareCny, "CNY")}
+                    </p>
+                  </div>
+                  {confirmId === person.id ? (
+                    <div className="claim-confirm">
+                      <p>
+                        确认你是「{person.name}」？之后可以联系行程创建者更改。
+                      </p>
+                      <button
+                        type="button"
+                        disabled={busy}
+                        onClick={() => void claim(person.id)}
+                      >
+                        确认认领
+                      </button>
+                      <button type="button" onClick={() => setConfirmId("")}>
+                        取消
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setConfirmId(person.id)}
+                    >
+                      认领
+                    </button>
+                  )}
+                </div>
+              ))}
               {error && (
                 <p role="alert" className="error-message">
                   {error}
                 </p>
               )}
-              <SheetFooter>
-                <button className="primary-button" disabled={busy}>
-                  {busy ? "正在加入…" : "确认加入行程"}
-                </button>
-              </SheetFooter>
+              <button
+                type="button"
+                className="text-action"
+                disabled={busy}
+                onClick={() =>
+                  void (async () => {
+                    setBusy(true);
+                    setError("");
+                    try {
+                      await finishJoin();
+                    } catch (e) {
+                      setError((e as Error).message);
+                    } finally {
+                      setBusy(false);
+                    }
+                  })()
+                }
+              >
+                都不是？以新成员加入行程
+              </button>
             </div>
-          </SheetForm>
+          ) : (
+            <SheetForm className="editor-form trip-join-form" onSubmit={join}>
+              <div className="trip-form-intro">
+                <Ticket size={24} />
+                <p>
+                  向行程创建者索取邀请口令，加入后即可查看安排、资料和共同账本。
+                </p>
+              </div>
+              <label>
+                邀请口令
+                <input
+                  maxLength={6}
+                  autoCapitalize="characters"
+                  spellCheck={false}
+                  aria-label="邀请口令"
+                  required
+                  value={token}
+                  autoComplete="off"
+                  placeholder="输入 6 位字母口令"
+                  onChange={(e) => {
+                    setToken(e.target.value.replace(/\s/g, "").toUpperCase());
+                    setError("");
+                  }}
+                />
+              </label>
+              <div className="trip-join-submit">
+                {error && (
+                  <p role="alert" className="error-message">
+                    {error}
+                  </p>
+                )}
+                <SheetFooter>
+                  <button className="primary-button" disabled={busy}>
+                    {busy ? "正在加入…" : "确认加入行程"}
+                  </button>
+                </SheetFooter>
+              </div>
+            </SheetForm>
+          )}
         </Sheet>
       )}
     </main>
   );
 }
+
+type ClaimPreview = {
+  tripId: string;
+  title: string;
+  placeholders: {
+    id: string;
+    name: string;
+    expenseCount: number;
+    shareCny: number;
+    approximate: boolean;
+  }[];
+};

@@ -11,6 +11,7 @@ export function MemberSelect({
   label,
   all = false,
   disabled = false,
+  onAdd,
 }: {
   members: Member[];
   value: string;
@@ -18,6 +19,7 @@ export function MemberSelect({
   label: string;
   all?: boolean;
   disabled?: boolean;
+  onAdd?: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const member = members.find((m) => m.id === value);
@@ -98,11 +100,28 @@ export function MemberSelect({
                 ) : (
                   <Avatar member={m} />
                 )}
-                <span>{m.name}</span>
+                <span>
+                  {m.name}
+                  {"status" in m && m.status === "placeholder" && (
+                    <small className="unregistered-badge">未注册</small>
+                  )}
+                </span>
                 {value === m.id && <Check size={18} />}
               </button>
             ))}
           </div>
+          {onAdd && (
+            <button
+              type="button"
+              className="add-companion-row"
+              onClick={() => {
+                onAdd();
+                setOpen(false);
+              }}
+            >
+              ＋ 添加同伴（只填昵称，无需注册）
+            </button>
+          )}
         </Sheet>
       )}
     </div>

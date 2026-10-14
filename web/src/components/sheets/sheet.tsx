@@ -82,6 +82,8 @@ export function Sheet({
   hasChanges,
   headerless = false,
   stopEscapePropagation = false,
+  modal = true,
+  ignoreOutsideSelector,
 }: {
   open: boolean;
   onClose: () => void;
@@ -94,6 +96,8 @@ export function Sheet({
   hasChanges?: boolean;
   headerless?: boolean;
   stopEscapePropagation?: boolean;
+  modal?: boolean;
+  ignoreOutsideSelector?: string;
 }) {
   const [dirty, setDirty] = useState(false),
     [discard, setDiscard] = useState(false),
@@ -123,6 +127,7 @@ export function Sheet({
   return (
     <Dialog.Root
       open={open}
+      modal={modal}
       onOpenChange={(value) => {
         if (!value) {
           const nestedDialogOpen =
@@ -140,6 +145,27 @@ export function Sheet({
       <Dialog.Portal>
         <Dialog.Overlay className="sheet-overlay" />
         <Dialog.Content
+          onPointerDownOutside={(event) => {
+            if (
+              ignoreOutsideSelector &&
+              (event.target as HTMLElement)?.closest(ignoreOutsideSelector)
+            )
+              event.preventDefault();
+          }}
+          onFocusOutside={(event) => {
+            if (
+              ignoreOutsideSelector &&
+              (event.target as HTMLElement)?.closest(ignoreOutsideSelector)
+            )
+              event.preventDefault();
+          }}
+          onInteractOutside={(event) => {
+            if (
+              ignoreOutsideSelector &&
+              (event.target as HTMLElement)?.closest(ignoreOutsideSelector)
+            )
+              event.preventDefault();
+          }}
           onEscapeKeyDown={(event) => {
             // Nested confirmation sheets must not close their parent on Escape.
             if (stopEscapePropagation) {

@@ -130,136 +130,180 @@ export function ExpenseDetail({
       document.removeEventListener("keydown", closeTopmostConfirmation, true);
   }, [settling, confirmReverse, confirmDelete]);
   return (
-    <Sheet
-      open
-      title="支出详情"
-      onClose={() => {
-        if (settling) {
-          setSettling(false);
-          return;
-        }
-        if (confirmReverse) {
-          setConfirmReverse(false);
-          return;
-        }
-        if (confirmDelete) {
-          setConfirmDelete(false);
-          return;
-        }
-        if (!busy) onClose();
-      }}
-      className="expense-detail-sheet"
-    >
-      <div className="expense-detail-content">
-        <article className="paid-receipt">
-          <div className="paid-receipt-top">
-            <span>
-              <Check size={13} />
-              已记录
-            </span>
-            <ReceiptText size={25} strokeWidth={1.4} />
-          </div>
-          <h3>{expense.title}</h3>
-          <div className="paid-amount">
-            {money(expense.amount, expense.currency)}
-            <small>{currencyLabel(expense.currency)}</small>
-          </div>
-          <p
-            className={settlement.approximate ? "amount-estimated" : undefined}
-          >
-            {settlement.approximate ? "约 " : ""}
-            {money(settlement.cents, "CNY")}
-            {expense.entry_type === "reversal"
-              ? " · 冲销"
-              : locked
-                ? " · 已结算"
-                : settlement.approximate
-                  ? " · 待结算"
-                  : ""}
-            {locked && expense.amount_cny_estimated != null && (
-              <small>
-                {" "}
-                原估算 约 {money(expense.amount_cny_estimated, "CNY")}
-              </small>
-            )}
-          </p>
-          <div className="paid-receipt-meta">
-            <span>
-              <CalendarDays size={14} />
-              {expense.date.replaceAll("-", ".")}
-            </span>
-            <span>{currencyLabel(expense.currency)}</span>
-          </div>
-          <div className="paid-by">
-            <Avatar member={payer} />
-            <div>
-              <small>付款人</small>
-              <strong>{payer?.name}</strong>
-            </div>
-            {recorder && <span>{recorder.name}记录</span>}
-          </div>
-        </article>
-        <section className="expense-share-section">
-          <div className="expense-detail-heading">
-            <h3>
-              <Users size={17} />
-              费用分摊
-            </h3>
-            <span>{participants.length} 人均分</span>
-          </div>
-          <div className="expense-share-grid">
-            {participants.map((member) => (
-              <div className="expense-share-member" key={member.id}>
-                <Avatar member={member} />
-                <span>{member.name}</span>
-                <strong>{money(shares[member.id], expense.currency)}</strong>
-              </div>
-            ))}
-          </div>
-        </section>
-        <section className="expense-files-section">
-          <div className="expense-detail-heading">
-            <h3>
-              <ReceiptText size={17} />
-              付款资料
-            </h3>
-            <span>{files.length} 份</span>
-          </div>
-          {files.length ? (
-            <FileTiles
-              files={files.map((file) => ({
-                ...file,
-                url: `/api/files/${file.id}`,
-              }))}
-            />
-          ) : locked ? (
-            <p className="empty-receipt-note">
-              <ReceiptText size={18} strokeWidth={1.3} />
-              这笔账已锁定，没有付款资料。
-            </p>
-          ) : (
-            <button
-              className="empty-receipt-action"
-              onClick={() => onEdit(expense)}
-            >
-              <ReceiptText size={24} strokeWidth={1.3} />
+    <>
+      <Sheet
+        open
+        modal={!settling && !confirmReverse && !confirmDelete}
+        ignoreOutsideSelector=".confirmation-modal-root"
+        title="支出详情"
+        onClose={() => {
+          if (settling) {
+            setSettling(false);
+            return;
+          }
+          if (confirmReverse) {
+            setConfirmReverse(false);
+            return;
+          }
+          if (confirmDelete) {
+            setConfirmDelete(false);
+            return;
+          }
+          if (!busy) onClose();
+        }}
+        className="expense-detail-sheet"
+      >
+        <div className="expense-detail-content">
+          <article className="paid-receipt">
+            <div className="paid-receipt-top">
               <span>
-                尚未添加资料<small>点击添加图片或 PDF</small>
+                <Check size={13} />
+                已记录
               </span>
-              <Pencil size={15} />
-            </button>
+              <ReceiptText size={25} strokeWidth={1.4} />
+            </div>
+            <h3>{expense.title}</h3>
+            <div className="paid-amount">
+              {money(expense.amount, expense.currency)}
+              <small>{currencyLabel(expense.currency)}</small>
+            </div>
+            <p
+              className={
+                settlement.approximate ? "amount-estimated" : undefined
+              }
+            >
+              {settlement.approximate ? "约 " : ""}
+              {money(settlement.cents, "CNY")}
+              {expense.entry_type === "reversal"
+                ? " · 冲销"
+                : locked
+                  ? " · 已结算"
+                  : settlement.approximate
+                    ? " · 待结算"
+                    : ""}
+              {locked && expense.amount_cny_estimated != null && (
+                <small>
+                  {" "}
+                  原估算 约 {money(expense.amount_cny_estimated, "CNY")}
+                </small>
+              )}
+            </p>
+            <div className="paid-receipt-meta">
+              <span>
+                <CalendarDays size={14} />
+                {expense.date.replaceAll("-", ".")}
+              </span>
+              <span>{currencyLabel(expense.currency)}</span>
+            </div>
+            <div className="paid-by">
+              <Avatar member={payer} />
+              <div>
+                <small>付款人</small>
+                <strong>{payer?.name}</strong>
+              </div>
+              {recorder && <span>{recorder.name}记录</span>}
+            </div>
+          </article>
+          <section className="expense-share-section">
+            <div className="expense-detail-heading">
+              <h3>
+                <Users size={17} />
+                费用分摊
+              </h3>
+              <span>{participants.length} 人均分</span>
+            </div>
+            <div className="expense-share-grid">
+              {participants.map((member) => (
+                <div className="expense-share-member" key={member.id}>
+                  <Avatar member={member} />
+                  <span>{member.name}</span>
+                  <strong>{money(shares[member.id], expense.currency)}</strong>
+                </div>
+              ))}
+            </div>
+          </section>
+          <section className="expense-files-section">
+            <div className="expense-detail-heading">
+              <h3>
+                <ReceiptText size={17} />
+                付款资料
+              </h3>
+              <span>{files.length} 份</span>
+            </div>
+            {files.length ? (
+              <FileTiles
+                files={files.map((file) => ({
+                  ...file,
+                  url: `/api/files/${file.id}`,
+                }))}
+              />
+            ) : locked ? (
+              <p className="empty-receipt-note">
+                <ReceiptText size={18} strokeWidth={1.3} />
+                这笔账已锁定，没有付款资料。
+              </p>
+            ) : (
+              <button
+                className="empty-receipt-action"
+                onClick={() => onEdit(expense)}
+              >
+                <ReceiptText size={24} strokeWidth={1.3} />
+                <span>
+                  尚未添加资料<small>点击添加图片或 PDF</small>
+                </span>
+                <Pencil size={15} />
+              </button>
+            )}
+          </section>
+          {expense.note && (
+            <details className="expense-original-note">
+              <summary>
+                <Info size={14} />
+                原始记录说明
+              </summary>
+              <p>{expense.note}</p>
+            </details>
           )}
-        </section>
-        {expense.note && (
-          <details className="expense-original-note">
-            <summary>
-              <Info size={14} />
-              原始记录说明
-            </summary>
-            <p>{expense.note}</p>
-          </details>
-        )}
-      </div>
+        </div>
+        <SheetFooter className="expense-detail-actions">
+          <div className="expense-action-buttons">
+            {locked ? (
+              <button
+                className="danger-button"
+                onClick={() => setConfirmReverse(true)}
+              >
+                冲销重记
+              </button>
+            ) : (
+              <button
+                className="danger-button"
+                onClick={() => setConfirmDelete(true)}
+              >
+                <Trash2 size={17} />
+                删除
+              </button>
+            )}
+            {!locked && settlement.approximate && (
+              <button
+                className="secondary-button"
+                onClick={() => setSettling(true)}
+              >
+                录入实际人民币
+              </button>
+            )}
+            {!locked && (
+              <button
+                className="primary-button"
+                aria-label="编辑这笔支出"
+                onClick={() => onEdit(expense)}
+              >
+                <Pencil size={17} />
+                修改支出
+              </button>
+            )}
+          </div>
+        </SheetFooter>
+      </Sheet>
       {settling && (
         <ConfirmationModal
           open
@@ -401,44 +445,6 @@ export function ExpenseDetail({
           </div>
         </ConfirmationModal>
       )}
-      <SheetFooter className="expense-detail-actions">
-        <div className="expense-action-buttons">
-          {locked ? (
-            <button
-              className="danger-button"
-              onClick={() => setConfirmReverse(true)}
-            >
-              冲销重记
-            </button>
-          ) : (
-            <button
-              className="danger-button"
-              onClick={() => setConfirmDelete(true)}
-            >
-              <Trash2 size={17} />
-              删除
-            </button>
-          )}
-          {!locked && settlement.approximate && (
-            <button
-              className="secondary-button"
-              onClick={() => setSettling(true)}
-            >
-              录入实际人民币
-            </button>
-          )}
-          {!locked && (
-            <button
-              className="primary-button"
-              aria-label="编辑这笔支出"
-              onClick={() => onEdit(expense)}
-            >
-              <Pencil size={17} />
-              修改支出
-            </button>
-          )}
-        </div>
-      </SheetFooter>
-    </Sheet>
+    </>
   );
 }

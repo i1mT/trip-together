@@ -9,7 +9,6 @@ import {
 } from "lucide-react";
 import type { ReactNode } from "react";
 import type { TripEvent } from "@/lib/models";
-import { createPortal } from "react-dom";
 export const eventIcons = {
   flight: Plane,
   drive: Car,
@@ -66,7 +65,9 @@ export function ConfirmationModal({
   footer: ReactNode;
 }) {
   if (!open || typeof document === "undefined") return null;
-  return createPortal(
+  // Keep this in the React tree so controlled inputs retain their events.
+  // Fixed positioning still makes it an independent modal above the parent sheet.
+  return (
     <div className="confirmation-modal-root">
       <div className="sheet-overlay" onMouseDown={onClose} />
       <div className="sheet confirmation-modal" role="dialog" aria-modal="true">
@@ -87,7 +88,6 @@ export function ConfirmationModal({
           <div className="sheet-actions">{footer}</div>
         </footer>
       </div>
-    </div>,
-    document.body,
+    </div>
   );
 }

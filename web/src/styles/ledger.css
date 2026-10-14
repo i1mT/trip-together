@@ -427,6 +427,28 @@
   display: grid;
   gap: 10px;
 }
+.companion-confirm-form,
+.companion-confirm-content {
+  display: grid;
+  gap: 14px;
+}
+.companion-confirm-form,
+.companion-confirm-content,
+.settle-form {
+  padding: 0 22px 24px;
+}
+.companion-confirm-content p,
+.confirm-consequence {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+.confirm-consequence {
+  border-radius: 12px;
+  padding: 12px 14px;
+  background: var(--paper);
+  line-height: 1.7;
+}
 .claim-card {
   display: flex;
   justify-content: space-between;

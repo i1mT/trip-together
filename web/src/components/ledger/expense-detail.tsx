@@ -8,13 +8,12 @@ import {
   ReceiptText,
   Users,
   Info,
-  LoaderCircle,
 } from "lucide-react";
 import type { Expense, TripData } from "@/lib/models";
 import { currencyLabel, money, settlementOf, splitAmount } from "@/lib/money";
 import { api } from "@/lib/api";
 import { Avatar } from "../avatar";
-import { SheetFooter, Sheet } from "../ui";
+import { SheetFooter, Sheet, SheetForm } from "../ui";
 import { FileTiles } from "../files/file-tiles";
 export function ExpenseDetail({
   expense,
@@ -35,7 +34,6 @@ export function ExpenseDetail({
   const [actual, setActual] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const [deleted, setDeleted] = useState(false);
   const locked = Boolean(expense.settlement_locked);
   const settlement = settlementOf(expense);
   const payer = data.members.find((member) => member.id === expense.payer_id);
@@ -55,13 +53,10 @@ export function ExpenseDetail({
     setBusy(true);
     setError("");
     try {
-      if (!deleted) {
-        await api(`/expenses/${expense.id}`, {
-          method: "DELETE",
-          body: JSON.stringify({ version: expense.version }),
-        });
-        setDeleted(true);
-      }
+      await api(`/expenses/${expense.id}`, {
+        method: "DELETE",
+        body: JSON.stringify({ version: expense.version }),
+      });
       await onRefresh();
       onClose();
     } catch (error) {
@@ -232,159 +227,176 @@ export function ExpenseDetail({
         )}
       </div>
       {settling && (
-        <form className="settle-form" onSubmit={settle}>
-          <h3>信用卡实际扣款（人民币）</h3>
-          <p className="muted">
-            {expense.title} · {money(expense.amount, expense.currency)}
-            {expense.amount_cny_estimated != null && (
-              <>
-                {" "}
-                · 记账估算{" "}
-                <s>约 {money(expense.amount_cny_estimated, "CNY")}</s>
-              </>
-            )}
-          </p>
-          <label>
-            实际人民币
-            <input
-              required
-              aria-label="实际人民币"
-              inputMode="decimal"
-              value={actual}
-              placeholder="0.00"
-              onChange={(event) => setActual(event.target.value)}
-            />
-          </label>
-          {delta != null && Number.isFinite(delta) && (
+        <Sheet
+          open
+          title="录入实际人民币"
+          description="录入信用卡实际扣款后，这笔账会被锁定。"
+          onClose={() => !busy && setSettling(false)}
+          className="expense-confirm-sheet"
+        >
+          <SheetForm className="settle-form" onSubmit={settle}>
             <p className="muted">
-              差额 {delta >= 0 ? "+" : ""}
-              {money(delta, "CNY")}
-              （手续费/汇率差），将按这笔账的分摊比例计入每个人。
+              {expense.title} · {money(expense.amount, expense.currency)}
+              {expense.amount_cny_estimated != null && (
+                <>
+                  {" "}
+                  · 记账估算{" "}
+                  <s>约 {money(expense.amount_cny_estimated, "CNY")}</s>
+                </>
+              )}
             </p>
-          )}
-          <button className="primary-button w-full" disabled={busy}>
-            确认并锁定
-          </button>
-          <button
-            type="button"
-            className="text-action"
-            onClick={() => setSettling(false)}
-          >
-            取消
-          </button>
-        </form>
-      )}
-      <SheetFooter className="expense-detail-actions">
-        {error && (
-          <p role="alert" className="error-message">
-            {error}
-          </p>
-        )}
-        {confirmDelete ? (
-          <div
-            className="expense-delete-confirm"
-            role="group"
-            aria-label="删除确认"
-          >
-            <p>
-              {deleted
-                ? "记录已删除，点击重试刷新账本。"
-                : "确定删除这笔支出吗？"}
-              <small>删除后会从账本和分摊统计中移除。</small>
-            </p>
-            <div>
-              <button
-                className="secondary-button"
-                disabled={busy}
-                onClick={() => {
-                  if (deleted) onClose();
-                  else {
-                    setConfirmDelete(false);
-                    setError("");
-                  }
-                }}
-              >
-                {deleted ? "关闭" : "取消"}
+            <label>
+              实际人民币
+              <input
+                required
+                aria-label="实际人民币"
+                inputMode="decimal"
+                value={actual}
+                placeholder="0.00"
+                onChange={(event) => setActual(event.target.value)}
+              />
+            </label>
+            {delta != null && Number.isFinite(delta) && (
+              <p className="muted">
+                差额 {delta >= 0 ? "+" : ""}
+                {money(delta, "CNY")}
+                （手续费/汇率差），将按这笔账的分摊比例计入每个人。
+              </p>
+            )}
+            <SheetFooter>
+              {error && (
+                <p role="alert" className="error-message">
+                  {error}
+                </p>
+              )}
+              <button className="primary-button w-full" disabled={busy}>
+                确认并锁定
               </button>
               <button
-                className="confirm-expense-delete"
+                type="button"
+                className="text-action"
                 disabled={busy}
-                onClick={() => void remove()}
-              >
-                {busy ? (
-                  <LoaderCircle size={17} className="animate-spin" />
-                ) : (
-                  <Trash2 size={16} />
-                )}
-                {deleted ? "重试刷新" : "确认删除"}
-              </button>
-            </div>
-          </div>
-        ) : confirmReverse ? (
-          <div
-            className="expense-delete-confirm"
-            role="group"
-            aria-label="冲销确认"
-          >
-            <p>
-              生成一条反向记录，原账保留且金额不变。
-              <small>之后可以重新记一笔正确的账。</small>
-            </p>
-            <div>
-              <button
-                className="secondary-button"
-                disabled={busy}
-                onClick={() => setConfirmReverse(false)}
+                onClick={() => setSettling(false)}
               >
                 取消
               </button>
-              <button
-                className="confirm-expense-delete"
-                disabled={busy}
-                onClick={() => void reverse()}
-              >
-                确认冲销
-              </button>
-            </div>
+            </SheetFooter>
+          </SheetForm>
+        </Sheet>
+      )}
+      {confirmReverse && (
+        <Sheet
+          open
+          title="冲销重记"
+          description="生成一条反向记录，原账保留不变。"
+          onClose={() => !busy && setConfirmReverse(false)}
+          className="expense-confirm-sheet"
+        >
+          <div className="companion-confirm-content">
+            <p>
+              这笔账已经锁定，不能直接编辑或删除。确认后会生成一条等额反向记录，之后可以重新记一笔正确的账。
+            </p>
+            <p className="confirm-consequence">
+              原账和冲销记录都会保留在审计链路中。
+            </p>
           </div>
-        ) : (
-          <div className="expense-action-buttons">
-            {locked ? (
-              <button
-                className="danger-button"
-                onClick={() => setConfirmReverse(true)}
-              >
-                冲销重记
-              </button>
-            ) : (
-              <button
-                className="danger-button"
-                onClick={() => setConfirmDelete(true)}
-              >
-                <Trash2 size={17} />
-                删除
-              </button>
+          <SheetFooter>
+            {error && (
+              <p role="alert" className="error-message">
+                {error}
+              </p>
             )}
-            {!locked && settlement.approximate && (
-              <button
-                className="secondary-button"
-                onClick={() => setSettling(true)}
-              >
-                录入实际人民币
-              </button>
-            )}
-            {!locked && (
-              <button
-                className="primary-button"
-                aria-label="编辑这笔支出"
-                onClick={() => onEdit(expense)}
-              >
-                <Pencil size={17} />
-                修改支出
-              </button>
-            )}
+            <button
+              className="danger-button w-full"
+              disabled={busy}
+              onClick={() => void reverse()}
+            >
+              确认冲销
+            </button>
+            <button
+              className="text-action"
+              disabled={busy}
+              onClick={() => setConfirmReverse(false)}
+            >
+              取消
+            </button>
+          </SheetFooter>
+        </Sheet>
+      )}
+      {confirmDelete && (
+        <Sheet
+          open
+          title="删除支出"
+          description="从账本和分摊统计中移除这笔未锁定的支出。"
+          onClose={() => !busy && setConfirmDelete(false)}
+          className="expense-confirm-sheet"
+        >
+          <div className="companion-confirm-content">
+            <p>删除后，这笔支出及其分摊记录不会再出现在行程账本中。</p>
+            <p className="confirm-consequence">
+              删除操作不可撤销。已结算的账不能删除，只能冲销重记。
+            </p>
           </div>
-        )}
+          <SheetFooter>
+            {error && (
+              <p role="alert" className="error-message">
+                {error}
+              </p>
+            )}
+            <button
+              className="danger-button w-full"
+              disabled={busy}
+              onClick={() => void remove()}
+            >
+              {busy ? "正在删除…" : "确认删除"}
+            </button>
+            <button
+              className="text-action"
+              disabled={busy}
+              onClick={() => setConfirmDelete(false)}
+            >
+              取消
+            </button>
+          </SheetFooter>
+        </Sheet>
+      )}
+      <SheetFooter className="expense-detail-actions">
+        <div className="expense-action-buttons">
+          {locked ? (
+            <button
+              className="danger-button"
+              onClick={() => setConfirmReverse(true)}
+            >
+              冲销重记
+            </button>
+          ) : (
+            <button
+              className="danger-button"
+              onClick={() => setConfirmDelete(true)}
+            >
+              <Trash2 size={17} />
+              删除
+            </button>
+          )}
+          {!locked && settlement.approximate && (
+            <button
+              className="secondary-button"
+              onClick={() => setSettling(true)}
+            >
+              录入实际人民币
+            </button>
+          )}
+          {!locked && (
+            <button
+              className="primary-button"
+              aria-label="编辑这笔支出"
+              onClick={() => onEdit(expense)}
+            >
+              <Pencil size={17} />
+              修改支出
+            </button>
+          )}
+        </div>
       </SheetFooter>
     </Sheet>
   );

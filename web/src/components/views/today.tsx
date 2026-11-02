@@ -90,6 +90,7 @@ export function Today({
                       flight: "航班",
                       transfer: "机场接驳",
                       explore: "活动路线",
+                      meal: "餐饮",
                       stay: "住宿",
                     }[featured.kind]
                   ) : (

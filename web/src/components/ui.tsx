@@ -4,6 +4,7 @@ import {
   Car,
   BedDouble,
   Compass,
+  Utensils,
   ArrowRightLeft,
   ChevronRight,
 } from "lucide-react";
@@ -14,6 +15,7 @@ export const eventIcons = {
   drive: Car,
   stay: BedDouble,
   explore: Compass,
+  meal: Utensils,
   transfer: ArrowRightLeft,
 };
 export function EventIcon({

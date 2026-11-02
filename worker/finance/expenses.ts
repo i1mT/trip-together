@@ -19,11 +19,19 @@ const schema = z.object({
         !isNaN(Date.parse(s)) && new Date(s).toISOString().slice(0, 10) === s,
       "日期无效",
     ),
-  participants: z.array(z.string()).min(1, "至少选择一位分摊成员").max(100),
+  participants: z.array(z.string()).max(100).default([]),
+  skipSplit: z.boolean().default(false),
   note: z.string().trim().max(1000).default(""),
   version: z.number().int().positive().optional(),
   receiptIds: z.array(z.string().uuid()).max(5).optional(),
   amountCnyEstimated: z.number().int().nonnegative().max(100000000).optional(),
+}).superRefine((value, context) => {
+  if (!value.skipSplit && value.participants.length < 1)
+    context.addIssue({
+      code: "custom",
+      message: "至少选择一位分摊成员",
+      path: ["participants"],
+    });
 });
 
 type Existing = {
@@ -43,6 +51,7 @@ type Existing = {
   amount_cny_settled: number | null;
   title: string;
   date: string;
+  skip_split: number;
 };
 
 function sameMembers(left: string[], right: string[]) {
@@ -96,7 +105,8 @@ export async function saveExpense(
 ) {
   const input = await body(request, schema);
   const directory = await ledgerDirectory(env, tripId);
-  const participants = input.participants.map((id) => {
+  const requested = input.skipSplit ? [] : input.participants;
+  const participants = requested.map((id) => {
     const member = resolveLedgerId(directory, id);
     if (!member) throw new HttpError(400, "分摊成员无效");
     return member;
@@ -108,7 +118,7 @@ export async function saveExpense(
     throw new HttpError(400, "分摊成员无效");
   const id = expenseId ?? input.id ?? crypto.randomUUID();
   const existing = await env.DB.prepare(
-    "SELECT payer_id,payer_member_id,created_by,version,amount,currency,participants,settle_status,settlement_locked,entry_type,fx_rate_ppm,amount_cny_estimated,amount_cny_settled,title,date,note FROM expenses WHERE id=? AND trip_id=?",
+    "SELECT payer_id,payer_member_id,created_by,version,amount,currency,participants,settle_status,settlement_locked,skip_split,entry_type,fx_rate_ppm,amount_cny_estimated,amount_cny_settled,title,date,note FROM expenses WHERE id=? AND trip_id=?",
   )
     .bind(id, tripId)
     .first<Existing>();
@@ -130,6 +140,7 @@ export async function saveExpense(
         input.title === existing.title &&
         input.date === existing.date &&
         input.note === existing.note &&
+        Number(Boolean(input.skipSplit)) === existing.skip_split &&
         sameMembers(
           participants.map((member) => member.id),
           stored,
@@ -175,7 +186,7 @@ export async function saveExpense(
   if (expenseId)
     statements.push(
       env.DB.prepare(
-        "UPDATE expenses SET title=?,amount=?,currency=?,payer_id=?,payer_member_id=?,date=?,participants=?,note=?,fx_rate_ppm=?,amount_cny_estimated=?,amount_cny_settled=?,settle_status=?,settlement_locked=?,version=version+1,write_token=? WHERE id=? AND trip_id=? AND version=?",
+        "UPDATE expenses SET title=?,amount=?,currency=?,payer_id=?,payer_member_id=?,date=?,participants=?,skip_split=?,note=?,fx_rate_ppm=?,amount_cny_estimated=?,amount_cny_settled=?,settle_status=?,settlement_locked=?,version=version+1,write_token=? WHERE id=? AND trip_id=? AND version=?",
       ).bind(
         input.title,
         input.amount,
@@ -184,6 +195,7 @@ export async function saveExpense(
         payer.id,
         input.date,
         JSON.stringify(participantIds),
+        input.skipSplit ? 1 : 0,
         input.note,
         settlement.ppm,
         settlement.estimated,
@@ -199,7 +211,7 @@ export async function saveExpense(
   else
     statements.push(
       env.DB.prepare(
-        "INSERT INTO expenses (id,trip_id,payer_id,payer_member_id,created_by,title,amount,currency,category,date,participants,note,write_token,fx_rate_ppm,amount_cny_estimated,amount_cny_settled,settle_status,settlement_locked,entry_type) VALUES (?,?,?,?,?,?,?,?,'其他',?,?,?,?,?,?,?,?,?,'normal')",
+        "INSERT INTO expenses (id,trip_id,payer_id,payer_member_id,created_by,title,amount,currency,category,date,participants,skip_split,note,write_token,fx_rate_ppm,amount_cny_estimated,amount_cny_settled,settle_status,settlement_locked,entry_type) VALUES (?,?,?,?,?,?,?,?,'其他',?,?,?,?,?,?,?,?,?,?,'normal')",
       ).bind(
         id,
         tripId,
@@ -211,6 +223,7 @@ export async function saveExpense(
         input.currency,
         input.date,
         JSON.stringify(participantIds),
+        input.skipSplit ? 1 : 0,
         input.note,
         token,
         settlement.ppm,
@@ -360,9 +373,9 @@ export async function reverseExpense(
   const reversalId = crypto.randomUUID();
   const result = await env.DB.prepare(
     `INSERT INTO expenses (
-      id,trip_id,payer_id,payer_member_id,created_by,title,amount,currency,category,date,participants,note,write_token,
+      id,trip_id,payer_id,payer_member_id,created_by,title,amount,currency,category,date,participants,skip_split,note,write_token,
       fx_rate_ppm,amount_cny_estimated,amount_cny_settled,settle_status,settlement_locked,entry_type,reversal_of
-    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,'settled',1,'reversal',?)`,
+    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,'settled',1,'reversal',?)`,
   )
     .bind(
       reversalId,
@@ -376,6 +389,7 @@ export async function reverseExpense(
       existing.category,
       existing.date,
       existing.participants,
+      existing.skip_split ?? 0,
       "",
       crypto.randomUUID(),
       existing.fx_rate_ppm,

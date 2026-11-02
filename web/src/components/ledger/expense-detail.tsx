@@ -41,7 +41,9 @@ export function ExpenseDetail({
     (member) =>
       member.user_id === expense.created_by || member.id === expense.created_by,
   );
-  const shares = splitAmount(expense.amount, expense.participants);
+  const shares = expense.skip_split
+    ? {}
+    : splitAmount(expense.amount, expense.participants);
   const participants = data.members.filter((member) =>
     expense.participants.includes(member.id),
   );
@@ -210,8 +212,15 @@ export function ExpenseDetail({
                 <Users size={17} />
                 费用分摊
               </h3>
-              <span>{participants.length} 人均分</span>
+              <span>
+                {expense.skip_split
+                  ? "不参与 AA"
+                  : `${participants.length} 人均分`}
+              </span>
             </div>
+            {expense.skip_split ? (
+              <p className="muted">这笔支出只计入总花费，不进入每人分摊。</p>
+            ) : (
             <div className="expense-share-grid">
               {participants.map((member) => (
                 <div className="expense-share-member" key={member.id}>
@@ -221,6 +230,7 @@ export function ExpenseDetail({
                 </div>
               ))}
             </div>
+            )}
           </section>
           <section className="expense-files-section">
             <div className="expense-detail-heading">

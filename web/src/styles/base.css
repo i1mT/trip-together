@@ -403,7 +403,8 @@ button:active {
   --sprite-w: 407;
   --sprite-h: 392;
 }
-.sticker-explore {
+.sticker-explore,
+.sticker-meal {
   --sprite-x: 8;
   --sprite-y: 680;
   --sprite-w: 432;

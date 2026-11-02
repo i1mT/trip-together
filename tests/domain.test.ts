@@ -112,7 +112,7 @@ test("安排时间支持分钟、单点、跨日跨区时间段及待定日期",
   assert.equal(dated.end, "2030-06-01T15:00:00.000Z");
 });
 test("地点坐标验证与导航保持 WGS84 坐标顺序", async () => {
-  const { placeSchema, mapLink } = await import("../shared/places");
+  const { placeSchema, mapLink, googleMapLink } = await import("../shared/places");
   const p = {
     id: "test",
     name: "测试地点",
@@ -126,4 +126,51 @@ test("地点坐标验证与导航保持 WGS84 坐标顺序", async () => {
     new URL(mapLink(placeSchema.parse(p))).searchParams.get("daddr"),
     "48.85,2.29",
   );
+  const google = new URL(googleMapLink(placeSchema.parse(p)));
+  assert.equal(google.searchParams.get("destination"), "48.85,2.29");
+  assert.equal(google.searchParams.get("api"), "1");
+});
+test("不参与 AA 的支出只计入总额", async () => {
+  const { summarize } = await import("../web/src/lib/money");
+  const members = [
+    {
+      id: "a",
+      name: "甲",
+      english_name: "",
+    },
+    {
+      id: "b",
+      name: "乙",
+      english_name: "",
+    },
+  ];
+  const base = {
+    id: "1",
+    payer_id: "a",
+    title: "晚饭",
+    currency: "CNY" as const,
+    category: "餐饮",
+    date: "2030-01-01",
+    note: "",
+    source: "",
+    version: 1,
+  };
+  const { total, rows } = summarize(
+    [
+      { ...base, amount: 1000, participants: ["a", "b"] },
+      {
+        ...base,
+        id: "2",
+        amount: 400,
+        participants: [],
+        skip_split: 1,
+      },
+    ],
+    members,
+    "CNY",
+  );
+  assert.equal(total, 1400);
+  assert.equal(rows.find((row) => row.id === "a")?.share, 500);
+  assert.equal(rows.find((row) => row.id === "a")?.paid, 1000);
+  assert.equal(rows.find((row) => row.id === "b")?.share, 500);
 });

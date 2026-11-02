@@ -15,7 +15,11 @@
   font-size: 11px;
   margin-bottom: 12px;
 }
-.expense-sheet .expense-form input,
+.expense-sheet .expense-form .skip-split {
+  margin-bottom: 0;
+  font-size: 12px;
+}
+.expense-sheet .expense-form input:not([type="checkbox"]),
 .expense-sheet .expense-form select,
 .expense-sheet .expense-form textarea {
   min-height: 42px;

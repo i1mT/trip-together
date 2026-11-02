@@ -228,7 +228,7 @@
   margin-bottom: 17px;
   min-width: 0;
 }
-.expense-form input,
+.expense-form input:not([type="checkbox"]),
 .expense-form select,
 .expense-form textarea {
   display: block;
@@ -269,6 +269,45 @@
   font-size: 10px;
   color: var(--muted);
   margin-left: 6px;
+}
+.expense-form .share-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+  min-width: 0;
+}
+.expense-form .share-heading > span {
+  min-width: 0;
+  font-size: 12px;
+  line-height: 1.3;
+}
+.expense-form .share-heading > span span {
+  font-size: 10px;
+  color: var(--muted);
+  margin-left: 6px;
+}
+.expense-form .skip-split {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  flex-shrink: 0;
+  font-size: 12px;
+  font-weight: 650;
+  color: var(--ink);
+  white-space: nowrap;
+}
+.expense-form .skip-split input {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: #9685b0;
+}
+.expense-form .skip-split input:focus,
+.expense-form .skip-split input:focus-visible {
+  outline: none;
 }
 .participant-grid {
   display: grid;

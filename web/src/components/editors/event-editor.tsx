@@ -17,6 +17,7 @@ import { useToast } from "../toast";
 import type { Place } from "../../../../shared/places";
 const kinds = {
   explore: "活动",
+  meal: "餐饮",
   flight: "航班",
   stay: "住宿",
   drive: "自驾",
@@ -191,7 +192,15 @@ export function EventEditor({
               ))}
             </div>
             <Field
-              label={stay ? "酒店名称" : transport ? "安排名称" : "活动名称"}
+              label={
+                stay
+                  ? "酒店名称"
+                  : transport
+                    ? "安排名称"
+                    : v.kind === "meal"
+                      ? "餐饮名称"
+                      : "活动名称"
+              }
               value={v.title}
               required
               maxLength={150}

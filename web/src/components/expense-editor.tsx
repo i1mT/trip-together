@@ -74,6 +74,7 @@ export function ExpenseEditor({
   const [participants, setParticipants] = useState(
     expense?.participants ?? members.map((member) => member.id),
   );
+  const [skipSplit, setSkipSplit] = useState(Boolean(expense?.skip_split));
   const [busy, setBusy] = useState(false),
     [error, setError] = useState(""),
     [confirmDelete, setConfirmDelete] = useState(false);
@@ -89,7 +90,7 @@ export function ExpenseEditor({
       setError("请选择实际付款人");
       return;
     }
-    if (!participants.length) {
+    if (!skipSplit && !participants.length) {
       setError("至少选择一位分摊成员");
       return;
     }
@@ -116,7 +117,8 @@ export function ExpenseEditor({
           payerId,
           receiptIds,
           date,
-          participants,
+          participants: skipSplit ? [] : participants,
+          skipSplit,
           note: expense?.note ?? "",
           version: expense?.version,
           amountCnyEstimated: estimated,
@@ -256,9 +258,24 @@ export function ExpenseEditor({
           />
         </div>
         <fieldset>
-          <legend>
-            分摊成员 <span>按人数均分</span>
-          </legend>
+          <div className="share-heading">
+            <span>
+              分摊成员 <span>按人数均分</span>
+            </span>
+            <label className="skip-split">
+              <input
+                type="checkbox"
+                checked={skipSplit}
+                disabled={locked}
+                onChange={(event) => setSkipSplit(event.target.checked)}
+              />
+              不参与AA
+            </label>
+          </div>
+          {skipSplit ? (
+            <p className="muted">这笔支出只计入总花费，不进入每人分摊。</p>
+          ) : (
+            <>
           <div className="form-actions">
             <button
               type="button"
@@ -322,6 +339,8 @@ export function ExpenseEditor({
             >
               ＋ 添加同伴（只填昵称，无需注册）
             </button>
+          )}
+            </>
           )}
         </fieldset>
         <ReceiptPicker receipts={receipts} disabled={busy} onError={setError} />

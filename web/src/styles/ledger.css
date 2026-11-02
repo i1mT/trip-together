@@ -270,6 +270,20 @@
   color: var(--muted);
   margin-left: 6px;
 }
+.expense-form legend.share-legend {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 8px;
+}
+.expense-form .skip-split {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 650;
+  color: var(--ink);
+  white-space: nowrap;
+}
 .participant-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);

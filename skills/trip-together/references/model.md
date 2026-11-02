@@ -64,7 +64,7 @@
 | 字段 | 必填 | 说明 |
 | --- | --- | --- |
 | `title` | 是 | 最多 150 字 |
-| `kind` | 是 | `flight` 航班、`drive` 自驾、`stay` 住宿、`explore` 活动、`transfer` 交通 |
+| `kind` | 是 | `flight` 航班、`drive` 自驾、`stay` 住宿、`explore` 活动、`meal` 餐饮、`transfer` 交通 |
 | `start` / `end` | 是 | 带偏移的 ISO 时间，`end` 必须晚于 `start` |
 | `timezone` / `endTimezone` | 是 / 跨时区时 | 出发与到达的当地时区 |
 | `certainty` | 是 | `confirmed` 已确认、`suggested` 建议 |
@@ -114,6 +114,7 @@
 
 - `amount` 是整数分且必须大于 0；不同币种分别统计。
 - `payerId` 必须是当前行程成员；省略 `participants` 时默认全员分摊，但 `payerId` 不允许省略。
+- `skipSplit: true` 表示这笔支出不参与 AA，此时 `participants` 应为空数组；总花费仍计入账本。
 - `date` 是支出发生日期（`YYYY-MM-DD`）。
 - 修改已有支出时带上它的 `version`，并保持原币种，除非用户明确要换。
 

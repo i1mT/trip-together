@@ -48,7 +48,7 @@ export const eventSchema = z
   .object({
     title: z.string().trim().min(1).max(150),
     subtitle: z.string().max(250).default(""),
-    kind: z.enum(["flight", "drive", "stay", "explore", "transfer"]),
+    kind: z.enum(["flight", "drive", "stay", "explore", "meal", "transfer"]),
     dateEnd: dateSchema.optional(),
     timeRange: z.boolean().optional(),
     timeMode: z.enum(["timed", "date"]).default("timed"),

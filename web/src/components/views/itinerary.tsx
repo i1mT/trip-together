@@ -1,7 +1,7 @@
 "use client";
 import { eventStatusLabel } from "../../../../shared/event-status";
 import { EventStatusActions } from "../events/status-actions";
-import { mapLink } from "../../../../shared/places";
+import { MapChooser } from "../events/map-chooser";
 import { useState } from "react";
 import {
   Plus,
@@ -238,6 +238,7 @@ export function EventDetail({
   onStatusChanged: (event: TripEvent) => Promise<void>;
   onRefresh: () => Promise<void>;
 }) {
+  const [mapTarget, setMapTarget] = useState<TripEvent | null>(null);
   if (!event) return null;
   const docs = data.documents.filter((d) => event.documents.includes(d.id));
   return (
@@ -306,19 +307,21 @@ export function EventDetail({
           </span>
         </div>
         {(event.location || event.address) && (
-          <a
+          <button
+            type="button"
             className="secondary-button w-full"
-            target="_blank"
-            rel="noreferrer"
-            href={
-              event.location
-                ? mapLink(event.location)
-                : `https://maps.apple.com/?q=${encodeURIComponent(event.address ?? "")}`
-            }
+            onClick={() => setMapTarget(event)}
           >
             {event.location ? "打开地图导航" : "在地图中搜索"}
             <ArrowUpRight size={16} />
-          </a>
+          </button>
+        )}
+        {mapTarget && (
+          <MapChooser
+            location={mapTarget.location}
+            address={mapTarget.address}
+            onClose={() => setMapTarget(null)}
+          />
         )}
         {event.phone && (
           <a className="detail-row text-action" href={`tel:${event.phone}`}>

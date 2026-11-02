@@ -15,3 +15,11 @@ export function mapLink(place: Place) {
   url.searchParams.set("dirflg", "d");
   return url.toString();
 }
+
+export function googleMapLink(place: Place) {
+  const url = new URL("https://www.google.com/maps/dir/");
+  url.searchParams.set("api", "1");
+  url.searchParams.set("destination", `${place.latitude},${place.longitude}`);
+  url.searchParams.set("travelmode", "driving");
+  return url.toString();
+}

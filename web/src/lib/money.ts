@@ -48,6 +48,7 @@ export function summarize(
     const sign = expense.entry_type === "reversal" ? -1 : 1;
     const amount = expense.amount * sign;
     total += amount;
+    if (expense.skip_split) continue;
     const splits = splitAmount(expense.amount, expense.participants);
     for (const row of rows) {
       if (row.id === expense.payer_id) row.paid += amount;

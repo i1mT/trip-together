@@ -248,6 +248,21 @@
   color: var(--color-primary-500);
 }
 
+.map-app-choices {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 8px 18px 24px;
+}
+.map-app-choices a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  border-radius: 16px;
+  background: #f3f0f5;
+  font-weight: 650;
+}
 .timeline-icon .travel-sticker {
   width: 43px;
   max-height: 45px;

@@ -293,12 +293,13 @@ export async function previewClaim(
     .bind(invite.trip_id)
     .all<{ id: string; display_name: string }>();
   const expenses = await env.DB.prepare(
-    "SELECT payer_member_id, participants, amount_cny_estimated, amount_cny_settled, settle_status, entry_type FROM expenses WHERE trip_id=?",
+    "SELECT payer_member_id, participants, skip_split, amount_cny_estimated, amount_cny_settled, settle_status, entry_type FROM expenses WHERE trip_id=?",
   )
     .bind(invite.trip_id)
     .all<{
       payer_member_id: string | null;
       participants: string;
+      skip_split: number;
       amount_cny_estimated: number | null;
       amount_cny_settled: number | null;
       settle_status: string;
@@ -319,6 +320,7 @@ export async function previewClaim(
         expense.settle_status === "settled" &&
         expense.amount_cny_settled != null;
       if (!settled) approximate = true;
+      if (expense.skip_split) continue;
       const cents = settled
         ? expense.amount_cny_settled!
         : (expense.amount_cny_estimated ?? 0);

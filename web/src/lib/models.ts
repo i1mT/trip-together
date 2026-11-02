@@ -55,7 +55,7 @@ export type TripEvent = {
   id: string;
   title: string;
   subtitle: string;
-  kind: "flight" | "drive" | "stay" | "explore" | "transfer";
+  kind: "flight" | "drive" | "stay" | "explore" | "meal" | "transfer";
   start: string;
   end: string;
   timezone: string;
@@ -105,6 +105,7 @@ export type Expense = {
   fx_rate_ppm?: number | null;
   settle_status?: "estimated" | "settled";
   settlement_locked?: number;
+  skip_split?: number;
   entry_type?: "normal" | "reversal";
   reversal_of?: string | null;
 };

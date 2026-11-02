@@ -305,6 +305,10 @@
   margin: 0;
   accent-color: #9685b0;
 }
+.expense-form .skip-split input:focus,
+.expense-form .skip-split input:focus-visible {
+  outline: none;
+}
 .participant-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);

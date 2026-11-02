@@ -21,10 +21,10 @@ export function MapChooser({
   return (
     <Sheet open title="打开地图" onClose={onClose}>
       <div className="map-app-choices">
-        <a href={apple} target="_blank" rel="noreferrer">
+        <a href={apple} target="_blank" rel="noreferrer" onClick={onClose}>
           苹果地图
         </a>
-        <a href={google} target="_blank" rel="noreferrer">
+        <a href={google} target="_blank" rel="noreferrer" onClick={onClose}>
           谷歌地图
         </a>
       </div>

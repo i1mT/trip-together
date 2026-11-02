@@ -130,13 +130,16 @@ export function Sheet({
       modal={modal}
       onOpenChange={(value) => {
         if (!value) {
-          const nestedDialogOpen =
-            document.querySelectorAll('[role="dialog"][data-state="open"]')
-              .length > 1;
-          if (
-            !stopEscapePropagation &&
-            (activeEscapeIsolatedSheets > 0 || nestedDialogOpen)
-          )
+          const openDialogs = [
+            ...document.querySelectorAll(
+              '[role="dialog"][data-state="open"]',
+            ),
+          ];
+          const top = openDialogs[openDialogs.length - 1];
+          // A nested sheet is portaled outside its parent. Closing the top
+          // one also notifies the parent; only the top sheet should dismiss.
+          if (top && content.current && top !== content.current) return;
+          if (!stopEscapePropagation && activeEscapeIsolatedSheets > 0)
             return;
           close();
         }

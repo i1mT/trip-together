@@ -210,17 +210,17 @@
 }
 .event-type-picker {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 6px;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 4px;
 }
 .event-type-picker button {
   display: grid;
   justify-items: center;
-  gap: 6px;
+  gap: 4px;
   background: #f3f0f5;
   border-radius: 14px;
-  padding: 12px 2px;
-  font-size: 13px;
+  padding: 8px 0;
+  font-size: 12px;
 }
 .event-type-picker button[aria-pressed="true"] {
   background: #e4dcee;

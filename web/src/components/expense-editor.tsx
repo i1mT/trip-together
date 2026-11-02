@@ -258,11 +258,11 @@ export function ExpenseEditor({
           />
         </div>
         <fieldset>
-          <legend className="share-legend">
+          <div className="share-heading">
             <span>
               分摊成员 <span>按人数均分</span>
             </span>
-            <label className="inline-check skip-split">
+            <label className="skip-split">
               <input
                 type="checkbox"
                 checked={skipSplit}
@@ -271,7 +271,7 @@ export function ExpenseEditor({
               />
               不参与AA
             </label>
-          </legend>
+          </div>
           {skipSplit ? (
             <p className="muted">这笔支出只计入总花费，不进入每人分摊。</p>
           ) : (
